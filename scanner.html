@@ -248,36 +248,37 @@ document.addEventListener('DOMContentLoaded', async () => {
   setTimeout(startScanner, 200);
 });
 
-function startScanner() {
+async function startScanner() {
   const idleEl = document.getElementById('idle-state');
   const overlayEl = document.getElementById('scan-overlay');
   const statusText = document.getElementById('status-text');
 
+  // Stop and destroy any previous instance cleanly
   if (html5QrcodeScanner) {
-    try { html5QrcodeScanner.clear(); } catch(e) {}
+    try {
+      if (html5QrcodeScanner.isScanning) await html5QrcodeScanner.stop();
+      html5QrcodeScanner.clear();
+    } catch(e) {}
+    html5QrcodeScanner = null;
   }
 
-  // Hide the results panel visually
   document.getElementById('result-success').classList.add('hidden');
   document.getElementById('result-idle').classList.remove('hidden');
   document.getElementById('match-badge').textContent = 'Live Feed';
   document.getElementById('match-badge').className = "absolute top-0 right-0 px-3 py-1 bg-primary text-white text-[10px] font-bold uppercase tracking-widest";
   document.getElementById('match-card').classList.remove('ring-2', 'ring-primary');
 
-  html5QrcodeScanner = new Html5Qrcode('reader');
   const isMobile = window.innerWidth < 768;
   const boxSize = isMobile ? Math.min(window.innerWidth - 100, 220) : 200;
   const config = { fps: 15, qrbox: { width: boxSize, height: boxSize }, disableFlip: false };
 
-  html5QrcodeScanner.start(
-    { facingMode: 'environment' }, config, onScanSuccess, 
-    (err) => { /* ignore decode errors */ }
-  ).then(() => {
+  const onStarted = () => {
     if (idleEl) idleEl.style.display = 'none';
     if (overlayEl) overlayEl.style.display = 'flex';
     statusText.textContent = 'Awaiting Tag';
     updateStatusDot('bg-green-400', 'animate-pulse');
-  }).catch(err => {
+  };
+  const onFailed = (err) => {
     console.warn('Camera start failed:', err);
     statusText.textContent = 'Camera Off';
     updateStatusDot('bg-error', '');
@@ -285,7 +286,28 @@ function startScanner() {
       idleEl.querySelector('p.font-headline').textContent = 'Camera Unavailable';
       document.getElementById('idle-msg').textContent = 'Use manual entry to search for assets';
     }
-  });
+  };
+
+  // Try rear camera first, fall back to any available camera
+  html5QrcodeScanner = new Html5Qrcode('reader');
+  try {
+    await html5QrcodeScanner.start(
+      { facingMode: 'environment' }, config, onScanSuccess, () => {}
+    );
+    onStarted();
+  } catch(e1) {
+    // Rear camera unavailable (desktop) — try any camera
+    try {
+      const devices = await Html5Qrcode.getCameras();
+      if (!devices || devices.length === 0) { onFailed('no cameras'); return; }
+      await html5QrcodeScanner.start(
+        devices[0].id, config, onScanSuccess, () => {}
+      );
+      onStarted();
+    } catch(e2) {
+      onFailed(e2);
+    }
+  }
 }
 
 function onScanSuccess(decodedText) {
