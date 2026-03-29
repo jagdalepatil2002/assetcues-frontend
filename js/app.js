@@ -57,11 +57,11 @@
       box-shadow:0 4px 20px rgba(0,93,169,0.35); display:flex; align-items:center; justify-content:center;
       transition:all 0.2s; }
     #ac-agent-fab:hover { transform:scale(1.08); box-shadow:0 6px 28px rgba(0,93,169,0.45); }
-    #ac-agent-panel { position:fixed; bottom:170px; right:24px; z-index:901; width:380px; max-width:calc(100vw - 32px);
-      max-height:500px; background:#fff; border-radius:16px; box-shadow:0 12px 48px rgba(0,0,0,0.15);
+    #ac-agent-panel { position:fixed; bottom:170px; right:24px; z-index:901; width:440px; max-width:calc(100vw - 32px);
+      max-height:600px; background:#fff; border-radius:16px; box-shadow:0 12px 48px rgba(0,0,0,0.18);
       display:none; flex-direction:column; overflow:hidden; border:1px solid #c0c7d4; }
     #ac-agent-panel.open { display:flex; animation:modalFadeIn 0.25s ease-out; }
-    #ac-agent-messages { flex:1; overflow-y:auto; padding:16px; space-y:12px; min-height:200px; max-height:340px; }
+    #ac-agent-messages { flex:1; overflow-y:auto; padding:16px; space-y:12px; min-height:280px; max-height:440px; }
     .agent-msg { padding:10px 14px; border-radius:12px; font-size:13px; line-height:1.5; max-width:90%; margin-bottom:10px; }
     .agent-msg.user { background:#005da9; color:#fff; margin-left:auto; border-bottom-right-radius:4px; }
     .agent-msg.bot { background:#f3f3f3; color:#1a1c1c; margin-right:auto; border-bottom-left-radius:4px; }
@@ -73,7 +73,7 @@
     @keyframes agentBounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-8px)} }
     @media(max-width:768px) {
       #ac-agent-fab { bottom:90px; right:16px; width:48px; height:48px; }
-      #ac-agent-panel { bottom:150px; right:16px; width:calc(100vw - 32px); max-height:60vh; }
+      #ac-agent-panel { bottom:100px; right:16px; width:calc(100vw - 32px); max-height:75vh; }
     }
 
     /* Mobile responsiveness */
@@ -620,8 +620,8 @@ document.addEventListener('click', (e) => {
         <span class="material-symbols-outlined text-white text-sm" style="font-variation-settings:'FILL' 1">smart_toy</span>
       </div>
       <div class="flex-1">
-        <h4 class="text-sm font-bold text-on-surface">AssetCues AI Agent</h4>
-        <p class="text-[10px] text-on-surface-variant">Ask anything about your assets</p>
+        <h4 class="text-sm font-bold text-on-surface">AssetCues Agentic Chatbot</h4>
+        <p class="text-[10px] text-on-surface-variant">Powered by Gemini AI</p>
       </div>
       <button onclick="document.getElementById('ac-agent-panel').classList.remove('open')" class="p-1 text-on-surface-variant hover:text-on-surface">
         <span class="material-symbols-outlined text-sm">close</span>
