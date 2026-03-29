@@ -9,7 +9,7 @@
 
 const Api = {
   _getBaseUrl() {
-    return Storage.getSettings().apiUrl || 'http://localhost:8000';
+    return Storage.getSettings().apiUrl || 'https://assetcues-backend.onrender.com';
   },
 
   _log(tag, ...args) {

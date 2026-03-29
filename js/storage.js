@@ -52,7 +52,7 @@ const Storage = {
 
   // ─── SETTINGS ──────────────────────────────────────
   getSettings() {
-    return _cacheGet('ac_settings') || { apiUrl: 'http://localhost:8000', tenantId: 'poc' };
+    return _cacheGet('ac_settings') || { apiUrl: 'https://assetcues-backend.onrender.com', tenantId: 'poc' };
   },
   saveSettings(s) { _cacheSet('ac_settings', s); },
 
