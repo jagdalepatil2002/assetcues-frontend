@@ -52,28 +52,39 @@
     @keyframes modalFadeIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
 
     /* AI Agent Chat Widget */
-    #ac-agent-fab { position:fixed; bottom:100px; right:24px; z-index:900; width:56px; height:56px; border-radius:50%;
+    #ac-agent-fab { position:fixed; bottom:24px; right:24px; z-index:900; width:52px; height:52px; border-radius:50%;
       background:linear-gradient(135deg,#005DA9,#0176D3); color:#fff; border:none; cursor:pointer;
       box-shadow:0 4px 20px rgba(0,93,169,0.35); display:flex; align-items:center; justify-content:center;
       transition:all 0.2s; }
     #ac-agent-fab:hover { transform:scale(1.08); box-shadow:0 6px 28px rgba(0,93,169,0.45); }
-    #ac-agent-panel { position:fixed; bottom:170px; right:24px; z-index:901; width:440px; max-width:calc(100vw - 32px);
-      max-height:600px; background:#fff; border-radius:16px; box-shadow:0 12px 48px rgba(0,0,0,0.18);
-      display:none; flex-direction:column; overflow:hidden; border:1px solid #c0c7d4; }
+    #ac-agent-panel {
+      position:fixed; bottom:86px; right:24px; z-index:901;
+      width:400px; max-width:calc(100vw - 32px);
+      height:560px; max-height:calc(100vh - 100px);
+      background:#fff; border-radius:16px;
+      box-shadow:0 12px 48px rgba(0,0,0,0.18);
+      display:none; flex-direction:column;
+      overflow:hidden; border:1px solid #c0c7d4; }
     #ac-agent-panel.open { display:flex; animation:modalFadeIn 0.25s ease-out; }
-    #ac-agent-messages { flex:1; overflow-y:auto; padding:16px; space-y:12px; min-height:280px; max-height:440px; }
-    .agent-msg { padding:10px 14px; border-radius:12px; font-size:13px; line-height:1.5; max-width:90%; margin-bottom:10px; }
-    .agent-msg.user { background:#005da9; color:#fff; margin-left:auto; border-bottom-right-radius:4px; }
-    .agent-msg.bot { background:#f3f3f3; color:#1a1c1c; margin-right:auto; border-bottom-left-radius:4px; }
+    #ac-agent-messages {
+      flex:1; overflow-y:auto; padding:14px;
+      display:flex; flex-direction:column; gap:2px;
+      min-height:0; /* critical — lets flexbox shrink correctly */ }
+    #ac-agent-messages::-webkit-scrollbar { width:4px; }
+    #ac-agent-messages::-webkit-scrollbar-track { background:transparent; }
+    #ac-agent-messages::-webkit-scrollbar-thumb { background:#c0c7d4; border-radius:4px; }
+    .agent-msg { padding:10px 13px; border-radius:12px; font-size:13px; line-height:1.55; max-width:88%; margin-bottom:4px; word-break:break-word; }
+    .agent-msg.user { background:#005da9; color:#fff; margin-left:auto; border-bottom-right-radius:3px; }
+    .agent-msg.bot { background:#f3f3f3; color:#1a1c1c; margin-right:auto; border-bottom-left-radius:3px; }
     .agent-msg.bot strong { color:#005da9; }
-    .agent-typing { display:flex; gap:4px; padding:10px 14px; }
+    .agent-typing { display:flex; gap:4px; padding:10px 14px; background:#f3f3f3; border-radius:12px; width:fit-content; margin-bottom:4px; }
     .agent-typing span { width:6px; height:6px; background:#005da9; border-radius:50%; animation:agentBounce 1.2s infinite; }
     .agent-typing span:nth-child(2) { animation-delay:0.15s; }
     .agent-typing span:nth-child(3) { animation-delay:0.3s; }
     @keyframes agentBounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-8px)} }
     @media(max-width:768px) {
-      #ac-agent-fab { bottom:90px; right:16px; width:48px; height:48px; }
-      #ac-agent-panel { bottom:100px; right:16px; width:calc(100vw - 32px); max-height:75vh; }
+      #ac-agent-fab { bottom:16px; right:16px; width:46px; height:46px; }
+      #ac-agent-panel { bottom:74px; right:16px; width:calc(100vw - 32px); height:70vh; max-height:calc(100vh - 90px); }
     }
 
     /* Mobile responsiveness */
@@ -619,13 +630,13 @@ const _agentQuickPrompts = [
 
   // Quick prompt chips HTML
   const chipsHtml = `
-    <div id="ac-agent-chips" style="padding:10px 12px 4px;display:flex;flex-wrap:wrap;gap:6px;">
+    <div id="ac-agent-chips" style="padding:8px 12px 6px;display:flex;flex-wrap:wrap;gap:5px;border-bottom:1px solid #f0f0f0;">
       ${_agentQuickPrompts.map((p, i) => `
         <button onclick="agentQuickAsk(${i})"
-          style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:20px;border:1px solid #c0c7d4;background:#f3f3f3;font-size:11px;font-weight:600;color:#005da9;cursor:pointer;transition:all 0.15s;white-space:nowrap;"
+          style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;border:1px solid #c0c7d4;background:#fff;font-size:11px;font-weight:600;color:#005da9;cursor:pointer;transition:all 0.15s;white-space:nowrap;"
           onmouseover="this.style.background='#005da9';this.style.color='#fff';this.style.borderColor='#005da9'"
-          onmouseout="this.style.background='#f3f3f3';this.style.color='#005da9';this.style.borderColor='#c0c7d4'">
-          <span class="material-symbols-outlined" style="font-size:13px;font-variation-settings:'FILL' 1">${p.icon}</span>
+          onmouseout="this.style.background='#fff';this.style.color='#005da9';this.style.borderColor='#c0c7d4'">
+          <span class="material-symbols-outlined" style="font-size:12px;font-variation-settings:'FILL' 1">${p.icon}</span>
           ${p.label}
         </button>`).join('')}
     </div>`;
