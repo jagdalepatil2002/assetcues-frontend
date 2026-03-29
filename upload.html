@@ -276,12 +276,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     fileInput.value = '';
   });
   
-  // Dashboard hookup
-  const stats = Storage.getDashboardStats();
-  if(stats) {
-     const quotaEl = document.getElementById('quota-used');
-     if(quotaEl) quotaEl.textContent = (1248 + stats.totalExtractions * 2).toLocaleString();
-  }
 });
 
 function handleFiles(fileList) {
