@@ -297,7 +297,7 @@
             <!-- Left Column: Specs, History, Assets -->
             <div class="col-span-12 xl:col-span-8 space-y-8">
                 <!-- Hero Bento Section -->
-                <div class="grid grid-cols-12 gap-6 h-auto md:h-[400px]">
+                <div class="grid grid-cols-12 gap-6 h-auto">
                     <div class="col-span-12 md:col-span-8 bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm relative group border border-outline-variant/10">
                         ${(() => {
           const img = Storage.getAssetImage(a.id);
@@ -327,15 +327,15 @@
                     </div>
                     <div class="col-span-12 md:col-span-4 flex flex-col gap-4">
                         <!-- AI Confidence -->
-                        <div class="bg-primary text-white p-5 rounded-xl flex flex-col justify-between shadow-lg">
-                            <div class="flex justify-between items-start">
-                                <p class="text-xs font-label uppercase tracking-widest opacity-90">Data Confidence</p>
-                                <span class="material-symbols-outlined text-white/50" style="font-variation-settings:'FILL' 1">auto_awesome</span>
+                        <div class="bg-primary text-white p-3 rounded-xl flex flex-col justify-between shadow-lg">
+                            <div class="flex justify-between items-center">
+                                <p class="text-[10px] font-label uppercase tracking-widest opacity-90">Data Confidence</p>
+                                <span class="material-symbols-outlined text-white/50 text-[18px]" style="font-variation-settings:'FILL' 1">auto_awesome</span>
                             </div>
-                            <div class="flex items-end justify-between mt-3">
-                                <span class="text-5xl font-black font-headline tracking-tighter">${Math.round((a.confidence || 0) * 100)}<span class="text-xl font-normal opacity-60">%</span></span>
+                            <div class="flex items-end justify-between mt-1.5">
+                                <span class="text-3xl font-black font-headline tracking-tighter">${Math.round((a.confidence || 0) * 100)}<span class="text-sm font-normal opacity-60">%</span></span>
                             </div>
-                            <div class="w-full bg-white/20 h-1.5 rounded-full overflow-hidden mt-3">
+                            <div class="w-full bg-white/20 h-1 rounded-full overflow-hidden mt-2">
                                 <div class="bg-white h-full" style="width:${(a.confidence || 0) * 100}%"></div>
                             </div>
                         </div>
@@ -418,9 +418,9 @@
                                 </div>
                                 <div class="flex justify-between items-center pb-3 border-b border-surface-container gap-2">
                                   <span class="text-on-surface-variant shrink-0">Make</span>
-                                  <div class="flex items-center gap-1 flex-1 justify-end">
+                                  <div class="flex items-center gap-1 justify-end">
                                     <input id="make-input" type="text" list="make-list" value="${a.make || ''}" placeholder="e.g. Lenovo"
-                                      class="text-sm text-right bg-transparent border-b border-dashed border-outline-variant/40 focus:border-primary outline-none w-32 px-1 font-bold"
+                                      class="text-sm text-right bg-transparent border-0 border-b border-dashed border-outline-variant/40 focus:ring-0 focus:border-primary outline-none w-32 px-1 font-bold"
                                       onblur="saveField('${a.id}','make',this.value)" onkeydown="if(event.key==='Enter')this.blur()" />
                                     <datalist id="make-list"><option value="HP"><option value="Dell"><option value="Lenovo"><option value="Apple"><option value="Asus"><option value="Acer"><option value="Samsung"><option value="LG"><option value="Sony"><option value="Canon"><option value="Epson"><option value="Cisco"><option value="D-Link"><option value="TP-Link"></datalist>
                                     ${a.make ? `<span class="text-[9px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded shrink-0">AI</span>` : ''}
@@ -428,9 +428,9 @@
                                 </div>
                                 <div class="flex justify-between items-center pb-3 border-b border-surface-container gap-2">
                                   <span class="text-on-surface-variant shrink-0">Model</span>
-                                  <div class="flex items-center gap-1 flex-1 justify-end">
+                                  <div class="flex items-center gap-1 justify-end">
                                     <input id="model-input" type="text" value="${a.model || ''}" placeholder="e.g. ThinkPad X1"
-                                      class="text-sm text-right bg-transparent border-b border-dashed border-outline-variant/40 focus:border-primary outline-none w-32 px-1 font-bold"
+                                      class="text-sm text-right bg-transparent border-0 border-b border-dashed border-outline-variant/40 focus:ring-0 focus:border-primary outline-none w-32 px-1 font-bold"
                                       onblur="saveField('${a.id}','model',this.value)" onkeydown="if(event.key==='Enter')this.blur()" />
                                     ${a.model ? `<span class="text-[9px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded shrink-0">AI</span>` : ''}
                                   </div>
