@@ -241,8 +241,22 @@ function updateCapacity() {
   document.getElementById('file-size').textContent = Math.round(totalMB / 50 * 100) + '% used';
 }
 
+let _extracting = false;
+window.addEventListener('beforeunload', (e) => {
+  if (_extracting) { e.preventDefault(); e.returnValue = ''; }
+});
+// Block sidebar clicks during extraction
+document.addEventListener('click', (e) => {
+  if (_extracting && e.target.closest('aside a, aside button')) {
+    e.preventDefault();
+    e.stopPropagation();
+    showToast('Please wait — AI extraction is in progress', 'info');
+  }
+}, true);
+
 async function startExtraction() {
   if (selectedFiles.length === 0) return;
+  _extracting = true;
   const btn = document.getElementById('extract-btn');
   btn.disabled = true;
   document.getElementById('progress-section').classList.remove('hidden');
@@ -316,10 +330,12 @@ async function startExtraction() {
       _log('DB', '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
       // Show success toast and redirect to review
+      _extracting = false;
       showToast('AI extraction complete — redirecting to review', 'success');
       setTimeout(() => { window.location.href = `review-detail.html?id=${savedId}`; }, 1200);
 
     } catch (dbErr) {
+      _extracting = false;
       _err('DB', `❌ Failed to save to Supabase: ${dbErr.message}`);
       _err('DB', dbErr);
       document.getElementById('error-section').classList.remove('hidden');
@@ -328,6 +344,7 @@ async function startExtraction() {
       btn.disabled = false;
     }
   } else {
+    _extracting = false;
     _err('EXTRACT', `❌ Extraction failed: ${result.error}`);
     document.getElementById('error-section').classList.remove('hidden');
     document.getElementById('error-message').textContent = result.error;
