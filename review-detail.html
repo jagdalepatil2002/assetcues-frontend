@@ -122,15 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function _resolveInvoiceUrl(ext) {
-  if (ext.fileUrl) {
-    return ext.fileUrl;
-  }
-  if (!ext.id) return null;
-  const orgId = '00000000-0000-0000-0000-000000000001';
-  const supabaseUrl = 'https://ocgywyoehuurkcojaeqm.supabase.co';
-  const bucket = 'invoice-images';
-  const fe = ext.fileName ? ext.fileName.split('.').pop().toLowerCase() : 'pdf';
-  return `${supabaseUrl}/storage/v1/object/public/${bucket}/${orgId}/${ext.id}.${fe}`;
+  return ext.fileUrl || null;
 }
 
 function _renderPreviewPanel(url, ext, valInfo) {

@@ -121,7 +121,7 @@ const Storage = {
       id: extraction.id, org_id: ORG_ID, file_name: fileName, status: 'draft',
       confidence, extraction_json: extractionJson, vendor_name: vendorName,
       invoice_number: invoiceNumber, invoice_date: invoiceDate, grand_total: grandTotal,
-      duplicate_of: isDuplicate ? 'duplicate' : null,
+      duplicate_of: typeof isDuplicate === 'string' ? isDuplicate : null,
     });
 
     // Expand assets
@@ -141,11 +141,7 @@ const Storage = {
             description: `Serial ${serial} already registered as asset ${existingAsset.asset_number || existingAsset.id}.`,
             related_extraction_id: extraction.id,
           });
-          // Mark extraction as duplicate if not already flagged
-          if (!isDuplicate) {
-            await Supabase.update('extractions', extraction.id, { duplicate_of: 'duplicate_serial' });
-            extraction.duplicateOf = 'duplicate_serial';
-          }
+          // Alert is created, skip updating extraction.duplicate_of with invalid UUID strings
         }
       }
     }
@@ -158,6 +154,7 @@ const Storage = {
         description: `Invoice #${invoiceNumber} from ${vendorName} (₹${grandTotal}) may already exist.`,
         related_extraction_id: extraction.id,
       });
+      extraction.duplicateOf = typeof isDuplicate === 'string' ? isDuplicate : 'duplicate';
     }
 
     _cache.extractions.unshift(extraction);
@@ -658,14 +655,14 @@ const Storage = {
       const filters = { invoice_number: invoiceNumber, org_id: ORG_ID };
       if (vendorName) filters.vendor_name = vendorName;
       const existing = await Supabase.query('extractions', { filters });
-      if (existing && existing.length > 0) return true;
+      if (existing && existing.length > 0) return existing[0].id;
     }
     // Match 2: same vendor + same grand total + same invoice date (re-upload with no inv# change)
     if (vendorName && grandTotal > 0 && invoiceDate) {
       const existing2 = await Supabase.query('extractions', {
         filters: { vendor_name: vendorName, grand_total: grandTotal, invoice_date: invoiceDate, org_id: ORG_ID }
       });
-      if (existing2 && existing2.length > 0) return true;
+      if (existing2 && existing2.length > 0) return existing2[0].id;
     }
     return false;
   },

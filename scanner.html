@@ -87,8 +87,8 @@
                 <h1 class="font-headline font-extrabold text-4xl text-on-surface tracking-tight">Scan Asset</h1>
             </div>
             <div class="flex gap-3">
-                <button onclick="restartScanner()" class="px-6 py-2.5 rounded-lg border border-outline-variant text-sm font-semibold hover:bg-surface-container-low transition-colors flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[18px]">restart_alt</span> Restart Camera
+                <button onclick="flipCamera()" class="px-6 py-2.5 rounded-lg border border-outline-variant text-sm font-semibold hover:bg-surface-container-low transition-colors flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[18px]">cameraswitch</span> Flip Camera
                 </button>
             </div>
         </div>
@@ -248,7 +248,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   setTimeout(startScanner, 200);
 });
 
-async function startScanner() {
+let availableCameras = [];
+let currentCameraIndex = 0;
+
+async function startScanner(flip = false) {
   const idleEl = document.getElementById('idle-state');
   const overlayEl = document.getElementById('scan-overlay');
   const statusText = document.getElementById('status-text');
@@ -288,21 +291,38 @@ async function startScanner() {
     }
   };
 
-  // Try rear camera first, fall back to any available camera
   html5QrcodeScanner = new Html5Qrcode('reader');
+
   try {
-    await html5QrcodeScanner.start(
-      { facingMode: 'environment' }, config, onScanSuccess, () => {}
-    );
+    if (availableCameras.length === 0) {
+      availableCameras = await Html5Qrcode.getCameras() || [];
+      if (availableCameras.length > 0) {
+        // Try to default to back camera
+        let backCam = availableCameras.findIndex(c => c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('environment'));
+        currentCameraIndex = backCam >= 0 ? backCam : (availableCameras.length > 1 ? 1 : 0);
+      }
+    }
+  } catch(e) {}
+
+  if (flip && availableCameras.length > 1) {
+    currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
+  }
+
+  try {
+    if (availableCameras.length > 0) {
+      await html5QrcodeScanner.start(availableCameras[currentCameraIndex].id, config, onScanSuccess, () => {});
+    } else {
+      await html5QrcodeScanner.start({ facingMode: 'environment' }, config, onScanSuccess, () => {});
+    }
     onStarted();
   } catch(e1) {
-    // Rear camera unavailable (desktop) — try any camera
+    // If targeted start fails, fallback to robust scanning strategy
     try {
-      const devices = await Html5Qrcode.getCameras();
-      if (!devices || devices.length === 0) { onFailed('no cameras'); return; }
-      await html5QrcodeScanner.start(
-        devices[0].id, config, onScanSuccess, () => {}
-      );
+      if (availableCameras.length > 0) {
+        await html5QrcodeScanner.start(availableCameras[0].id, config, onScanSuccess, () => {});
+      } else {
+        onFailed(e1); return;
+      }
       onStarted();
     } catch(e2) {
       onFailed(e2);
@@ -320,16 +340,30 @@ function onScanSuccess(decodedText) {
   try {
     const url = new URL(decodedText, window.location.href);
     assetId = url.searchParams.get('id');
-    assetUrl = `asset-detail.html?id=${assetId}`;
+    if (assetId) {
+      assetUrl = `asset-detail.html?id=${assetId}`;
+    } else {
+      throw new Error("Missing ID param in URL");
+    }
   } catch(e) {
-    // raw lookup
+    // raw lookup (Plain text QR: AST-1004, S/N, Barcode, etc)
     const assets = Storage.getAssets();
     const dt = decodedText.toLowerCase().trim();
-    const match = assets.find(a => a.id === decodedText || (a.tempAssetId||'').toLowerCase() === dt || a.assetNumber === parseInt(decodedText.replace(/\D/g,'')) || (a.serialNumber||'').toLowerCase() === dt || (a.barcode||'').toLowerCase() === dt || String(a.assetId) === decodedText);
-    if (match) { assetId = match.id; assetUrl = `asset-detail.html?id=${assetId}`; }
+    const match = assets.find(a => 
+      a.id === decodedText || 
+      (a.tempAssetId||'').toLowerCase() === dt || 
+      a.assetNumber === parseInt(decodedText.replace(/\D/g,'') || 0) || 
+      (a.serialNumber||'').toLowerCase() === dt || 
+      (a.barcode||'').toLowerCase() === dt || 
+      String(a.assetId) === decodedText
+    );
+    if (match) { 
+      assetId = match.id; 
+      assetUrl = `asset-detail.html?id=${assetId}`; 
+    }
   }
 
-  if (!assetId && !assetUrl) {
+  if (!assetId || !assetUrl) {
     // Unknown QR
     document.getElementById('status-text').textContent = 'Unknown QR';
     updateStatusDot('bg-error', '');
@@ -383,7 +417,13 @@ function onScanSuccess(decodedText) {
 function restartScanner() {
   document.getElementById('status-text').textContent = 'Restarting...';
   updateStatusDot('bg-secondary', 'animate-pulse');
-  startScanner();
+  startScanner(false);
+}
+
+function flipCamera() {
+  document.getElementById('status-text').textContent = 'Flipping...';
+  updateStatusDot('bg-secondary', 'animate-pulse');
+  startScanner(true);
 }
 
 function manualLookup() {
