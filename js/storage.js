@@ -489,6 +489,44 @@ const Storage = {
     if (asset) asset.assetImageUrl = null;
   },
 
+  // ── BARCODE / NAMEPLATE IMAGE ──
+  async saveBarcodeImage(assetId, dataUrl) {
+    if (!assetId || !dataUrl) return null;
+    try {
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const path = `${ORG_ID}/${assetId}_barcode.jpg`;
+      const url = await Supabase.uploadFile('asset-images', path, blob);
+      const finalUrl = url || dataUrl;
+      await Supabase.update('assets', assetId, { barcode_image_url: finalUrl });
+      const asset = this.getAsset(assetId);
+      if (asset) asset.barcodeImageUrl = finalUrl;
+      return finalUrl;
+    } catch(e) {
+      try {
+        await Supabase.update('assets', assetId, { barcode_image_url: dataUrl });
+        const asset = this.getAsset(assetId);
+        if (asset) asset.barcodeImageUrl = dataUrl;
+        return dataUrl;
+      } catch(e2) {
+        console.error('[STORAGE] Barcode image save failed:', e2);
+        return null;
+      }
+    }
+  },
+
+  getBarcodeImage(assetId) {
+    if (!assetId) return null;
+    const asset = this.getAsset(assetId);
+    return (asset && asset.barcodeImageUrl) ? asset.barcodeImageUrl : null;
+  },
+
+  async removeBarcodeImage(assetId) {
+    await Supabase.update('assets', assetId, { barcode_image_url: null });
+    const asset = this.getAsset(assetId);
+    if (asset) asset.barcodeImageUrl = null;
+  },
+
   // ═══════════════════════════════════════════════════
   // AUDIT TRAIL
   // ═══════════════════════════════════════════════════
@@ -799,6 +837,7 @@ const Storage = {
       amcProvider: row.amc_provider, amcCost: row.amc_cost ? parseFloat(row.amc_cost) : null,
       status: row.status, verificationDate: row.verification_date,
       verifiedBy: row.verified_by, assetImageUrl: row.asset_image_url,
+      barcodeImageUrl: row.barcode_image_url,
       confidence: parseFloat(row.confidence) || 0,
       customFields: row.custom_fields || {}, tags: row.tags || [],
       createdAt: row.created_at,
@@ -837,6 +876,7 @@ const Storage = {
       verification_date: asset.verificationDate,
       verified_by: asset.verifiedBy,
       asset_image_url: asset.assetImageUrl,
+      barcode_image_url: asset.barcodeImageUrl,
       confidence: asset.confidence,
       custom_fields: asset.customFields, tags: asset.tags,
     };
