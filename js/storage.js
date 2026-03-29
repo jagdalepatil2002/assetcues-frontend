@@ -243,30 +243,28 @@ const Storage = {
       created_at: new Date().toISOString(),
     });
 
-    // Bulk delete all linked data in FK-safe order
-    // 1. Get asset IDs from DB directly
-    const linkedAssets = await Supabase.query('assets', { select: 'id', filters: { extraction_id: id } }) || [];
-    console.log(`[STORAGE]    🗑️  Deleting ${linkedAssets.length} linked asset(s)...`);
-
-    // 2. Delete child records for each asset (FK safe)
-    for (const row of linkedAssets) {
-      await Supabase.deleteWhere('asset_invoices', { asset_id: row.id });
-      await Supabase.deleteWhere('audit_trail', { asset_id: row.id });
-      await Supabase.deleteWhere('depreciation_entries', { asset_id: row.id });
-      await Supabase.deleteWhere('physical_audits', { asset_id: row.id });
+    // Bulk delete all linked data via DB function (single call, FK-safe)
+    console.log(`[STORAGE]    🗑️  Deleting extraction + all linked data...`);
+    const rpcResult = await Supabase.rpc('delete_extraction_cascade', { p_extraction_id: id });
+    if (rpcResult === null) {
+      // RPC not available — fallback to sequential deletes
+      console.warn('[STORAGE]    RPC unavailable, using fallback...');
+      await Supabase.deleteWhere('asset_invoices', { extraction_id: id });
+      await Supabase.deleteWhere('anomaly_alerts', { related_extraction_id: id });
+      await Supabase.deleteWhere('audit_trail', { extraction_id: id });
+      // Delete asset child records
+      const linkedAssets = await Supabase.query('assets', { select: 'id', filters: { extraction_id: id } }) || [];
+      for (const row of linkedAssets) {
+        await Supabase.deleteWhere('asset_invoices', { asset_id: row.id });
+        await Supabase.deleteWhere('audit_trail', { asset_id: row.id });
+        await Supabase.deleteWhere('depreciation_entries', { asset_id: row.id });
+        await Supabase.deleteWhere('physical_audits', { asset_id: row.id });
+      }
+      await Supabase.deleteWhere('assets', { extraction_id: id });
+      await Supabase.deleteWhere('audit_trail', { extraction_id: id });
+      await Supabase.delete('extractions', id);
     }
-
-    // 3. Delete all assets for this extraction in one shot
-    await Supabase.deleteWhere('assets', { extraction_id: id });
-
-    // 4. Delete extraction-level records
-    await Supabase.deleteWhere('audit_trail', { extraction_id: id });
-    await Supabase.deleteWhere('anomaly_alerts', { related_extraction_id: id });
-    await Supabase.deleteWhere('asset_invoices', { extraction_id: id });
-
-    // 5. Delete the extraction itself
-    const exDeleted = await Supabase.delete('extractions', id);
-    console.log(`[STORAGE]    ${exDeleted ? '✅' : '⚠️ '} Extraction ${id} ${exDeleted ? 'deleted' : 'failed'}`);
+    console.log('%c[STORAGE]    ✅ Extraction deleted', 'color:#ba1a1a;font-weight:bold');
 
     // Remove from local cache
     const list = this.getExtractions();
