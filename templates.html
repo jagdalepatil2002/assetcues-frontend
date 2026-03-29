@@ -374,38 +374,45 @@ function openTemplate(id) {
     <div class="p-8 space-y-6">
       <p class="text-[15px] text-on-surface-variant leading-relaxed font-medium">${t.description || '—'}</p>
 
-      <!-- Depreciation Details grid -->
+      <!-- Editable Depreciation Details -->
       <div class="bg-surface-container-lowest border border-outline-variant/20 rounded-2xl p-6 shadow-sm">
-        <p class="text-[10px] font-bold uppercase tracking-widest text-primary mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">account_balance</span> IRS / IT Act Framework Details</p>
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="flex items-center justify-between mb-4">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-primary flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">account_balance</span> IT Act Framework Details</p>
+          <span class="text-[10px] text-on-surface-variant font-bold bg-surface-container px-2 py-1 rounded">Editable</span>
+        </div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="bg-surface-container-low p-4 rounded-xl">
-            <p class="text-[10px] text-outline font-bold uppercase tracking-wider mb-1">Applicable Section</p>
-            <p class="font-bold text-sm text-on-surface">${t.it_act_section || 'Standard'}</p>
+            <label class="text-[10px] text-outline font-bold uppercase tracking-wider block mb-1">IT Act Section</label>
+            <input id="tpl-section" type="text" value="${t.it_act_section || 'Standard'}" class="w-full bg-white border border-outline-variant/30 rounded-lg px-2 py-1.5 text-sm font-bold focus:ring-2 focus:ring-primary focus:outline-none" />
           </div>
           <div class="bg-surface-container-low p-4 rounded-xl">
-            <p class="text-[10px] text-outline font-bold uppercase tracking-wider mb-1">Valuation Method</p>
-            <p class="font-bold text-sm text-on-surface flex items-center gap-1">${t.method || 'SLM'} <span class="material-symbols-outlined text-[14px]">info</span></p>
+            <label class="text-[10px] text-outline font-bold uppercase tracking-wider block mb-1">Method</label>
+            <select id="tpl-method" class="w-full bg-white border border-outline-variant/30 rounded-lg px-2 py-1.5 text-sm font-bold focus:ring-2 focus:ring-primary focus:outline-none" onchange="recalcSchedule('${t.id}')">
+              <option value="SLM" ${(t.method||t.depreciation_method||'SLM')==='SLM'?'selected':''}>SLM</option>
+              <option value="WDV" ${(t.method||t.depreciation_method||'SLM')==='WDV'?'selected':''}>WDV</option>
+            </select>
           </div>
           <div class="bg-surface-container-low p-4 rounded-xl">
-            <p class="text-[10px] text-outline font-bold uppercase tracking-wider mb-1">Annual Rate</p>
-            <p class="font-bold text-xl text-primary font-headline">${t.depreciation_rate || '0'}%</p>
+            <label class="text-[10px] text-outline font-bold uppercase tracking-wider block mb-1">Annual Rate (%)</label>
+            <input id="tpl-rate" type="number" value="${t.depreciation_rate || 15}" min="1" max="100" class="w-full bg-white border border-outline-variant/30 rounded-lg px-2 py-1.5 text-xl font-bold text-primary font-headline focus:ring-2 focus:ring-primary focus:outline-none" onchange="recalcSchedule('${t.id}')" />
           </div>
           <div class="bg-surface-container-low p-4 rounded-xl">
-            <p class="text-[10px] text-outline font-bold uppercase tracking-wider mb-1">Useful Life</p>
-            <p class="font-bold text-xl text-on-surface font-headline">${t.useful_life_years || 'N/A'}<span class="text-xs font-bold text-on-surface-variant ml-1 uppercase">Yrs</span></p>
+            <label class="text-[10px] text-outline font-bold uppercase tracking-wider block mb-1">Useful Life (Yrs)</label>
+            <input id="tpl-life" type="number" value="${t.useful_life_years || 5}" min="1" max="50" class="w-full bg-white border border-outline-variant/30 rounded-lg px-2 py-1.5 text-xl font-bold font-headline focus:ring-2 focus:ring-primary focus:outline-none" onchange="recalcSchedule('${t.id}')" />
           </div>
         </div>
       </div>
 
-      <!-- Misc -->
-      <div class="flex items-center justify-between border-t border-b border-surface-container py-4">
-          ${t.hsn_code ? `<div class="flex items-center gap-3">
-            <span class="text-[10px] font-bold uppercase tracking-widest text-outline">HSN Code</span>
-            <span class="font-mono text-sm font-extrabold text-on-surface bg-surface border border-outline-variant/20 px-3 py-1.5 rounded-lg shadow-sm">${t.hsn_code}</span>
-          </div>` : '<div/>'}
-          ${(t.tags||[]).length > 0 ? `<div class="flex flex-wrap gap-2 justify-end">
-            ${(t.tags||[]).map(tag => `<span class="text-[10px] px-3 py-1.5 bg-surface-container-high text-on-surface-variant font-bold uppercase tracking-widest rounded-full">${tag}</span>`).join('')}
-          </div>` : ''}
+      <!-- Editable HSN -->
+      <div class="flex items-center gap-4 border-t border-b border-surface-container py-4">
+        <div class="flex items-center gap-3">
+          <span class="text-[10px] font-bold uppercase tracking-widest text-outline">HSN Code</span>
+          <input id="tpl-hsn" type="text" value="${t.hsn_code || ''}" placeholder="e.g. 84713010" class="font-mono text-sm font-bold text-on-surface bg-surface border border-outline-variant/20 px-3 py-1.5 rounded-lg w-32 focus:ring-2 focus:ring-primary focus:outline-none" />
+        </div>
+        <div class="flex-1"></div>
+        ${(t.tags||[]).length > 0 ? `<div class="flex flex-wrap gap-2 justify-end">
+          ${(t.tags||[]).map(tag => `<span class="text-[10px] px-3 py-1.5 bg-surface-container-high text-on-surface-variant font-bold uppercase tracking-widest rounded-full">${tag}</span>`).join('')}
+        </div>` : ''}
       </div>
 
       <!-- Sample Depreciation Table -->
@@ -424,7 +431,7 @@ function openTemplate(id) {
                 <th class="px-5 py-3 text-[10px] font-extrabold uppercase tracking-widest text-outline">Written Down Value</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-surface-container">${generateSampleSchedule(t)}</tbody>
+            <tbody id="tpl-schedule" class="divide-y divide-surface-container">${generateSampleSchedule(t)}</tbody>
           </table>
         </div>
       </div>
@@ -434,11 +441,11 @@ function openTemplate(id) {
     <!-- Action Buttons — fixed footer outside scroll -->
     <div class="flex flex-col sm:flex-row gap-3 p-6 border-t border-surface-container sm:justify-end shrink-0 bg-white rounded-b-[1.5rem]">
       <button onclick="closeModal()" class="py-3 px-6 bg-white border border-outline-variant/30 rounded-xl font-bold text-sm text-on-surface-variant hover:bg-surface-container-lowest transition-colors shadow-sm">
-        Return to Gallery
+        Close
       </button>
-      <a href="upload.html" class="py-3 px-6 signature-gradient text-white rounded-xl font-headline font-extrabold text-sm flex items-center justify-center gap-2 no-underline hover:scale-[1.02] shadow-lg transition-transform">
-        <span class="material-symbols-outlined text-[20px]">document_scanner</span> Initialize Extraction
-      </a>
+      <button onclick="saveCurrentTemplate('${t.id}')" class="py-3 px-6 signature-gradient text-white rounded-xl font-headline font-extrabold text-sm flex items-center justify-center gap-2 hover:scale-[1.02] shadow-lg transition-transform">
+        <span class="material-symbols-outlined text-[20px]">save</span> Save Changes
+      </button>
     </div>`;
   
   // Show modal with animation
@@ -480,6 +487,41 @@ function generateSampleSchedule(t) {
 function closeModal() {
   document.getElementById('template-modal').classList.remove('active');
   document.body.style.overflow = 'auto';
+}
+
+function recalcSchedule(templateId) {
+  const rate = parseFloat(document.getElementById('tpl-rate').value) || 15;
+  const life = parseInt(document.getElementById('tpl-life').value) || 5;
+  const method = document.getElementById('tpl-method').value || 'SLM';
+  const tbody = document.getElementById('tpl-schedule');
+  if (!tbody) return;
+  tbody.innerHTML = generateSampleSchedule({ depreciation_rate: rate, useful_life_years: life, method });
+}
+
+async function saveCurrentTemplate(templateId) {
+  const t = allTemplates.find(x => x.id === templateId || String(x.id) === String(templateId));
+  if (!t) return;
+
+  t.depreciation_rate = parseFloat(document.getElementById('tpl-rate').value) || 15;
+  t.useful_life_years = parseInt(document.getElementById('tpl-life').value) || 5;
+  t.depreciation_method = document.getElementById('tpl-method').value || 'SLM';
+  t.method = t.depreciation_method;
+  t.it_act_section = document.getElementById('tpl-section').value || 'Standard';
+  t.hsn_code = document.getElementById('tpl-hsn').value || null;
+
+  try {
+    await Storage.saveTemplate({
+      id: t.id, name: t.name, category: t.category, sub_category: t.sub_category,
+      depreciation_rate: t.depreciation_rate, useful_life_years: t.useful_life_years,
+      depreciation_method: t.depreciation_method, default_fields: t.default_fields || {},
+    });
+    showToast('Template saved', 'success');
+    // Refresh list behind modal
+    allTemplates = Storage.getTemplates().length > 0 ? Storage.getTemplates() : FALLBACK_TEMPLATES;
+    renderTemplates();
+  } catch(e) {
+    showToast('Save failed: ' + e.message, 'error');
+  }
 }
 </script>
 </body></html>

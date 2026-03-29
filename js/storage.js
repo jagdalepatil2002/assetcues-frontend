@@ -513,6 +513,23 @@ const Storage = {
   },
   getTemplates() { return _cache.templates; },
 
+  async saveTemplate(template) {
+    template.org_id = ORG_ID;
+    if (template.id) {
+      await Supabase.update('asset_templates', template.id, template);
+    } else {
+      const result = await Supabase.insert('asset_templates', template);
+      if (result && result[0]) template.id = result[0].id;
+    }
+    await this.fetchTemplates();
+    return template;
+  },
+
+  async deleteTemplate(id) {
+    await Supabase.delete('asset_templates', id);
+    await this.fetchTemplates();
+  },
+
   // ═══════════════════════════════════════════════════
   // LOCATIONS & DEPARTMENTS
   // ═══════════════════════════════════════════════════
