@@ -477,6 +477,23 @@ const Storage = {
       });
     }
 
+    // If assets have ₹0 tax but invoice has tax, distribute evenly
+    const assetTaxSum = assetRows.reduce((s, r) => s + (r.cgst || 0) + (r.sgst || 0) + (r.igst || 0), 0);
+    if (assetTaxSum === 0 && (totalCgst || totalSgst || totalIgst) && assetRows.length > 0) {
+      const n = assetRows.length;
+      const perCgst = Math.round((totalCgst / n) * 100) / 100;
+      const perSgst = Math.round((totalSgst / n) * 100) / 100;
+      const perIgst = Math.round((totalIgst / n) * 100) / 100;
+      const perTax = perCgst + perSgst + perIgst;
+      assetRows.forEach(r => {
+        r.cgst = perCgst;
+        r.sgst = perSgst;
+        r.igst = perIgst;
+        r.tax = perTax;
+        r.total_cost = Math.round(((r.purchase_price || 0) + perTax) * 100) / 100;
+      });
+    }
+
     // Clean transient fields before insert and store them separately
     const groupInfo = assetRows.map(r => ({
       tempId: r._backend_temp_id,
