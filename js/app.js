@@ -246,7 +246,7 @@ function injectTopBar(title) {
         <span class="material-symbols-outlined">menu</span>
       </button>
       <img src="img/logo.png" alt="AssetCues" class="h-7 w-auto md:hidden" />
-      <img src="img/logo.png" alt="AssetCues" class="hidden md:block h-7 w-auto" />
+      <img src="img/logo.png" alt="AssetCues" class="hidden md:block h-8 w-auto" onerror="this.style.display='none'" />
     </div>
     <div class="flex items-center gap-3">
       <div class="hidden md:flex items-center bg-surface-container-highest px-3 py-1.5 rounded-lg w-64">
@@ -269,6 +269,13 @@ function injectTopBar(title) {
       <button onclick="openSettings()" class="hidden md:block p-2 text-slate-600 hover:bg-slate-100 transition-colors rounded-full">
         <span class="material-symbols-outlined">settings</span>
       </button>
+      <div class="hidden md:flex items-center gap-2 pl-2 ml-1 border-l border-outline-variant/30">
+        <div class="text-right">
+          <p class="text-xs font-bold text-on-surface leading-none">Admin</p>
+          <p class="text-[9px] text-on-surface-variant">Manager</p>
+        </div>
+        <div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">A</div>
+      </div>
     </div>
   `;
   // Check connection
