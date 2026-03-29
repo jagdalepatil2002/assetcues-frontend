@@ -167,7 +167,7 @@ function injectSidebar(activePage) {
       </a>
     </div>
 
-    <nav class="flex-1 space-y-1">
+    <nav class="flex-1 min-h-0 overflow-y-auto no-scrollbar space-y-1">
       ${nav.map(item => {
         const isActive = item.href === activePage;
         if (isActive) {
