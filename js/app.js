@@ -246,7 +246,7 @@ function injectTopBar(title) {
         <span class="material-symbols-outlined">menu</span>
       </button>
       <img src="img/logo.png" alt="AssetCues" class="h-7 w-auto md:hidden" />
-      <h2 class="hidden md:block font-headline font-bold text-lg text-on-surface">${title}</h2>
+      <img src="img/logo.png" alt="AssetCues" class="hidden md:block h-7 w-auto" />
     </div>
     <div class="flex items-center gap-3">
       <div class="hidden md:flex items-center bg-surface-container-highest px-3 py-1.5 rounded-lg w-64">
