@@ -135,14 +135,8 @@ function injectSidebar(activePage) {
   const stats = Storage.getDashboardStats();
 
   aside.innerHTML = `
-    <div class="px-6 mb-8 flex items-center gap-3">
-      <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-md">
-        <span class="material-symbols-outlined text-white text-sm" data-icon="apartment">apartment</span>
-      </div>
-      <div>
-        <h2 class="text-slate-900 font-black font-headline leading-tight">AssetCues</h2>
-        <p class="text-[10px] text-on-surface-variant font-label tracking-wider uppercase">Enterprise</p>
-      </div>
+    <div class="px-4 mb-8">
+      <img src="img/logo.png" alt="AssetCues" class="h-10 w-auto" />
     </div>
 
     <div class="px-6 mb-6">
@@ -223,7 +217,7 @@ function injectTopBar(title) {
   if (!header) return;
   header.innerHTML = `
     <div class="flex items-center gap-8">
-      <span class="text-xl font-bold text-primary font-headline tracking-tight md:hidden">AssetCues</span>
+      <img src="img/logo.png" alt="AssetCues" class="h-8 w-auto md:hidden" />
       <div class="hidden md:flex items-center bg-surface-container-highest px-3 py-1.5 rounded-lg w-96 ml-64">
         <span class="material-symbols-outlined text-outline mr-2">search</span>
         <input class="bg-transparent border-none focus:ring-0 text-sm w-full placeholder-on-surface-variant outline-none" placeholder="Search assets, documents, or insights..." type="text"/>
