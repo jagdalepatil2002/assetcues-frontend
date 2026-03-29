@@ -692,42 +692,150 @@ async function exportAssetPDF(id) {
   if (!a) return;
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pw = 210, margin = 14;
+  let y = 14;
 
-  doc.setFontSize(20); doc.setFont('helvetica','bold');
-  doc.text('Asset Detail Report', 14, 18);
-  doc.setFontSize(11); doc.setFont('helvetica','normal'); doc.setTextColor(100);
-  doc.text(`${a.tempAssetId || ''} — ${a.name}`, 14, 26);
-  doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`, 14, 32);
+  // ── Header with branding ──
+  doc.setFillColor(15, 23, 42);
+  doc.rect(0, 0, pw, 38, 'F');
+  doc.setTextColor(255);
+  doc.setFontSize(18); doc.setFont('helvetica','bold');
+  doc.text('Assetcues', margin, 14);
+  doc.setFontSize(9); doc.setFont('helvetica','normal');
+  doc.text('AI-Powered Asset Management', margin, 20);
+  doc.setFontSize(8);
+  doc.text(`Generated: ${new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })}`, margin, 34);
+  doc.text(`Status: ${(a.status || 'unknown').toUpperCase()}`, pw - margin - 30, 34);
+  y = 46;
+
+  // ── QR Code (top right) ──
+  const qrEl = document.getElementById('qr-canvas');
+  if (qrEl) {
+    const qrCanvas = qrEl.querySelector('canvas');
+    if (qrCanvas) {
+      try {
+        const qrData = qrCanvas.toDataURL('image/png');
+        doc.addImage(qrData, 'PNG', pw - margin - 28, 42, 28, 28);
+        doc.setFontSize(7); doc.setTextColor(100);
+        doc.text(a.tempAssetId || '', pw - margin - 14, 73, { align: 'center' });
+      } catch(e) {}
+    }
+  }
+
+  // ── Asset Name + Identity ──
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(14); doc.setFont('helvetica','bold');
+  const nameLines = doc.splitTextToSize(a.name || 'Unnamed Asset', pw - margin * 2 - 35);
+  doc.text(nameLines, margin, y);
+  y += nameLines.length * 6 + 2;
+  doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(100);
+  doc.text(`${a.tempAssetId || ''} | ${a.category || ''} | ${a.serialNumber || 'No Serial'}`, margin, y);
+  y += 8;
+
+  // ── Asset Image (if available) ──
+  const assetImg = Storage.getAssetImage(id);
+  if (assetImg) {
+    try {
+      doc.addImage(assetImg, 'JPEG', margin, y, 50, 35);
+      y += 38;
+    } catch(e) { /* image format issue, skip */ }
+  }
+
+  // ── Asset Details Table ──
   doc.setTextColor(0);
-
   doc.autoTable({
-    startY: 40,
-    head: [['Field', 'Value']],
+    startY: y,
+    head: [['Asset Details', '']],
     body: [
       ['Asset Number', a.tempAssetId || '—'],
-      ['Name', a.name || '—'],
       ['Category', a.category || '—'],
+      ['Sub-Category', a.subCategory || '—'],
+      ['Make / Model', `${a.make || '—'} / ${a.model || '—'}`],
       ['Serial Number', a.serialNumber || '—'],
       ['HSN Code', a.hsnCode || '—'],
+      ['Unit of Measure', a.unitOfMeasure || 'Nos'],
       ['Vendor', a.vendor || '—'],
       ['Invoice Number', a.invoiceNumber || '—'],
-      ['Acquisition Date', a.acquisitionDate || '—'],
-      ['Purchase Price', formatCurrency(a.purchasePrice)],
+      ['Acquisition Date', formatDate(a.acquisitionDate) || '—'],
+    ],
+    styles: { fontSize: 8.5, cellPadding: 2.5 },
+    headStyles: { fillColor: [79, 70, 229], textColor: 255, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [247, 249, 251] },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 45 } },
+    margin: { left: margin, right: margin },
+  });
+  y = doc.lastAutoTable.finalY + 6;
+
+  // ── Financial Summary Table ──
+  doc.autoTable({
+    startY: y,
+    head: [['Financial Summary', '']],
+    body: [
+      ['Purchase Price (excl. tax)', formatCurrency(a.purchasePrice)],
       ['CGST', formatCurrency(a.cgst || 0)],
       ['SGST', formatCurrency(a.sgst || 0)],
       ['IGST', formatCurrency(a.igst || 0)],
-      ['Total Cost', formatCurrency(a.totalCost)],
-      ['Dep. Method', a.depreciationMethod || 'SLM'],
-      ['Dep. Rate', `${a.depreciationRate || 15}%`],
-      ['Status', a.status || '—'],
-      ['Warranty Expiry', a.warrantyExpiry ? formatDate(a.warrantyExpiry) : '—'],
+      ['Total Tax', formatCurrency(a.tax || 0)],
+      ['Total Cost (incl. tax)', formatCurrency(a.totalCost)],
     ],
-    styles: { fontSize: 9 },
-    headStyles: { fillColor: [19,27,46], textColor: 255 },
-    alternateRowStyles: { fillColor: [247,249,251] },
+    styles: { fontSize: 8.5, cellPadding: 2.5 },
+    headStyles: { fillColor: [5, 150, 105], textColor: 255, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [247, 249, 251] },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 55 }, 1: { halign: 'right' } },
+    margin: { left: margin, right: margin },
   });
+  y = doc.lastAutoTable.finalY + 6;
 
-  doc.save(`asset_${a.tempAssetId || a.id.slice(0,8)}.pdf`);
+  // ── Depreciation Info ──
+  doc.autoTable({
+    startY: y,
+    head: [['Depreciation', '']],
+    body: [
+      ['Method', a.depreciationMethod === 'WDV' ? 'Written Down Value' : 'Straight Line'],
+      ['Rate', `${a.depreciationRate || 15}%`],
+      ['Useful Life', `${a.usefulLifeYears || 5} years`],
+      ['Salvage Value', formatCurrency(a.salvageValue || 1)],
+    ],
+    styles: { fontSize: 8.5, cellPadding: 2.5 },
+    headStyles: { fillColor: [100, 100, 120], textColor: 255, fontStyle: 'bold' },
+    alternateRowStyles: { fillColor: [247, 249, 251] },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 45 } },
+    margin: { left: margin, right: margin },
+  });
+  y = doc.lastAutoTable.finalY + 6;
+
+  // ── Linked Invoices ──
+  try {
+    const invoices = await Storage.getLinkedInvoices(id);
+    if (invoices && invoices.length > 0) {
+      doc.autoTable({
+        startY: y,
+        head: [['Linked Documents', 'Invoice #', 'Date', 'Amount']],
+        body: invoices.map(inv => [
+          (inv.invoice_type || 'purchase').toUpperCase(),
+          inv.invoice_number || '—',
+          formatDate(inv.invoice_date) || '—',
+          inv.amount ? formatCurrency(inv.amount) : '—',
+        ]),
+        styles: { fontSize: 8.5, cellPadding: 2.5 },
+        headStyles: { fillColor: [79, 70, 229], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [247, 249, 251] },
+        margin: { left: margin, right: margin },
+      });
+      y = doc.lastAutoTable.finalY + 6;
+    }
+  } catch(e) {}
+
+  // ── Footer ──
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(7); doc.setTextColor(150);
+    doc.text(`Assetcues AI — Asset Report — ${a.tempAssetId || ''}`, margin, 290);
+    doc.text(`Page ${i} of ${pageCount}`, pw - margin, 290, { align: 'right' });
+  }
+
+  doc.save(`${a.tempAssetId || 'asset'}_report.pdf`);
 }
 </script>
 </body></html>
