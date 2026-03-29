@@ -160,19 +160,19 @@ function injectSidebar(activePage) {
   const stats = Storage.getDashboardStats();
 
   aside.innerHTML = `
-    <div class="px-6 mb-6 mt-4">
-      <a href="upload.html" class="w-full signature-gradient text-on-primary py-3 rounded-lg flex items-center justify-center gap-2 shadow-md hover:opacity-90 transition-opacity no-underline">
+    <div class="px-6 mb-4 mt-3">
+      <a href="upload.html" class="w-full signature-gradient text-on-primary py-2.5 rounded-lg flex items-center justify-center gap-2 shadow-md hover:opacity-90 transition-opacity no-underline">
         <span class="material-symbols-outlined text-sm" data-icon="add">add</span>
         <span class="font-bold text-xs">New Upload</span>
       </a>
     </div>
 
-    <nav class="flex-1 min-h-0 overflow-y-auto no-scrollbar space-y-1">
+    <nav class="flex-1 space-y-0.5">
       ${nav.map(item => {
         const isActive = item.href === activePage;
         if (isActive) {
           return `
-            <a class="bg-blue-50 text-blue-700 border-r-4 border-blue-700 font-bold px-6 py-3 flex items-center gap-3 translate-x-1 transition-transform duration-200 no-underline" href="${item.href}">
+            <a class="bg-blue-50 text-blue-700 border-r-4 border-blue-700 font-bold px-6 py-2.5 flex items-center gap-3 translate-x-1 transition-transform duration-200 no-underline" href="${item.href}">
               <span class="material-symbols-outlined text-blue-700" style="font-variation-settings: 'FILL' 1">${item.icon}</span>
               <span class="font-medium text-sm">${item.label}</span>
               ${item.label === 'Review' && stats.pending > 0 ? `<span class="ml-auto text-[10px] font-bold bg-blue-600 text-white px-1.5 py-0.5 rounded">${stats.pending}</span>` : ''}
@@ -180,7 +180,7 @@ function injectSidebar(activePage) {
           `;
         } else {
           return `
-            <a class="text-slate-600 px-6 py-3 flex items-center gap-3 hover:bg-slate-200/50 transition-colors no-underline" href="${item.href}">
+            <a class="text-slate-600 px-6 py-2.5 flex items-center gap-3 hover:bg-slate-200/50 transition-colors no-underline" href="${item.href}">
               <span class="material-symbols-outlined">${item.icon}</span>
               <span class="font-medium text-sm">${item.label}</span>
               ${item.label === 'Review' && stats.pending > 0 ? `<span class="ml-auto text-[10px] font-bold bg-error text-white px-1.5 py-0.5 rounded">${stats.pending}</span>` : ''}
@@ -189,13 +189,9 @@ function injectSidebar(activePage) {
         }
       }).join('')}
     </nav>
-    <div class="border-t border-slate-200 pt-4 pb-6">
-      <button onclick="openSettings()" class="w-full text-slate-600 px-6 py-2 flex items-center gap-3 hover:bg-slate-200/50 transition-colors text-left">
-        <span class="material-symbols-outlined">settings</span>
-        <span class="font-medium text-sm">Settings</span>
-      </button>
-      <button onclick="if(confirm('Clear all POC data?')){Storage.clearAll().then(()=>location.reload())}" class="w-full mt-1 text-slate-600 hover:text-red-600 px-6 py-2 flex items-center gap-3 hover:bg-red-50 transition-colors text-left">
-        <span class="material-symbols-outlined">delete_sweep</span>
+    <div class="border-t border-slate-200 pt-3 pb-4">
+      <button onclick="if(confirm('Clear all POC data?')){Storage.clearAll().then(()=>location.reload())}" class="w-full text-slate-500 hover:text-red-600 px-6 py-2 flex items-center gap-3 hover:bg-red-50 transition-colors text-left">
+        <span class="material-symbols-outlined text-[18px]">delete_sweep</span>
         <span class="font-medium text-sm">Clear Data</span>
       </button>
     </div>
@@ -595,6 +591,17 @@ document.addEventListener('click', (e) => {
 });
 
 /* ── AssetCues AI Agent Chat Widget ── */
+const _agentHistory = []; // multi-turn conversation history
+
+const _agentQuickPrompts = [
+  { icon: 'warning', label: 'Warranty expiring soon', q: 'Which assets have warranty expiring in the next 60 days?' },
+  { icon: 'inventory_2', label: 'Top vendors', q: 'Which vendors do I have the most assets from?' },
+  { icon: 'attach_money', label: 'Highest value assets', q: 'List my top 5 highest value assets with their costs.' },
+  { icon: 'search', label: 'Find by serial', q: 'How do I find an asset by serial number?' },
+  { icon: 'category', label: 'Category breakdown', q: 'Give me a breakdown of assets by category.' },
+  { icon: 'event_busy', label: 'AMC renewals', q: 'Which assets have AMC contracts ending soon?' },
+];
+
 (function initAgentWidget() {
   if (document.getElementById('ac-agent-fab')) return;
 
@@ -606,67 +613,202 @@ document.addEventListener('click', (e) => {
   fab.onclick = () => {
     const panel = document.getElementById('ac-agent-panel');
     panel.classList.toggle('open');
+    if (panel.classList.contains('open')) document.getElementById('ac-agent-input').focus();
   };
   document.body.appendChild(fab);
+
+  // Quick prompt chips HTML
+  const chipsHtml = `
+    <div id="ac-agent-chips" style="padding:10px 12px 4px;display:flex;flex-wrap:wrap;gap:6px;">
+      ${_agentQuickPrompts.map((p, i) => `
+        <button onclick="agentQuickAsk(${i})"
+          style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:20px;border:1px solid #c0c7d4;background:#f3f3f3;font-size:11px;font-weight:600;color:#005da9;cursor:pointer;transition:all 0.15s;white-space:nowrap;"
+          onmouseover="this.style.background='#005da9';this.style.color='#fff';this.style.borderColor='#005da9'"
+          onmouseout="this.style.background='#f3f3f3';this.style.color='#005da9';this.style.borderColor='#c0c7d4'">
+          <span class="material-symbols-outlined" style="font-size:13px;font-variation-settings:'FILL' 1">${p.icon}</span>
+          ${p.label}
+        </button>`).join('')}
+    </div>`;
 
   // Chat panel
   const panel = document.createElement('div');
   panel.id = 'ac-agent-panel';
   panel.innerHTML = `
-    <div class="flex items-center gap-3 px-4 py-3 border-b border-outline-variant/20 bg-surface-container-low">
-      <div class="w-8 h-8 signature-gradient rounded-lg flex items-center justify-center">
-        <span class="material-symbols-outlined text-white text-sm" style="font-variation-settings:'FILL' 1">smart_toy</span>
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #c0c7d420;background:#f3f3f3;">
+      <div style="width:32px;height:32px;background:linear-gradient(135deg,#005DA9,#0176D3);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <span class="material-symbols-outlined" style="color:#fff;font-size:16px;font-variation-settings:'FILL' 1">smart_toy</span>
       </div>
-      <div class="flex-1">
-        <h4 class="text-sm font-bold text-on-surface">AssetCues Agentic Chatbot</h4>
-        <p class="text-[10px] text-on-surface-variant">Powered by Gemini AI</p>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;color:#1a1c1c;">AssetCues AI Assistant</div>
+        <div style="font-size:10px;color:#717784;">Powered by AssetCues AI</div>
       </div>
-      <button onclick="document.getElementById('ac-agent-panel').classList.remove('open')" class="p-1 text-on-surface-variant hover:text-on-surface">
-        <span class="material-symbols-outlined text-sm">close</span>
+      <button onclick="_agentClearHistory()" title="Clear chat" style="padding:4px;color:#717784;background:none;border:none;cursor:pointer;border-radius:6px;" onmouseover="this.style.background='#e8e8e8'" onmouseout="this.style.background='none'">
+        <span class="material-symbols-outlined" style="font-size:16px;">delete_sweep</span>
+      </button>
+      <button onclick="document.getElementById('ac-agent-panel').classList.remove('open')" style="padding:4px;color:#717784;background:none;border:none;cursor:pointer;border-radius:6px;" onmouseover="this.style.background='#e8e8e8'" onmouseout="this.style.background='none'">
+        <span class="material-symbols-outlined" style="font-size:16px;">close</span>
       </button>
     </div>
     <div id="ac-agent-messages">
-      <div class="agent-msg bot">Hello! I'm your <strong>AssetCues AI Agent</strong>. Ask me anything about your assets, invoices, vendors, or compliance data.</div>
+      <div class="agent-msg bot">Hello! I'm your <strong>AssetCues AI Assistant</strong>. Ask me anything about your assets, invoices, vendors, or compliance — or pick a quick question below.</div>
     </div>
-    <div class="flex items-center gap-2 p-3 border-t border-outline-variant/20">
+    ${chipsHtml}
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-top:1px solid #c0c7d420;">
       <input id="ac-agent-input" type="text" placeholder="Ask about your assets..."
-        class="flex-1 px-3 py-2 bg-surface-container-highest border-none rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+        style="flex:1;padding:8px 12px;background:#f3f3f3;border:none;border-radius:8px;font-size:13px;outline:none;font-family:inherit;"
+        onfocus="this.style.boxShadow='0 0 0 2px #005da940'" onblur="this.style.boxShadow='none'"
         onkeydown="if(event.key==='Enter')sendAgentMessage()" />
-      <button onclick="sendAgentMessage()" class="w-9 h-9 signature-gradient rounded-lg flex items-center justify-center text-white shrink-0">
-        <span class="material-symbols-outlined text-sm">send</span>
+      <button onclick="sendAgentMessage()" style="width:36px;height:36px;background:linear-gradient(135deg,#005DA9,#0176D3);border:none;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
+        <span class="material-symbols-outlined" style="color:#fff;font-size:16px;">send</span>
       </button>
     </div>
   `;
   document.body.appendChild(panel);
 })();
 
+function agentQuickAsk(idx) {
+  const p = _agentQuickPrompts[idx];
+  if (!p) return;
+  document.getElementById('ac-agent-input').value = p.q;
+  sendAgentMessage();
+}
+
+function _agentClearHistory() {
+  _agentHistory.length = 0;
+  const messages = document.getElementById('ac-agent-messages');
+  messages.innerHTML = '<div class="agent-msg bot">Chat cleared. Hello again! Ask me anything about your assets, invoices, or compliance data.</div>';
+}
+window._agentClearHistory = _agentClearHistory;
+window.agentQuickAsk = agentQuickAsk;
+
 function _buildAgentContext() {
   const assets = Storage.getAssets();
   const extractions = Storage.getExtractions();
-  const vendors = Storage.getVendorProfiles ? Storage.getVendorProfiles() : [];
+  const today = new Date();
+  const in90 = new Date(today); in90.setDate(in90.getDate() + 90);
 
   const totalValue = assets.reduce((s, a) => s + (a.totalCost || 0), 0);
-  const totalTax = assets.reduce((s, a) => s + (a.tax || 0), 0);
   const categories = {};
-  const statusCounts = {};
   const vendorCounts = {};
   assets.forEach(a => {
     categories[a.category || 'Unknown'] = (categories[a.category || 'Unknown'] || 0) + 1;
-    statusCounts[a.status || 'unknown'] = (statusCounts[a.status || 'unknown'] || 0) + 1;
     vendorCounts[a.vendor || 'Unknown'] = (vendorCounts[a.vendor || 'Unknown'] || 0) + 1;
   });
 
-  return `ASSET MANAGEMENT DATA SUMMARY:
-- Total assets: ${assets.length}
-- Total asset value: ₹${totalValue.toLocaleString('en-IN')}
-- Total tax paid: ₹${totalTax.toLocaleString('en-IN')}
-- Assets by category: ${JSON.stringify(categories)}
-- Assets by status: ${JSON.stringify(statusCounts)}
-- Assets by vendor: ${JSON.stringify(vendorCounts)}
-- Total extractions/invoices: ${extractions.length}
-- Extractions: ${extractions.map(e => `${e.invoiceNumber || 'N/A'} from ${e.vendorName || 'Unknown'} (${e.status})`).join('; ')}
-- Vendor profiles: ${vendors.map(v => v.vendor_name || v.name).join(', ') || 'None'}
-- Top 5 assets: ${assets.slice(0, 5).map(a => `${a.tempAssetId}: ${a.name} (₹${(a.totalCost||0).toLocaleString('en-IN')}, ${a.status})`).join('; ')}`;
+  // Warranty expiring within 90 days
+  const warrantyExpiring = assets.filter(a => {
+    if (!a.warrantyEndDate) return false;
+    const d = new Date(a.warrantyEndDate);
+    return d >= today && d <= in90;
+  }).map(a => `${a.tempAssetId}|${a.name}|expires:${a.warrantyEndDate}|vendor:${a.vendor||''}`);
+
+  // AMC expiring within 90 days
+  const amcExpiring = assets.filter(a => {
+    if (!a.amcEndDate) return false;
+    const d = new Date(a.amcEndDate);
+    return d >= today && d <= in90;
+  }).map(a => `${a.tempAssetId}|${a.name}|amc-ends:${a.amcEndDate}|provider:${a.amcProvider||''}`);
+
+  // Full asset list with all searchable fields
+  const assetList = assets.map(a =>
+    `${a.tempAssetId}|${a.name}|serial:${a.serialNumber||'none'}|hsn:${a.hsnCode||'none'}|vendor:${a.vendor||''}|category:${a.category||''}|cost:₹${a.totalCost||0}|status:${a.status}|invoice:${a.invoiceNumber||''}|date:${a.acquisitionDate||''}|warranty:${a.warrantyEndDate||''}|amc-end:${a.amcEndDate||''}`
+  ).join('\n');
+
+  return `ASSET MANAGEMENT DATA (as of ${today.toISOString().split('T')[0]}):
+Total assets: ${assets.length} | Total value: ₹${totalValue.toLocaleString('en-IN')}
+Categories: ${JSON.stringify(categories)}
+Vendors: ${JSON.stringify(vendorCounts)}
+Invoices processed: ${extractions.map(e => `${e.invoiceNumber||'N/A'} | ${e.vendorName||'Unknown'} | ${e.status}`).join('; ')}
+
+WARRANTY EXPIRING WITHIN 90 DAYS (${warrantyExpiring.length} assets):
+${warrantyExpiring.length ? warrantyExpiring.join('\n') : 'None'}
+
+AMC EXPIRING WITHIN 90 DAYS (${amcExpiring.length} assets):
+${amcExpiring.length ? amcExpiring.join('\n') : 'None'}
+
+FULL ASSET LIST (format: AssetID|Name|serial|hsn|vendor|category|cost|status|invoice|date|warranty|amc-end):
+${assetList}`;
+}
+
+function _renderAgentMarkdown(text) {
+  // Build asset ID → detail page link map
+  const assets = Storage.getAssets();
+  const assetIdMap = {};
+  assets.forEach(a => { if (a.tempAssetId) assetIdMap[a.tempAssetId] = a.id; });
+
+  let html = text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code style="background:#e2e2e2;padding:1px 6px;border-radius:3px;font-size:11.5px;font-family:monospace">$1</code>')
+    .replace(/^#{1,3}\s+(.+)$/gm, '<p style="font-weight:700;color:#005da9;margin:8px 0 2px">$1</p>')
+    .replace(/^[-•]\s+(.+)$/gm, '<div style="display:flex;gap:6px;margin:2px 0"><span style="color:#005da9;margin-top:1px">•</span><span>$1</span></div>')
+    .replace(/\n{2,}/g, '</p><p style="margin-top:8px">')
+    .replace(/\n/g, '<br>');
+
+  // Linkify asset IDs like AC-0001, AC-0042 etc.
+  html = html.replace(/\b(AC-\d{4,})\b/g, (match) => {
+    const dbId = assetIdMap[match];
+    if (dbId) return `<a href="asset-detail.html?id=${dbId}" style="color:#005da9;font-weight:700;text-decoration:underline;text-underline-offset:2px" title="Open ${match}">${match} ↗</a>`;
+    return `<strong>${match}</strong>`;
+  });
+
+  return html;
+}
+
+// ── Local intent detection — handle without AI ──
+function _agentLocalIntent(question) {
+  const q = question.trim();
+  const assets = Storage.getAssets();
+
+  // Pure numeric → search by asset number (e.g. "1001" → AC-1001 or tempAssetId ending in 1001)
+  if (/^\d+$/.test(q)) {
+    const num = q.padStart(4, '0');
+    const asset = assets.find(a =>
+      a.tempAssetId === `AC-${num}` ||
+      a.tempAssetId === q ||
+      String(a.assetNumber || '').replace(/^0+/, '') === String(parseInt(q, 10))
+    );
+    return { type: 'asset_lookup', asset, query: q };
+  }
+
+  // "show me", "open", "find", "get" + number or AC-XXXX
+  const showMatch = q.match(/(?:show\s+me|open|find|get|go\s+to)\s+(?:asset\s+)?(?:AC-)?(\d{1,6})/i);
+  if (showMatch) {
+    const num = showMatch[1].padStart(4, '0');
+    const asset = assets.find(a =>
+      a.tempAssetId === `AC-${num}` ||
+      a.tempAssetId === `AC-${showMatch[1]}` ||
+      String(a.assetNumber || '') === showMatch[1]
+    );
+    return { type: 'asset_lookup', asset, query: showMatch[1] };
+  }
+
+  // "show me AC-0042"
+  const acMatch = q.match(/(?:show\s+me|open|find|get)?\s*(AC-\d{4,})/i);
+  if (acMatch) {
+    const asset = assets.find(a => a.tempAssetId === acMatch[1].toUpperCase());
+    return { type: 'asset_lookup', asset, query: acMatch[1] };
+  }
+
+  return null;
+}
+
+function _renderAssetActionCard(asset, query) {
+  if (!asset) {
+    return `<div class="agent-msg bot">No asset found for <strong>${query}</strong>. Try a different asset number or serial.</div>`;
+  }
+  return `<div class="agent-msg bot" style="padding:0;overflow:hidden;">
+    <div style="padding:10px 14px 8px;font-size:12px;color:#717784;">Found asset</div>
+    <div style="padding:0 14px 12px;">
+      <div style="font-weight:700;font-size:14px;color:#1a1c1c;">${asset.name || 'Unnamed Asset'}</div>
+      <div style="font-size:11px;color:#717784;margin-top:2px;">${asset.tempAssetId} • ${asset.category || '—'} • ${asset.vendor || '—'}</div>
+      ${asset.serialNumber ? `<div style="font-size:11px;font-family:monospace;color:#005da9;margin-top:2px;">SN: ${asset.serialNumber}</div>` : ''}
+      <div style="font-size:12px;font-weight:600;color:#1a1c1c;margin-top:4px;">${asset.totalCost ? '₹' + Number(asset.totalCost).toLocaleString('en-IN') : ''}</div>
+    </div>
+    <a href="asset-detail.html?id=${asset.id}" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;background:#005da9;color:#fff;font-size:12px;font-weight:700;text-decoration:none;">
+      <span class="material-symbols-outlined" style="font-size:15px;">open_in_new</span> Open Asset
+    </a>
+  </div>`;
 }
 
 async function sendAgentMessage() {
@@ -675,37 +817,106 @@ async function sendAgentMessage() {
   const question = input.value.trim();
   if (!question) return;
 
-  // Add user message
+  // Hide quick chips after first message
+  const chips = document.getElementById('ac-agent-chips');
+  if (chips) chips.style.display = 'none';
+
   messages.innerHTML += `<div class="agent-msg user">${question}</div>`;
   input.value = '';
-
-  // Add typing indicator
-  messages.innerHTML += `<div class="agent-typing" id="agent-typing"><span></span><span></span><span></span></div>`;
   messages.scrollTop = messages.scrollHeight;
 
+  // ── Local intent: numeric or "show me" — no AI needed ──
+  const intent = _agentLocalIntent(question);
+  if (intent && intent.type === 'asset_lookup') {
+    messages.innerHTML += _renderAssetActionCard(intent.asset, intent.query);
+    messages.scrollTop = messages.scrollHeight;
+    return;
+  }
+
+  // ── AI path: streaming ──
+  _agentHistory.push({ role: 'user', content: question });
+  if (_agentHistory.length > 20) _agentHistory.splice(0, 2);
+
+  // Create streaming bot bubble
+  const botId = `bot-msg-${Date.now()}`;
+  messages.innerHTML += `<div class="agent-msg bot" id="${botId}"><span style="opacity:0.5">▍</span></div>`;
+  messages.scrollTop = messages.scrollHeight;
+
+  const baseUrl = Storage.getSettings().apiUrl || 'https://assetcues-backend.onrender.com';
+  const context = _buildAgentContext();
+  let rawAnswer = '';
+  let streamOk = false;
+
   try {
-    const baseUrl = Storage.getSettings().apiUrl || 'https://assetcues-backend.onrender.com';
-    const context = _buildAgentContext();
-    const res = await fetch(`${baseUrl}/api/v1/agent/chat`, {
+    const res = await fetch(`${baseUrl}/api/v1/agent/chat/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, context }),
+      body: JSON.stringify({ question, context, history: _agentHistory.slice(0, -1) }),
     });
 
-    const typing = document.getElementById('agent-typing');
-    if (typing) typing.remove();
+    if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
 
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    streamOk = true;
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    const bubble = document.getElementById(botId);
+    let buffer = '';
 
-    // Simple markdown-to-html: bold, bullets, line breaks
-    let answer = (data.answer || 'No response').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/^\- /gm, '• ').replace(/\n/g, '<br>');
-    messages.innerHTML += `<div class="agent-msg bot">${answer}</div>`;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      // Process SSE lines
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // keep incomplete line
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const payload = line.slice(6).trim();
+        if (payload === '[DONE]') break;
+        try {
+          const obj = JSON.parse(payload);
+          if (obj.chunk) {
+            rawAnswer += obj.chunk;
+            if (bubble) bubble.innerHTML = _renderAgentMarkdown(rawAnswer) + '<span style="opacity:0.5">▍</span>';
+            messages.scrollTop = messages.scrollHeight;
+          }
+          if (obj.error) throw new Error(obj.error);
+        } catch (_) { /* skip malformed lines */ }
+      }
+    }
+
+    // Final render without cursor
+    const bubble2 = document.getElementById(botId);
+    if (bubble2) bubble2.innerHTML = _renderAgentMarkdown(rawAnswer || 'No response');
+    _agentHistory.push({ role: 'assistant', content: rawAnswer });
+
   } catch (e) {
-    const typing = document.getElementById('agent-typing');
-    if (typing) typing.remove();
-    messages.innerHTML += `<div class="agent-msg bot" style="color:#ba1a1a">Sorry, I couldn't process that. Make sure the backend is running.</div>`;
+    // Fallback to non-streaming if stream endpoint fails
+    if (!streamOk) {
+      const bubble = document.getElementById(botId);
+      if (bubble) bubble.innerHTML = '<span style="opacity:0.5">Thinking…</span>';
+      try {
+        const res2 = await fetch(`${baseUrl}/api/v1/agent/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question, context, history: _agentHistory.slice(0, -1) }),
+        });
+        if (!res2.ok) throw new Error(`HTTP ${res2.status}`);
+        const data = await res2.json();
+        rawAnswer = data.answer || 'No response';
+        _agentHistory.push({ role: 'assistant', content: rawAnswer });
+        const bubble2 = document.getElementById(botId);
+        if (bubble2) bubble2.innerHTML = _renderAgentMarkdown(rawAnswer);
+      } catch (e2) {
+        _agentHistory.pop();
+        const bubble2 = document.getElementById(botId);
+        if (bubble2) bubble2.innerHTML = '<span style="color:#ba1a1a">Sorry, I couldn\'t reach the AI backend. Check your connection or API URL in Settings.</span>';
+      }
+    } else {
+      const bubble2 = document.getElementById(botId);
+      if (bubble2 && rawAnswer) bubble2.innerHTML = _renderAgentMarkdown(rawAnswer);
+    }
   }
   messages.scrollTop = messages.scrollHeight;
 }

@@ -291,11 +291,18 @@ const Storage = {
     const assetRows = [];
     const groupInfo = [];
 
+    const lineItemsAll = json.line_items || [];
     const atc = json.assets_to_create || [];
     if (atc.length >= 1) {
       atc.forEach((a, i) => {
         const assetNum = nextNum++;
         const assetNumber = `AST-${String(assetNum).padStart(4,'0')}`;
+        // Cross-reference source line item for fields not in AssetToCreate
+        const srcLine = lineItemsAll[a.source_line_index] || {};
+        const hsnCode = _unwrap(srcLine.hsn_sac_code) || null;
+        // Serial: prefer asset-level, then positional from line item's list, then fallback array
+        const lineSerials = srcLine.serial_numbers_listed || [];
+        const serialFromLine = lineSerials[a.quantity_index - 1] || lineSerials[0] || null;
         assetRows.push({
           org_id: ORG_ID, extraction_id: extraction.id, asset_number: assetNumber,
           name: a.asset_name || a.description || `Asset ${i+1}`,
@@ -303,13 +310,13 @@ const Storage = {
           sub_category: a.suggested_sub_category || null,
           asset_class: a.suggested_asset_class || null,
           make: a.suggested_make || null, model: a.suggested_model || null,
-          serial_number: a.serial_number || serialNumbers[i] || null,
+          serial_number: a.serial_number || serialFromLine || serialNumbers[i] || null,
           purchase_price: a.individual_cost_before_tax || a.individual_cost_with_tax || 0,
           cgst: a.individual_cgst || 0, sgst: a.individual_sgst || 0,
           igst: a.individual_igst || 0, tax: a.individual_tax || 0,
           total_cost: a.individual_cost_with_tax || a.individual_cost_before_tax || 0,
           vendor, invoice_number: invoiceNumber, invoice_date: invoiceDate || null,
-          status: 'in_review', hsn_code: a.hsn_sac_code || null,
+          status: 'in_review', hsn_code: hsnCode,
           acquisition_date: invoiceDate || new Date().toISOString().split('T')[0],
           confidence: a.confidence_overall || extraction.confidence || 0,
           unit_of_measure: a.unit_of_measure || 'Nos',
@@ -407,20 +414,27 @@ const Storage = {
   async saveAssetImage(assetId, dataUrl) {
     if (!assetId || !dataUrl) return null;
     try {
-      // Convert data URL to blob
+      // Try Supabase Storage first
       const res = await fetch(dataUrl);
       const blob = await res.blob();
       const path = `${ORG_ID}/${assetId}.jpg`;
       const url = await Supabase.uploadFile('asset-images', path, blob);
-      if (url) {
-        await Supabase.update('assets', assetId, { asset_image_url: url });
-        const asset = this.getAsset(assetId);
-        if (asset) asset.assetImageUrl = url;
-      }
-      return url;
+      const finalUrl = url || dataUrl; // fall back to base64 data URL if bucket missing/unavailable
+      await Supabase.update('assets', assetId, { asset_image_url: finalUrl });
+      const asset = this.getAsset(assetId);
+      if (asset) asset.assetImageUrl = finalUrl;
+      return finalUrl;
     } catch(e) {
-      console.error('[STORAGE] Image upload failed:', e);
-      return null;
+      // Last resort: save the data URL directly
+      try {
+        await Supabase.update('assets', assetId, { asset_image_url: dataUrl });
+        const asset = this.getAsset(assetId);
+        if (asset) asset.assetImageUrl = dataUrl;
+        return dataUrl;
+      } catch(e2) {
+        console.error('[STORAGE] Image save failed:', e2);
+        return null;
+      }
     }
   },
   saveImage(id, dataUrl) { return this.saveAssetImage(id, dataUrl); },
