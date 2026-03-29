@@ -7,7 +7,21 @@ server.js
 .DS_Store
 Thumbs.db
 desktop.ini
+*.DS_Store
 
 # Editor
 .vscode/
 .idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.*
+
+# Logs
+*.log
+npm-debug.log*
+
+# Cache
+.cache/
