@@ -1,0 +1,13 @@
+# Dev server files
+node_modules/
+serve.ps1
+server.js
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/

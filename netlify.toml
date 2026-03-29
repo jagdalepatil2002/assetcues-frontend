@@ -1,0 +1,20 @@
+[build]
+  publish = "."
+
+# SPA-style: serve index.html for missing routes (not needed for this multi-page app, but safe)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  conditions = {Role = ["admin"]}
+
+# Cache static assets
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
+  for = "/img/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"

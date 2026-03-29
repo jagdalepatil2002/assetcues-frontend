@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>Review & Approve | Assetcues</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+    rel="stylesheet" />
+  <script>
+    tailwind.config = { darkMode: "class", theme: { extend: { colors: { "on-tertiary-container": "#009668", "on-error": "#ffffff", "on-secondary-container": "#57657b", "on-primary-fixed-variant": "#3f465c", "on-tertiary-fixed": "#002113", "on-primary-fixed": "#131b2e", "primary-fixed-dim": "#bec6e0", "on-secondary": "#ffffff", "outline": "#76777d", "surface-container-high": "#e6e8ea", "on-error-container": "#93000a", "background": "#f7f9fb", "surface-container-low": "#f2f4f6", "surface-tint": "#565e74", "secondary": "#515f74", "surface-container-lowest": "#ffffff", "on-surface-variant": "#45464d", "on-primary": "#ffffff", "surface-container": "#eceef0", "secondary-fixed": "#d5e3fd", "primary": "#4f46e5", "outline-variant": "#c6c6cd", "primary-fixed": "#dae2fd", "tertiary-fixed-dim": "#4edea3", "on-background": "#191c1e", "on-primary-container": "#7c839b", "surface-variant": "#e0e3e5", "secondary-container": "#d5e3fd", "error": "#ba1a1a", "secondary-fixed-dim": "#b9c7e0", "primary-container": "#131b2e", "surface-dim": "#d8dadc", "surface-bright": "#f7f9fb", "on-surface": "#191c1e", "surface": "#f7f9fb", "tertiary-fixed": "#6ffbbe", "error-container": "#ffdad6", "tertiary-container": "#005236" }, fontFamily: { "headline": ["Manrope"], "body": ["Inter"] }, borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" } } } }
+  </script>
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      vertical-align: middle;
+    }
+
+    body {
+      background-color: #f7f9fb;
+    }
+
+    a {
+      text-decoration: none;
+    }
+
+    @media (max-width: 768px) {
+      #sidebar {
+        transform: translateX(-100%);
+        position: fixed;
+        z-index: 999;
+      }
+    }
+  </style>
+</head>
+
+<body class="font-body text-on-surface">
+  <aside id="sidebar"
+    class="h-full w-64 fixed left-0 top-0 flex flex-col p-4 gap-2 z-40 transition-transform"></aside>
+  <main class="ml-0 md:ml-64 min-h-screen">
+    <header id="topbar"
+      class="flex justify-between items-center w-full px-6 md:px-8 py-6 bg-slate-50 sticky top-0 z-30"></header>
+    <div class="px-6 md:px-8 pb-12">
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-on-surface-variant">Extraction Review</p>
+          <h3 class="font-headline text-3xl font-extrabold text-on-primary-fixed mt-1">Review & Approve</h3>
+        </div>
+        <div class="flex gap-3">
+          <select id="status-filter" onchange="renderList()"
+            class="px-4 py-2 rounded-lg bg-white border border-outline-variant/30 text-sm font-medium">
+            <option value="all">All Status</option>
+            <option value="draft">Draft</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
+      <div id="list-container" class="space-y-3"></div>
+    </div>
+  </main>
+  <script src="js/supabase.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Storage.init();
+      injectSidebar('review.html');
+      injectTopBar('Review & Approve');
+      renderList();
+    });
+
+    function renderList() {
+      const filter = document.getElementById('status-filter').value;
+      let extractions = Storage.getExtractions();
+      if (filter !== 'all') extractions = extractions.filter(e => e.status === filter);
+      const container = document.getElementById('list-container');
+      if (extractions.length === 0) {
+        container.innerHTML = `
+      <div class="text-center py-16 text-on-surface-variant">
+        <span class="material-symbols-outlined text-5xl mb-4 block">rate_review</span>
+        <p class="font-headline font-bold text-lg">No extractions to review</p>
+        <p class="text-sm mt-2">Upload an invoice to create an extraction for review</p>
+        <a href="upload.html" class="inline-flex items-center gap-2 mt-4 px-6 py-3 bg-primary text-white rounded-lg font-bold text-sm no-underline hover:opacity-90">
+          <span class="material-symbols-outlined text-lg">upload_file</span> Upload Invoice
+        </a>
+      </div>`;
+        return;
+      }
+      container.innerHTML = extractions.map(ext => {
+        const json = ext.extractionJson || {};
+        const vendor = getVal(json.vendor_details, 'vendor_name') || 'Unknown Vendor';
+        const invNo = getVal(json.invoice_header, 'invoice_number') || ext.fileName;
+        const total = getVal(json.totals, 'grand_total') || 0;
+        const assetCount = (ext.assetIds || []).length;
+        return `
+      <a href="review-detail.html?id=${ext.id}" class="group bg-surface-container-lowest p-6 rounded-xl hover:bg-primary-fixed/10 transition-colors flex items-center justify-between no-underline shadow-sm">
+        <div class="flex items-center gap-4 flex-1">
+          <div class="w-12 h-12 bg-surface-container flex items-center justify-center rounded-lg">
+            <span class="material-symbols-outlined text-on-surface-variant">${ext.status === 'rejected' ? 'cancel' : ext.status === 'approved' ? 'task_alt' : 'description'}</span>
+          </div>
+          <div class="flex-1">
+            <p class="font-headline font-bold text-on-primary-fixed">${invNo}</p>
+            <p class="text-xs text-on-surface-variant">${vendor} · ${assetCount} assets · ${timeAgo(ext.timestamp)}</p>
+          </div>
+        </div>
+        <div class="text-right px-6">
+          <p class="text-sm font-bold text-on-primary-fixed">${formatCurrency(total)}</p>
+          <p class="text-[10px] text-on-surface-variant">${ext.pageCount || 1} page(s)</p>
+        </div>
+        <div class="px-4">${confidenceBadge(ext.confidence)}</div>
+        <div class="px-2">${statusBadge(ext.status)}</div>
+        <span class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">chevron_right</span>
+      </a>`;
+      }).join('');
+    }
+  </script>
+</body>
+
+</html>

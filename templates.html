@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Asset Templates | Assetcues</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>
+tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-tertiary-container":"#009668","on-error":"#ffffff","on-secondary-container":"#57657b","on-primary-fixed":"#131b2e","primary-fixed-dim":"#bec6e0","outline":"#76777d","surface-container-high":"#e6e8ea","on-error-container":"#93000a","background":"#f7f9fb","surface-container-low":"#f2f4f6","secondary":"#515f74","surface-container-lowest":"#ffffff","on-surface-variant":"#45464d","on-primary":"#ffffff","surface-container":"#eceef0","secondary-fixed":"#d5e3fd","primary":"#4f46e5","outline-variant":"#c6c6cd","primary-fixed":"#dae2fd","tertiary-fixed-dim":"#4edea3","on-background":"#191c1e","on-primary-container":"#7c839b","secondary-container":"#d5e3fd","error":"#ba1a1a","primary-container":"#131b2e","on-surface":"#191c1e","surface":"#f7f9fb","tertiary-fixed":"#6ffbbe","error-container":"#ffdad6","tertiary-container":"#005236"},fontFamily:{"headline":["Manrope"],"body":["Inter"]},borderRadius:{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"}}}}
+</script>
+<style>
+  .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle}
+  body{background:#f7f9fb} a{text-decoration:none}
+  @media(max-width:768px){#sidebar{transform:translateX(-100%);position:fixed;z-index:999}}
+  .template-card { transition: all 0.15s; cursor:pointer; }
+  .template-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s}
+  .modal-overlay.active{opacity:1;pointer-events:all}
+  .modal-content{background:#fff;border-radius:1rem;max-width:560px;width:95%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);transform:scale(0.95);transition:transform 0.2s}
+  .modal-overlay.active .modal-content{transform:scale(1)}
+</style>
+</head>
+<body class="font-body text-on-surface">
+<aside id="sidebar" class="h-full w-64 fixed left-0 top-0 flex flex-col p-4 gap-2 z-40 transition-transform"></aside>
+<main class="ml-0 md:ml-64 min-h-screen">
+  <header id="topbar" class="flex justify-between items-center w-full px-6 md:px-8 py-6 bg-slate-50 sticky top-0 z-30"></header>
+  <div class="px-6 md:px-8 pb-12">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-on-surface-variant">Asset Intelligence</p>
+        <h3 class="font-headline text-3xl font-extrabold text-on-primary-fixed mt-1">Template Library</h3>
+        <p class="text-sm text-on-surface-variant mt-1">Pre-built templates with Indian IT Act depreciation rates. Click any template to apply to a new asset.</p>
+      </div>
+    </div>
+
+    <!-- Filters & Stats -->
+    <div class="flex flex-wrap items-center gap-4 mb-6">
+      <div class="flex items-center gap-2">
+        <span class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Category</span>
+        <select id="filter-cat" onchange="renderTemplates()" class="px-3 py-1.5 rounded-lg bg-white border border-outline-variant/30 text-xs font-medium">
+          <option value="">All Categories</option>
+        </select>
+      </div>
+      <div class="flex items-center bg-white px-3 py-1.5 rounded-lg border border-outline-variant/30">
+        <span class="material-symbols-outlined text-on-surface-variant text-sm mr-2">search</span>
+        <input id="search" oninput="renderTemplates()" type="text" placeholder="Search templates..." class="bg-transparent border-none focus:ring-0 text-xs font-medium w-48"/>
+      </div>
+      <div class="ml-auto">
+        <div id="template-count" class="text-xs text-on-surface-variant font-medium"></div>
+      </div>
+    </div>
+
+    <!-- IT Act Info Banner -->
+    <div class="bg-primary-container text-white rounded-2xl p-5 mb-6 flex items-start gap-4">
+      <span class="material-symbols-outlined text-tertiary-fixed text-2xl shrink-0" style="font-variation-settings:'FILL' 1">gavel</span>
+      <div>
+        <p class="font-headline font-bold text-sm">Indian Income Tax Act Depreciation Rates</p>
+        <p class="text-xs text-on-primary-container mt-1">All templates use rates prescribed under the Income Tax Act, 1961 (Schedule II). Both SLM and WDV methods supported. Rates shown are for WDV (Written Down Value) method.</p>
+      </div>
+    </div>
+
+    <!-- Templates Grid -->
+    <div id="templates-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+
+  </div>
+</main>
+
+<!-- Template Detail Modal -->
+<div id="template-modal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal-content" id="modal-body"></div>
+</div>
+
+<script src="js/supabase.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script>
+// Fallback templates in case DB is empty
+const FALLBACK_TEMPLATES = [
+  { id:'t1', category:'IT Equipment', name:'Laptop / Notebook', sub_category:'Computing', depreciation_rate:40, useful_life_years:3, method:'WDV', description:'All portable computers including business laptops, workstations. Includes MacBook, Dell, HP, Lenovo series.', it_act_section:'Block 5 — 40%', hsn_code:'84713010', tags:['laptop','computer','notebook'] },
+  { id:'t2', category:'IT Equipment', name:'Desktop Computer', sub_category:'Computing', depreciation_rate:40, useful_life_years:4, method:'WDV', description:'Desktop PCs, all-in-ones, workstations. Includes towers and compact form factors.', it_act_section:'Block 5 — 40%', hsn_code:'84714900', tags:['desktop','computer','pc'] },
+  { id:'t3', category:'IT Equipment', name:'Server / Rack Server', sub_category:'Server Infrastructure', depreciation_rate:40, useful_life_years:5, method:'WDV', description:'Physical servers, rack-mounted servers, blade servers. For data center and on-premise use.', it_act_section:'Block 5 — 40%', hsn_code:'84715000', tags:['server','rack','data center'] },
+  { id:'t4', category:'IT Equipment', name:'Network Switch / Router', sub_category:'Networking', depreciation_rate:40, useful_life_years:5, method:'WDV', description:'Managed and unmanaged switches, routers, access points, firewalls.', it_act_section:'Block 5 — 40%', hsn_code:'85176990', tags:['network','switch','router','firewall'] },
+  { id:'t5', category:'IT Equipment', name:'Mobile Phone / Smartphone', sub_category:'Communication', depreciation_rate:40, useful_life_years:2, method:'WDV', description:'Android, iOS devices issued to employees for business use.', it_act_section:'Block 5 — 40%', hsn_code:'85171210', tags:['phone','mobile','smartphone'] },
+  { id:'t6', category:'IT Equipment', name:'Printer / Scanner', sub_category:'Peripherals', depreciation_rate:15, useful_life_years:5, method:'SLM', description:'Laser, inkjet printers, multifunction devices, document scanners.', it_act_section:'Block 3 — 15%', hsn_code:'84433100', tags:['printer','scanner','MFD'] },
+  { id:'t7', category:'IT Equipment', name:'UPS / Battery Backup', sub_category:'Power', depreciation_rate:15, useful_life_years:5, method:'SLM', description:'Uninterruptible power supply units, batteries, inverters for IT equipment.', it_act_section:'Block 3 — 15%', hsn_code:'85044090', tags:['ups','power','battery'] },
+  { id:'t8', category:'Furniture', name:'Office Chair', sub_category:'Seating', depreciation_rate:10, useful_life_years:10, method:'SLM', description:'Ergonomic chairs, executive chairs, visitor chairs.', it_act_section:'Block 2 — 10%', hsn_code:'94013000', tags:['chair','furniture','seating'] },
+  { id:'t9', category:'Furniture', name:'Office Desk / Workstation', sub_category:'Desk', depreciation_rate:10, useful_life_years:10, method:'SLM', description:'Executive desks, modular workstations, standing desks.', it_act_section:'Block 2 — 10%', hsn_code:'94031000', tags:['desk','furniture','workstation'] },
+  { id:'t10', category:'Vehicles', name:'Car / Passenger Vehicle', sub_category:'Four Wheeler', depreciation_rate:15, useful_life_years:8, method:'WDV', description:'Company cars, passenger vehicles for business use. Registered in company name.', it_act_section:'Block 3 — 15%', hsn_code:'87032290', tags:['car','vehicle','automobile'] },
+  { id:'t11', category:'Vehicles', name:'Two Wheeler', sub_category:'Two Wheeler', depreciation_rate:15, useful_life_years:7, method:'WDV', description:'Motorcycles, scooters for business use. Registered in company name.', it_act_section:'Block 3 — 15%', hsn_code:'87112010', tags:['bike','scooter','motorcycle'] },
+  { id:'t12', category:'Plant & Machinery', name:'Air Conditioner', sub_category:'HVAC', depreciation_rate:15, useful_life_years:10, method:'SLM', description:'Split ACs, window ACs, cassette units, central air conditioning.', it_act_section:'Block 3 — 15%', hsn_code:'84151010', tags:['ac','air conditioner','hvac'] },
+  { id:'t13', category:'Plant & Machinery', name:'Generator / DG Set', sub_category:'Power Generation', depreciation_rate:15, useful_life_years:12, method:'SLM', description:'Diesel generators, petrol gensets, silent DG sets for power backup.', it_act_section:'Block 3 — 15%', hsn_code:'85022090', tags:['generator','DG set','power'] },
+  { id:'t14', category:'Office Equipment', name:'CCTV / Security System', sub_category:'Security', depreciation_rate:15, useful_life_years:5, method:'SLM', description:'IP cameras, DVR/NVR systems, access control, biometric devices.', it_act_section:'Block 3 — 15%', hsn_code:'85258090', tags:['cctv','camera','security'] },
+  { id:'t15', category:'Office Equipment', name:'Projector / Display Screen', sub_category:'AV Equipment', depreciation_rate:40, useful_life_years:4, method:'WDV', description:'LCD/DLP projectors, interactive displays, video walls, smartboards.', it_act_section:'Block 5 — 40%', hsn_code:'90132000', tags:['projector','screen','display'] },
+];
+
+let allTemplates = [];
+
+const CATEGORY_ICONS = {
+  'IT Equipment': 'computer',
+  'Furniture': 'chair',
+  'Vehicles': 'directions_car',
+  'Plant & Machinery': 'precision_manufacturing',
+  'Office Equipment': 'business_center',
+};
+const CATEGORY_COLORS = {
+  'IT Equipment': 'bg-primary-fixed text-on-primary-fixed',
+  'Furniture': 'bg-secondary-fixed text-on-secondary-container',
+  'Vehicles': 'bg-tertiary-fixed/30 text-on-tertiary-container',
+  'Plant & Machinery': 'bg-surface-container-high text-on-surface',
+  'Office Equipment': 'bg-error-container text-on-error-container',
+};
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await Storage.init();
+  injectSidebar('templates.html');
+  injectTopBar('Template Library');
+  await loadTemplates();
+});
+
+async function loadTemplates() {
+  const dbTemplates = await Storage.fetchTemplates();
+  allTemplates = dbTemplates.length > 0 ? dbTemplates : FALLBACK_TEMPLATES;
+
+  // Populate category filter
+  const cats = [...new Set(allTemplates.map(t => t.category).filter(Boolean))].sort();
+  const sel = document.getElementById('filter-cat');
+  cats.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c; o.textContent = c;
+    sel.appendChild(o);
+  });
+  renderTemplates();
+}
+
+function renderTemplates() {
+  const cat = document.getElementById('filter-cat').value;
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  let filtered = allTemplates;
+  if (cat) filtered = filtered.filter(t => t.category === cat);
+  if (q) filtered = filtered.filter(t =>
+    (t.name||'').toLowerCase().includes(q) ||
+    (t.sub_category||'').toLowerCase().includes(q) ||
+    (t.description||'').toLowerCase().includes(q) ||
+    (t.tags||[]).some(tag => tag.toLowerCase().includes(q))
+  );
+
+  document.getElementById('template-count').textContent = `${filtered.length} of ${allTemplates.length} templates`;
+
+  const grid = document.getElementById('templates-grid');
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="col-span-3 text-center py-16 text-on-surface-variant">
+      <span class="material-symbols-outlined text-4xl mb-3 block">search_off</span>
+      <p class="font-headline font-bold">No templates found</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(t => {
+    const icon = CATEGORY_ICONS[t.category] || 'inventory_2';
+    const badgeCls = CATEGORY_COLORS[t.category] || 'bg-surface-container text-on-surface-variant';
+    const methodColor = t.method === 'WDV' ? 'bg-error-container text-on-error-container' : 'bg-secondary-fixed text-on-secondary-container';
+    const slmRate = t.method === 'WDV' ? ((t.depreciation_rate || 15) / (1 + (t.depreciation_rate||15)/100) * 100 / (t.useful_life_years||5)).toFixed(1) : t.depreciation_rate;
+    return `
+    <div class="template-card bg-white rounded-2xl shadow-sm p-6 flex flex-col" onclick="openTemplate('${t.id}')">
+      <div class="flex items-start justify-between mb-4">
+        <div class="w-12 h-12 bg-surface-container-low rounded-xl flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-2xl text-on-surface-variant" style="font-variation-settings:'FILL' 1">${icon}</span>
+        </div>
+        <span class="text-[9px] font-bold px-2 py-1 rounded-full ${methodColor}">${t.method}</span>
+      </div>
+      <h4 class="font-headline font-bold text-on-primary-fixed mb-1">${t.name}</h4>
+      <p class="text-xs text-on-surface-variant mb-3 flex-1">${(t.description||'').slice(0,80)}${(t.description||'').length > 80 ? '…' : ''}</p>
+      <div class="flex items-center justify-between pt-3 border-t border-surface-container">
+        <span class="text-[10px] font-bold px-2 py-1 rounded ${badgeCls}">${t.category}</span>
+        <div class="text-right">
+          <p class="text-xs font-bold text-on-primary-fixed">${t.depreciation_rate || t.depreciation_rate_wdv || '—'}% per yr</p>
+          <p class="text-[10px] text-on-surface-variant">${t.useful_life_years} yr life · ${t.it_act_section || 'IT Act'}</p>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openTemplate(id) {
+  const t = allTemplates.find(x => x.id === id || String(x.id) === String(id));
+  if (!t) return;
+  const icon = CATEGORY_ICONS[t.category] || 'inventory_2';
+  const badgeCls = CATEGORY_COLORS[t.category] || 'bg-surface-container text-on-surface-variant';
+
+  document.getElementById('modal-body').innerHTML = `
+    <div class="bg-primary-container text-white p-6 rounded-t-xl">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 bg-white/10 rounded-xl flex items-center justify-center">
+          <span class="material-symbols-outlined text-3xl text-tertiary-fixed" style="font-variation-settings:'FILL' 1">${icon}</span>
+        </div>
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-wider text-on-primary-container">${t.category}</p>
+          <h3 class="font-headline text-xl font-extrabold">${t.name}</h3>
+          ${t.sub_category ? `<p class="text-xs text-on-primary-container">${t.sub_category}</p>` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="p-6 space-y-5">
+      <p class="text-sm text-on-surface-variant leading-relaxed">${t.description || '—'}</p>
+
+      <!-- Depreciation Details -->
+      <div class="bg-surface-container-low rounded-xl p-4">
+        <p class="text-[9px] font-bold uppercase tracking-wider text-on-surface-variant mb-3">Depreciation Schedule (Indian IT Act)</p>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-[10px] text-on-surface-variant">IT Act Section</p>
+            <p class="font-bold text-sm text-on-primary-fixed">${t.it_act_section || '—'}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-on-surface-variant">Method</p>
+            <p class="font-bold text-sm text-on-primary-fixed">${t.depreciation_method || t.method || 'SLM'}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-on-surface-variant">Annual Rate (WDV)</p>
+            <p class="font-bold text-xl text-on-primary-fixed">${t.depreciation_rate || '—'}%</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-on-surface-variant">Useful Life</p>
+            <p class="font-bold text-xl text-on-primary-fixed">${t.useful_life_years || '—'} years</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- HSN Code + Tags -->
+      ${t.hsn_code ? `<div class="flex items-center gap-3">
+        <span class="text-[10px] font-bold uppercase text-on-surface-variant">HSN Code</span>
+        <span class="font-mono text-sm font-bold text-on-primary-fixed bg-surface-container px-2 py-1 rounded">${t.hsn_code}</span>
+      </div>` : ''}
+
+      ${(t.tags||[]).length > 0 ? `<div class="flex flex-wrap gap-2">
+        ${(t.tags||[]).map(tag => `<span class="text-[10px] px-2 py-1 bg-secondary-fixed text-on-secondary-container rounded-full font-medium">${tag}</span>`).join('')}
+      </div>` : ''}
+
+      <!-- Sample Depreciation Table -->
+      <div>
+        <p class="text-[9px] font-bold uppercase tracking-wider text-on-surface-variant mb-2">Sample Schedule (₹1,00,000 asset)</p>
+        <div class="overflow-x-auto rounded-xl border border-outline-variant/20">
+          <table class="w-full text-xs">
+            <thead><tr class="bg-surface-container-low">
+              <th class="px-3 py-2 text-left text-[9px] font-bold uppercase text-on-surface-variant">FY</th>
+              <th class="px-3 py-2 text-right text-[9px] font-bold uppercase text-on-surface-variant">Opening</th>
+              <th class="px-3 py-2 text-right text-[9px] font-bold uppercase text-on-surface-variant">Depreciation</th>
+              <th class="px-3 py-2 text-right text-[9px] font-bold uppercase text-on-surface-variant">Closing</th>
+            </tr></thead>
+            <tbody>${generateSampleSchedule(t)}</tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex gap-3 pt-2">
+        <a href="upload.html" class="flex-1 py-3 bg-primary text-white rounded-xl font-headline font-bold text-sm flex items-center justify-center gap-2 no-underline hover:opacity-90 transition-all">
+          <span class="material-symbols-outlined text-base">upload_file</span> Upload Invoice with This Template
+        </a>
+        <button onclick="closeModal()" class="py-3 px-5 border border-outline-variant/30 rounded-xl font-bold text-sm text-on-surface-variant hover:bg-surface-container transition-colors">
+          Close
+        </button>
+      </div>
+    </div>`;
+  document.getElementById('template-modal').classList.add('active');
+}
+
+function generateSampleSchedule(t) {
+  const cost = 100000;
+  const rate = (t.depreciation_rate || 15) / 100;
+  const life = Math.min(t.useful_life_years || 5, 5); // Show max 5 years
+  const method = t.method || 'SLM';
+  const salvage = 1;
+  let rows = '';
+  let opening = cost;
+  const curYear = new Date().getFullYear();
+  const fyStart = new Date().getMonth() >= 3 ? curYear : curYear - 1;
+
+  for (let yr = 0; yr < life; yr++) {
+    if (opening <= salvage) break;
+    const fy = `FY ${fyStart + yr}-${String(fyStart + yr + 1).slice(-2)}`;
+    let dep = method === 'WDV' ? opening * rate : (cost - salvage) / (t.useful_life_years || 5);
+    dep = Math.round(dep);
+    const closing = Math.max(opening - dep, salvage);
+    dep = opening - closing;
+    const pct = (dep / cost * 100).toFixed(1);
+    rows += `<tr class="border-b border-surface-container">
+      <td class="px-3 py-2 font-medium">${fy}</td>
+      <td class="px-3 py-2 text-right">₹${opening.toLocaleString('en-IN')}</td>
+      <td class="px-3 py-2 text-right text-error font-medium">−₹${dep.toLocaleString('en-IN')} <span class="text-[9px] text-on-surface-variant">(${pct}%)</span></td>
+      <td class="px-3 py-2 text-right font-bold text-on-tertiary-container">₹${closing.toLocaleString('en-IN')}</td>
+    </tr>`;
+    opening = closing;
+  }
+  return rows;
+}
+
+function closeModal() {
+  document.getElementById('template-modal').classList.remove('active');
+}
+</script>
+</body></html>

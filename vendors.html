@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Vendor Profiles | Assetcues</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>
+tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-tertiary-container":"#009668","on-error":"#ffffff","on-secondary-container":"#57657b","on-primary-fixed":"#131b2e","primary-fixed-dim":"#bec6e0","outline":"#76777d","surface-container-high":"#e6e8ea","on-error-container":"#93000a","background":"#f7f9fb","surface-container-low":"#f2f4f6","secondary":"#515f74","surface-container-lowest":"#ffffff","on-surface-variant":"#45464d","on-primary":"#ffffff","surface-container":"#eceef0","secondary-fixed":"#d5e3fd","primary":"#4f46e5","outline-variant":"#c6c6cd","primary-fixed":"#dae2fd","tertiary-fixed-dim":"#4edea3","on-background":"#191c1e","on-primary-container":"#7c839b","secondary-container":"#d5e3fd","error":"#ba1a1a","primary-container":"#131b2e","on-surface":"#191c1e","surface":"#f7f9fb","tertiary-fixed":"#6ffbbe","error-container":"#ffdad6","tertiary-container":"#005236"},fontFamily:{"headline":["Manrope"],"body":["Inter"]},borderRadius:{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"}}}}
+</script>
+<style>
+  .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle}
+  body{background:#f7f9fb}
+  a{text-decoration:none}
+  @media(max-width:768px){#sidebar{transform:translateX(-100%);position:fixed;z-index:999}}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s}
+  .modal-overlay.active{opacity:1;pointer-events:all}
+  .modal-content{background:#fff;border-radius:1rem;max-width:640px;width:95%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);transform:scale(0.95);transition:transform 0.2s}
+  .modal-overlay.active .modal-content{transform:scale(1)}
+</style>
+</head>
+<body class="font-body text-on-surface">
+<aside id="sidebar" class="h-full w-64 fixed left-0 top-0 flex flex-col p-4 gap-2 z-40 transition-transform"></aside>
+<main class="ml-0 md:ml-64 min-h-screen">
+  <header id="topbar" class="flex justify-between items-center w-full px-6 md:px-8 py-6 bg-slate-50 sticky top-0 z-30"></header>
+  <div class="px-6 md:px-8 pb-12" id="content"></div>
+</main>
+<!-- Vendor Profile Modal -->
+<div id="vendor-modal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal-content p-0" id="modal-body"></div>
+</div>
+<script src="js/supabase.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  await Storage.init();
+  injectSidebar('vendors.html');
+  injectTopBar('Vendor Profiles');
+  renderPage();
+});
+
+function renderPage() {
+  const profiles = Storage.getVendorProfiles();
+  document.getElementById('content').innerHTML = `
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-on-surface-variant">Configuration</p>
+        <h2 class="font-headline text-2xl font-extrabold text-on-primary-fixed">Vendor Profiles & Custom Fields</h2>
+        <p class="text-sm text-on-surface-variant mt-1">Define custom attributes per vendor. When AI detects a matching vendor, these fields auto-populate on every asset.</p>
+      </div>
+      <button onclick="openCreateModal()" class="px-5 py-2.5 bg-primary text-white rounded-lg font-bold text-sm hover:opacity-90 transition-all flex items-center gap-2">
+        <span class="material-symbols-outlined text-lg">add</span> New Vendor Profile
+      </button>
+    </div>
+    ${profiles.length === 0 ? `
+      <div class="bg-white rounded-2xl shadow-sm p-12 text-center">
+        <span class="material-symbols-outlined text-5xl text-on-surface-variant mb-4 block">store</span>
+        <h3 class="font-headline font-bold text-lg text-on-primary-fixed">No vendor profiles yet</h3>
+        <p class="text-sm text-on-surface-variant mt-2 max-w-md mx-auto">Create your first vendor profile to add custom tracking fields. When a bill from this vendor is uploaded, AI will auto-populate these fields on each asset.</p>
+        <button onclick="openCreateModal()" class="mt-6 px-6 py-3 bg-primary text-white rounded-lg font-bold text-sm hover:opacity-90 transition-all inline-flex items-center gap-2">
+          <span class="material-symbols-outlined">add</span> Create First Vendor Profile
+        </button>
+      </div>
+    ` : `
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        ${profiles.map(p => `
+          <div class="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow cursor-pointer" onclick="openEditModal('${p.id}')">
+            <div class="p-6">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center">
+                  <span class="material-symbols-outlined text-on-primary-fixed">store</span>
+                </div>
+                <div>
+                  <h3 class="font-headline font-bold text-on-primary-fixed">${p.vendor_name}</h3>
+                  ${p.aliases && p.aliases.length > 0 ? `<p class="text-[10px] text-on-surface-variant">Also: ${p.aliases.join(', ')}</p>` : ''}
+                </div>
+              </div>
+              <div class="flex items-center gap-2 mb-3">
+                <span class="text-[9px] font-bold uppercase tracking-wider text-on-surface-variant">Custom Fields</span>
+                <span class="px-2 py-0.5 bg-tertiary-fixed/20 text-on-tertiary-container text-[10px] font-bold rounded-full">${(p.custom_fields || []).length}</span>
+              </div>
+              <div class="space-y-1.5">
+                ${(p.custom_fields || []).slice(0, 4).map(cf => `
+                  <div class="flex items-center gap-2 text-xs">
+                    <span class="material-symbols-outlined text-sm text-on-surface-variant">${cf.type === 'date' ? 'calendar_today' : cf.type === 'number' ? 'tag' : cf.type === 'select' ? 'list' : 'text_fields'}</span>
+                    <span class="font-medium">${cf.label}</span>
+                    ${cf.required ? '<span class="text-error text-[9px]">REQ</span>' : ''}
+                    ${cf.defaultValue ? `<span class="text-on-surface-variant ml-auto text-[10px]">Default: ${cf.defaultValue}</span>` : ''}
+                  </div>
+                `).join('')}
+                ${(p.custom_fields || []).length > 4 ? `<p class="text-[10px] text-on-surface-variant">+${(p.custom_fields || []).length - 4} more fields</p>` : ''}
+              </div>
+            </div>
+            <div class="border-t border-surface-container px-6 py-3 flex items-center justify-between">
+              <span class="text-[10px] text-on-surface-variant">Created ${formatDate(p.created_at)}</span>
+              <div class="flex gap-2">
+                <button onclick="event.stopPropagation();openEditModal('${p.id}')" class="text-xs text-on-surface-variant hover:text-primary flex items-center gap-1"><span class="material-symbols-outlined text-sm">edit</span>Edit</button>
+                <button onclick="event.stopPropagation();deleteProfile('${p.id}')" class="text-xs text-error hover:text-on-error-container flex items-center gap-1"><span class="material-symbols-outlined text-sm">delete</span></button>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `}
+    <!-- How It Works -->
+    <div class="bg-primary-container text-white rounded-2xl p-8 mt-8">
+      <h3 class="font-headline font-bold text-lg mb-4">How Vendor Profiles Work</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+        <div class="flex gap-3">
+          <span class="material-symbols-outlined text-tertiary-fixed text-2xl">1️⃣</span>
+          <div><p class="font-bold text-primary-fixed-dim">Define Custom Fields</p><p class="text-on-primary-container mt-1 text-xs">Add fields like "Warranty Period", "AMC Contract", "Support Contact" specific to each vendor</p></div>
+        </div>
+        <div class="flex gap-3">
+          <span class="material-symbols-outlined text-tertiary-fixed text-2xl">2️⃣</span>
+          <div><p class="font-bold text-primary-fixed-dim">AI Auto-Matches Vendor</p><p class="text-on-primary-container mt-1 text-xs">When a bill is uploaded, AI extracts vendor name and fuzzy-matches against your profiles</p></div>
+        </div>
+        <div class="flex gap-3">
+          <span class="material-symbols-outlined text-tertiary-fixed text-2xl">3️⃣</span>
+          <div><p class="font-bold text-primary-fixed-dim">Fields Auto-Populate</p><p class="text-on-primary-container mt-1 text-xs">Custom fields appear on each asset with defaults pre-filled. Fill in the rest during review.</p></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function openCreateModal() {
+  renderModal({ id: 'vp_' + Date.now().toString(36), vendorName: '', aliases: [], customFields: [], createdAt: new Date().toISOString() }, false);
+}
+
+function openEditModal(id) {
+  const p = Storage.getVendorProfile(id);
+  if (!p) return;
+  renderModal({...p, vendorName: p.vendor_name, customFields: p.custom_fields || []}, true);
+}
+
+function renderModal(profile, isEdit) {
+  document.getElementById('modal-body').innerHTML = `
+    <div class="bg-primary-container text-white p-5 rounded-t-xl flex items-center justify-between">
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-wider text-primary-fixed-dim">${isEdit ? 'Edit' : 'New'} Vendor Profile</p>
+        <h3 class="font-headline text-xl font-extrabold">${isEdit ? profile.vendorName : 'Create Profile'}</h3>
+      </div>
+      <button onclick="closeModal()" class="p-1 hover:bg-white/10 rounded-lg"><span class="material-symbols-outlined text-white">close</span></button>
+    </div>
+    <div class="p-6 space-y-5">
+      <div>
+        <label class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant block mb-1">Vendor Name *</label>
+        <input type="text" id="vp-name" value="${profile.vendorName}" class="w-full border border-outline-variant rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary" placeholder="e.g., Tejas Technology Pvt. Ltd."/>
+      </div>
+      <div>
+        <label class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant block mb-1">Aliases (comma separated)</label>
+        <input type="text" id="vp-aliases" value="${(profile.aliases || []).join(', ')}" class="w-full border border-outline-variant rounded-lg px-3 py-2 text-sm" placeholder="e.g., Tejas Tech, TT Pvt"/>
+        <p class="text-[9px] text-on-surface-variant mt-1">Alternative names this vendor might appear as on invoices</p>
+      </div>
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <label class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Custom Fields</label>
+          <button onclick="addField()" class="text-xs text-primary font-bold flex items-center gap-1 hover:underline"><span class="material-symbols-outlined text-sm">add</span>Add Field</button>
+        </div>
+        <div id="fields-container" class="space-y-3">
+          ${(profile.customFields || []).map((cf, i) => renderFieldRow(cf, i)).join('')}
+        </div>
+        ${(profile.customFields || []).length === 0 ? '<p id="no-fields-msg" class="text-xs text-on-surface-variant text-center py-4 bg-surface-container-low rounded-lg">No custom fields yet. Click "Add Field" above.</p>' : ''}
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button onclick="saveProfile('${profile.id}', ${isEdit})" class="flex-1 py-3 bg-primary text-white rounded-xl font-headline font-bold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined">save</span> ${isEdit ? 'Update Profile' : 'Create Profile'}
+        </button>
+        <button onclick="closeModal()" class="py-3 px-6 bg-surface-container rounded-xl font-bold text-sm text-on-surface-variant hover:bg-surface-container-high transition-colors">Cancel</button>
+      </div>
+    </div>`;
+  document.getElementById('vendor-modal').classList.add('active');
+}
+
+let fieldCounter = 100;
+function renderFieldRow(cf, index) {
+  const id = `cf-${index}-${fieldCounter++}`;
+  return `<div class="field-row-item bg-surface-container-low rounded-lg p-3" data-idx="${index}">
+    <div class="grid grid-cols-12 gap-2 items-center">
+      <div class="col-span-4">
+        <input type="text" class="cf-label w-full border border-outline-variant/50 rounded px-2 py-1.5 text-xs" value="${cf.label || ''}" placeholder="Field label"/>
+      </div>
+      <div class="col-span-2">
+        <select class="cf-type w-full border border-outline-variant/50 rounded px-2 py-1.5 text-xs bg-white">
+          <option value="text" ${cf.type==='text'?'selected':''}>Text</option>
+          <option value="number" ${cf.type==='number'?'selected':''}>Number</option>
+          <option value="date" ${cf.type==='date'?'selected':''}>Date</option>
+          <option value="select" ${cf.type==='select'?'selected':''}>Dropdown</option>
+        </select>
+      </div>
+      <div class="col-span-3">
+        <input type="text" class="cf-default w-full border border-outline-variant/50 rounded px-2 py-1.5 text-xs" value="${cf.defaultValue || ''}" placeholder="Default value"/>
+      </div>
+      <div class="col-span-2 flex items-center gap-2">
+        <label class="flex items-center gap-1 text-[10px]">
+          <input type="checkbox" class="cf-required rounded" ${cf.required ? 'checked' : ''}/>
+          Req
+        </label>
+      </div>
+      <div class="col-span-1 text-right">
+        <button onclick="this.closest('.field-row-item').remove()" class="text-error hover:text-on-error-container p-1"><span class="material-symbols-outlined text-sm">close</span></button>
+      </div>
+    </div>
+    ${cf.type === 'select' ? `<input type="text" class="cf-options w-full border border-outline-variant/50 rounded px-2 py-1.5 text-xs mt-2" value="${(cf.options||[]).join(', ')}" placeholder="Options (comma separated)"/>` : ''}
+  </div>`;
+}
+
+function addField() {
+  const container = document.getElementById('fields-container');
+  const msg = document.getElementById('no-fields-msg');
+  if (msg) msg.remove();
+  const idx = container.children.length;
+  container.insertAdjacentHTML('beforeend', renderFieldRow({ label: '', type: 'text', defaultValue: '', required: false }, idx));
+}
+
+async function saveProfile(id, isEdit) {
+  const name = document.getElementById('vp-name').value.trim();
+  if (!name) { alert('Vendor name is required'); return; }
+  const aliases = document.getElementById('vp-aliases').value.split(',').map(s => s.trim()).filter(Boolean);
+  const fieldRows = document.querySelectorAll('.field-row-item');
+  const customFields = [];
+  fieldRows.forEach(row => {
+    const label = row.querySelector('.cf-label').value.trim();
+    if (!label) return;
+    const type = row.querySelector('.cf-type').value;
+    const defaultValue = row.querySelector('.cf-default').value.trim();
+    const required = row.querySelector('.cf-required').checked;
+    const key = label.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    const optionsEl = row.querySelector('.cf-options');
+    const options = optionsEl ? optionsEl.value.split(',').map(s => s.trim()).filter(Boolean) : [];
+    customFields.push({ key, label, type, defaultValue, required, options });
+  });
+  const profile = { vendor_name: name, custom_fields: customFields };
+  if (isEdit) {
+    profile.id = id;
+  }
+  await Storage.saveVendorProfile(profile);
+  closeModal();
+  renderPage();
+}
+
+async function deleteProfile(id) {
+  if (!confirm('Delete this vendor profile? Existing assets will keep their custom fields.')) return;
+  await Storage.deleteVendorProfile(id);
+  renderPage();
+}
+
+function closeModal() {
+  document.getElementById('vendor-modal').classList.remove('active');
+}
+</script>
+</body></html>

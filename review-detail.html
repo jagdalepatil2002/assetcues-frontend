@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Reviewing Invoice | Assetcues</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>
+tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-tertiary-container":"#009668","on-error":"#ffffff","on-secondary-container":"#57657b","on-primary-fixed-variant":"#3f465c","on-primary-fixed":"#131b2e","primary-fixed-dim":"#bec6e0","on-secondary":"#ffffff","outline":"#76777d","surface-container-high":"#e6e8ea","on-error-container":"#93000a","background":"#f7f9fb","surface-container-low":"#f2f4f6","secondary":"#515f74","surface-container-lowest":"#ffffff","on-surface-variant":"#45464d","on-primary":"#ffffff","surface-container":"#eceef0","secondary-fixed":"#d5e3fd","primary":"#4f46e5","outline-variant":"#c6c6cd","primary-fixed":"#dae2fd","tertiary-fixed-dim":"#4edea3","on-background":"#191c1e","on-primary-container":"#7c839b","secondary-container":"#d5e3fd","error":"#ba1a1a","primary-container":"#131b2e","on-surface":"#191c1e","surface":"#f7f9fb","tertiary-fixed":"#6ffbbe","error-container":"#ffdad6","tertiary-container":"#005236"},fontFamily:{"headline":["Manrope"],"body":["Inter"]},borderRadius:{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"}}}}
+</script>
+<style>
+  .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle}
+  body{background:#f7f9fb}
+  a{text-decoration:none}
+  .field-label{font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#45464d;margin-bottom:0.15rem}
+  .field-value{font-size:0.8rem;font-weight:500;color:#131b2e}
+  .editable-field{border:1px solid transparent;border-radius:0.375rem;padding:0.25rem 0.4rem;transition:all 0.15s;background:transparent;width:100%}
+  .editable-field:hover{border-color:#c6c6cd;background:#f2f4f6}
+  .editable-field:focus{border-color:#000;background:#fff;outline:none;box-shadow:0 0 0 2px rgba(0,0,0,0.1)}
+  .editable-field.edited{background:#dae2fd;border-color:#bec6e0}
+  .match-pass{color:#009668;font-weight:700}.match-fail{color:#ba1a1a;font-weight:700}
+  @media(max-width:768px){#sidebar{transform:translateX(-100%);position:fixed;z-index:999}}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s}
+  .modal-overlay.active{opacity:1;pointer-events:all}
+  .modal-content{background:#fff;border-radius:1rem;max-width:720px;width:95%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);transform:scale(0.95);transition:transform 0.2s}
+  .modal-overlay.active .modal-content{transform:scale(1)}
+  table{border-collapse:separate;border-spacing:0}
+  th{position:sticky;top:0;z-index:5}
+</style>
+</head>
+<body class="font-body text-on-surface">
+<aside id="sidebar" class="h-full w-64 fixed left-0 top-0 flex flex-col p-4 gap-2 z-40 transition-transform"></aside>
+<main class="ml-0 md:ml-64 min-h-screen">
+  <header id="topbar" class="flex justify-between items-center w-full px-6 md:px-8 py-6 bg-slate-50 sticky top-0 z-30"></header>
+  <div class="px-6 md:px-8 pb-12" id="content">
+    <p class="text-center py-20 text-on-surface-variant">Loading extraction...</p>
+  </div>
+</main>
+<!-- Asset Detail Modal -->
+<div id="asset-modal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal-content p-0" id="modal-body"></div>
+</div>
+<script src="js/supabase.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script>
+let currentExt = null;
+let editedFields = {};  // Track changes: { entityType: { field: newValue } }
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await Storage.init();
+  injectSidebar('review.html');
+  const id = new URLSearchParams(window.location.search).get('id');
+  if (!id) { window.location.href = 'review.html'; return; }
+  const ext = await Storage.getExtractionAsync(id);
+  if (!ext) { document.getElementById('content').innerHTML = '<p class="text-center py-20 text-error">Extraction not found</p>'; return; }
+  currentExt = ext;
+  const json = ext.extractionJson || {};
+  const invNo = getVal(json.invoice_header, 'invoice_number') || ext.fileName;
+  injectTopBar(`Reviewing: ${invNo}`);
+  renderDetail();
+});
+
+function renderDetail() {
+  const ext = currentExt;
+  const json = ext.extractionJson || {};
+  const img = Storage.getImage(ext.id);
+  const vendor = json.vendor_details || {};
+  const buyer = json.buyer_details || {};
+  const header = json.invoice_header || {};
+  const totals = json.totals || {};
+  const lineItems = json.line_items || [];
+  const isEditable = ext.status === 'draft';
+  const editAttr = isEditable ? '' : 'disabled';
+
+  document.getElementById('content').innerHTML = `
+    <!-- Top Bar -->
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-3">
+        <a href="review.html" class="p-2 hover:bg-surface-container rounded-lg transition-colors"><span class="material-symbols-outlined">arrow_back</span></a>
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-on-surface-variant">Extraction Review</p>
+          <h3 class="font-headline text-xl font-bold text-on-primary-fixed">${ext.fileName}</h3>
+        </div>
+        ${statusBadge(ext.status)}
+      </div>
+      <div class="flex items-center gap-3">
+        ${confidenceBadge(ext.confidence)}
+        <span class="text-xs text-on-surface-variant">${formatDate(ext.timestamp)}</span>
+      </div>
+    </div>
+    <!-- Split View -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Left: Invoice Preview -->
+      <div class="bg-white rounded-2xl shadow-sm p-6 overflow-hidden">
+        <h4 class="font-headline font-bold text-sm text-on-primary-fixed mb-4 flex items-center gap-2">
+          <span class="material-symbols-outlined text-base">description</span> Original Document
+        </h4>
+        <div class="bg-surface-container-low rounded-xl p-4 min-h-[400px] flex items-center justify-center">
+          ${img
+            ? `<img src="${img}" class="max-w-full max-h-[600px] object-contain rounded-lg shadow-md" alt="Invoice"/>`
+            : `<div class="text-center text-on-surface-variant">
+                <span class="material-symbols-outlined text-5xl mb-3 block">image_not_supported</span>
+                <p class="text-sm font-medium">Preview not available</p>
+                <p class="text-xs mt-1">PDF files are processed but not stored for preview in POC</p>
+              </div>`}
+        </div>
+      </div>
+      <!-- Right: Extracted Data -->
+      <div class="space-y-4">
+        <!-- Entity Verification (Editable) -->
+        <div class="bg-white rounded-2xl shadow-sm p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h4 class="font-headline font-bold text-sm text-on-primary-fixed flex items-center gap-2">
+              <span class="material-symbols-outlined text-base">verified_user</span> Entity Verification
+            </h4>
+            ${isEditable ? '<span class="text-[9px] text-on-surface-variant bg-surface-container-low px-2 py-1 rounded-full">Click any field to edit</span>' : ''}
+          </div>
+          <div class="space-y-3">
+            <div><p class="field-label">Vendor Name</p>${editableField('vendor_name', getVal(vendor,'vendor_name'), isEditable)}</div>
+            <div class="grid grid-cols-2 gap-4">
+              <div><p class="field-label">GSTIN</p>${editableField('vendor_gstin', getVal(vendor,'vendor_gstin'), isEditable, 'font-mono text-xs')}</div>
+              <div><p class="field-label">PAN</p>${editableField('vendor_pan', getVal(vendor,'vendor_pan'), isEditable, 'font-mono text-xs')}</div>
+            </div>
+            <div><p class="field-label">Buyer Name</p>${editableField('buyer_name', getVal(buyer,'buyer_name'), isEditable)}</div>
+            <div class="grid grid-cols-2 gap-4">
+              <div><p class="field-label">Invoice Number</p>${editableField('invoice_number', getVal(header,'invoice_number'), isEditable, 'font-mono')}</div>
+              <div><p class="field-label">Invoice Date</p>${editableField('invoice_date', getVal(header,'invoice_date'), isEditable)}</div>
+            </div>
+          </div>
+        </div>
+        <!-- Line Items & Taxes -->
+        <div class="bg-white rounded-2xl shadow-sm p-6">
+          <h4 class="font-headline font-bold text-sm text-on-primary-fixed mb-4 flex items-center gap-2">
+            <span class="material-symbols-outlined text-base">receipt_long</span> Line Items & Taxes
+          </h4>
+          <div class="space-y-3">
+            ${lineItems.map((li, i) => {
+              const desc = li.description || `Item ${i+1}`;
+              const qty = li.quantity || 1;
+              const price = li.unit_price || 0;
+              return `
+                <div class="p-3 rounded-lg bg-surface-container-low">
+                  <p class="font-medium text-sm text-on-primary-fixed">${desc}</p>
+                  <div class="grid grid-cols-4 gap-2 mt-2 text-xs">
+                    <div><span class="text-on-surface-variant">HSN</span><p class="font-medium">${li.hsn_sac_code || '—'}</p></div>
+                    <div><span class="text-on-surface-variant">Qty</span><p class="font-medium">${qty}</p></div>
+                    <div><span class="text-on-surface-variant">Rate</span><p class="font-medium">${formatCurrency(price)}</p></div>
+                    <div><span class="text-on-surface-variant">Tax</span><p class="font-medium">${(li.cgst_rate||0) > 0 ? (li.cgst_rate+'%+'+li.sgst_rate+'%') : (li.igst_rate ? li.igst_rate+'%' : '—')}</p></div>
+                  </div>
+                </div>`;
+            }).join('')}
+            ${lineItems.length === 0 ? '<p class="text-sm text-on-surface-variant text-center py-4">No line items extracted</p>' : ''}
+          </div>
+        </div>
+        <!-- Financial Summary (Editable) -->
+        <div class="bg-white rounded-2xl shadow-sm p-6">
+          <h4 class="font-headline font-bold text-sm text-on-primary-fixed mb-4 flex items-center gap-2">
+            <span class="material-symbols-outlined text-base">payments</span> Financial Summary
+          </h4>
+          <div class="space-y-2">
+            <div class="flex justify-between text-sm"><span class="text-on-surface-variant">Taxable Value</span><span class="font-medium">${formatCurrency(getVal(totals,'subtotal_before_tax'))}</span></div>
+            <div class="flex justify-between text-sm"><span class="text-on-surface-variant">CGST (9%)</span><span class="font-medium">${formatCurrency(getVal(totals,'total_cgst'))}</span></div>
+            <div class="flex justify-between text-sm"><span class="text-on-surface-variant">SGST (9%)</span><span class="font-medium">${formatCurrency(getVal(totals,'total_sgst'))}</span></div>
+            <div class="flex justify-between text-sm"><span class="text-on-surface-variant">IGST (0%)</span><span class="font-medium">${formatCurrency(getVal(totals,'total_igst'))}</span></div>
+            <div class="flex justify-between text-lg font-bold border-t border-outline-variant/30 pt-3 mt-2">
+              <span>GRAND TOTAL</span>
+              <span class="font-headline text-2xl">${formatCurrency(getVal(totals,'grand_total'))}</span>
+            </div>
+            ${getVal(totals,'amount_in_words') ? `<p class="text-[10px] text-on-surface-variant italic mt-1">${getVal(totals,'amount_in_words')}</p>` : ''}
+          </div>
+        </div>
+        <!-- Math & GST Validator -->
+        <div class="bg-white rounded-2xl shadow-sm p-6 border-2 ${calcValidation(ext).allPass ? 'border-on-tertiary-container/30' : 'border-error/30'}">
+          <h4 class="font-headline font-bold text-sm text-on-primary-fixed mb-4 flex items-center gap-2">
+            <span class="material-symbols-outlined text-base">calculate</span> Math & GST Validator
+          </h4>
+          ${renderValidation(ext)}
+        </div>
+        <!-- Individual Assets Table -->
+        <div class="bg-white rounded-2xl shadow-sm p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h4 class="font-headline font-bold text-sm text-on-primary-fixed flex items-center gap-2">
+              <span class="material-symbols-outlined text-base">inventory_2</span>
+              Individual Assets (${(ext.assetIds||[]).length})
+            </h4>
+            <div class="flex items-center bg-surface-container-low px-3 py-1 rounded-lg">
+              <span class="material-symbols-outlined text-sm mr-1.5 text-on-surface-variant">search</span>
+              <input id="asset-search" oninput="filterAssetTable()" type="text" placeholder="Search asset no. or serial..." class="bg-transparent border-none focus:ring-0 text-xs w-44"/>
+            </div>
+          </div>
+          <div class="overflow-x-auto max-h-[500px] overflow-y-auto" id="assets-table-wrap">
+            ${renderAssetsTable(ext)}
+          </div>
+          ${(ext.assetIds||[]).length > 10 ? `<p class="text-[10px] text-on-surface-variant mt-2 text-center">Scroll to see all ${(ext.assetIds||[]).length} assets · Click any row to view details</p>` : ''}
+        </div>
+        <!-- Actions -->
+        <div class="flex gap-3">
+          ${ext.status === 'draft' ? `
+            <button onclick="approveExtraction('${ext.id}')" class="flex-1 py-4 btn-glow rounded-xl font-headline font-bold text-sm flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined">check_circle</span> Approve & Finalize All Assets
+            </button>
+            <button onclick="rejectExtraction('${ext.id}')" class="py-4 px-6 bg-error-container text-error rounded-xl font-bold text-sm hover:bg-error hover:text-white transition-all">
+              <span class="material-symbols-outlined">cancel</span> Reject
+            </button>
+          ` : ext.status === 'approved' ? `
+            <div class="flex-1 py-4 bg-tertiary-fixed/20 text-on-tertiary-container rounded-xl font-bold text-sm flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">check_circle</span> Finalized — ${(ext.assetIds||[]).length} assets in registry
+            </div>
+            <a href="registry.html" class="py-4 px-6 bg-primary text-white rounded-xl font-bold text-sm flex items-center gap-2 no-underline hover:opacity-90">View Registry</a>
+          ` : `
+            <div class="flex-1 py-4 bg-error-container text-error rounded-xl font-bold text-sm flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined">cancel</span> Rejected
+            </div>
+          `}
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ── Editable Field Generator ── */
+function editableField(fieldId, value, editable, extraClass='') {
+  if (!editable) return `<p class="field-value ${extraClass}">${value || '—'}</p>`;
+  return `<input type="text" class="editable-field field-value ${extraClass}" 
+    data-field="${fieldId}" data-original="${value || ''}" 
+    value="${value || ''}" 
+    onchange="onFieldEdit(this)"
+    onfocus="this.select()" />`;
+}
+
+function onFieldEdit(el) {
+  const field = el.dataset.field;
+  const original = el.dataset.original;
+  const newVal = el.value.trim();
+  if (newVal !== original) {
+    el.classList.add('edited');
+    editedFields[field] = newVal;
+    // Also update all linked assets with this field
+    const ext = currentExt;
+    (ext.assetIds || []).forEach(aid => {
+      const mapping = { vendor_name:'vendor', vendor_gstin:'vendorGstin', vendor_pan:'vendorPan', buyer_name:'buyerName', invoice_number:'invoiceNumber', invoice_date:'invoiceDate' };
+      if (mapping[field]) Storage.updateAssetField(aid, mapping[field], newVal);
+    });
+  } else {
+    el.classList.remove('edited');
+    delete editedFields[field];
+  }
+}
+
+/* ── Math & GST Validation ── */
+function calcValidation(ext) {
+  const json = ext.extractionJson || {};
+  const totals = json.totals || {};
+  const lineItems = json.line_items || [];
+  // Get assets from cache OR by scanning all assets for matching extraction_id
+  let assets = (ext.assetIds || []).map(id => Storage.getAsset(id)).filter(Boolean);
+  if (assets.length === 0) {
+    assets = Storage.getAssets().filter(a => a.extractionId === ext.id);
+  }
+
+  const extractedSubtotal = parseNum(getVal(totals,'subtotal_before_tax'));
+  const extractedCgst = parseNum(getVal(totals,'total_cgst'));
+  const extractedSgst = parseNum(getVal(totals,'total_sgst'));
+  const extractedIgst = parseNum(getVal(totals,'total_igst'));
+  const extractedGrand = parseNum(getVal(totals,'grand_total'));
+
+  // Calculated from assets
+  const calcSubtotal = assets.reduce((s,a) => s + (a.purchasePrice||0), 0);
+  const calcCgst = assets.reduce((s,a) => s + (a.cgst||0), 0);
+  const calcSgst = assets.reduce((s,a) => s + (a.sgst||0), 0);
+  const calcIgst = assets.reduce((s,a) => s + (a.igst||0), 0);
+  const calcGrand = assets.reduce((s,a) => s + (a.totalCost||0), 0);
+
+  // Line item: qty × unit_price vs subtotal (unwrap ConfidenceField)
+  const _u = v => (v && typeof v === 'object' && 'value' in v) ? v.value : v;
+  const lineCalcTotal = lineItems.reduce((s,li) => s + (_u(li.quantity)||1) * (_u(li.unit_price)||0), 0);
+  
+  const checks = [
+    { label: 'Qty × Unit Price = Subtotal', extracted: extractedSubtotal, calculated: lineCalcTotal, tolerance: 2 },
+    { label: 'Sum of asset costs = Subtotal', extracted: extractedSubtotal, calculated: calcSubtotal, tolerance: assets.length },
+    { label: 'CGST matches', extracted: extractedCgst, calculated: calcCgst, tolerance: assets.length },
+    { label: 'SGST matches', extracted: extractedSgst, calculated: calcSgst, tolerance: assets.length },
+    { label: 'Subtotal + Taxes = Grand Total', extracted: extractedGrand, calculated: calcSubtotal + calcCgst + calcSgst + calcIgst, tolerance: assets.length + 2 },
+    { label: `Grand Total (${assets.length} assets sum)`, extracted: extractedGrand, calculated: calcGrand, tolerance: assets.length + 2 },
+  ];
+  
+  checks.forEach(c => {
+    c.diff = Math.abs(c.extracted - c.calculated);
+    c.pass = c.diff <= c.tolerance;
+    c.pct = c.extracted > 0 ? ((1 - c.diff / c.extracted) * 100) : (c.calculated === 0 ? 100 : 0);
+  });
+  
+  return { checks, allPass: checks.every(c => c.pass) };
+}
+
+function renderValidation(ext) {
+  const { checks, allPass } = calcValidation(ext);
+  return `
+    <div class="space-y-2">
+      ${checks.map(c => `
+        <div class="flex items-center justify-between text-xs py-1.5 border-b border-surface-container">
+          <span class="text-on-surface-variant flex-1">${c.label}</span>
+          <span class="font-mono text-[10px] text-on-surface-variant mr-3">Extracted: ${formatCurrency(c.extracted)}</span>
+          <span class="font-mono text-[10px] text-on-surface-variant mr-3">Calc: ${formatCurrency(c.calculated)}</span>
+          <span class="${c.pass ? 'match-pass' : 'match-fail'} flex items-center gap-1">
+            <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1">${c.pass ? 'check_circle' : 'error'}</span>
+            ${c.pct.toFixed(1)}%
+          </span>
+        </div>
+      `).join('')}
+      <div class="flex items-center justify-between pt-3 font-bold text-sm">
+        <span>Overall Validation</span>
+        <span class="${allPass ? 'match-pass' : 'match-fail'} flex items-center gap-2 text-base">
+          <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">${allPass ? 'verified' : 'gpp_maybe'}</span>
+          ${allPass ? '100% MATCH ✓' : 'MISMATCH DETECTED'}
+        </span>
+      </div>
+    </div>`;
+}
+
+function parseNum(v) { return parseFloat(v) || 0; }
+
+/* ── Assets Table ── */
+function renderAssetsTable(ext) {
+  const assetIds = ext.assetIds || [];
+  if (assetIds.length === 0) return '<p class="text-center py-8 text-on-surface-variant text-sm">No assets created yet</p>';
+  let sumUnit = 0, sumCgst = 0, sumSgst = 0, sumIgst = 0, sumTotal = 0;
+  let rows = '';
+
+  // Build parent-child map for display ordering
+  const allAssets = assetIds.map(aid => Storage.getAsset(aid)).filter(Boolean);
+  const parentIds = new Set(allAssets.filter(a => a.parentAssetId).map(a => a.parentAssetId));
+
+  // Sort: parents first, then children immediately after their parent
+  const ordered = [];
+  allAssets.forEach(a => {
+    if (!a.parentAssetId) {
+      ordered.push(a);
+      // Add children immediately after parent
+      const children = allAssets.filter(c => c.parentAssetId === a.id);
+      children.sort((x,y) => (x.childIndex||0) - (y.childIndex||0));
+      ordered.push(...children);
+    }
+  });
+  // Add any orphans not yet included
+  allAssets.forEach(a => { if (!ordered.find(o => o.id === a.id)) ordered.push(a); });
+
+  ordered.forEach((a, idx) => {
+    sumUnit += a.purchasePrice || 0;
+    sumCgst += a.cgst || 0;
+    sumSgst += a.sgst || 0;
+    sumIgst += a.igst || 0;
+    sumTotal += a.totalCost || 0;
+
+    const isChild = !!a.parentAssetId;
+    const isParent = parentIds.has(a.id);
+    const isBulk = a.isBulkAsset;
+
+    // Asset number display
+    let assetLabel = a.tempAssetId || 'AST-'+String(a.assetNumber).padStart(4,'0');
+    let nameDisplay = (a.name || '').length > 28 ? a.name.slice(0,26)+'…' : (a.name || '—');
+
+    // Badges
+    let badges = '';
+    if (isParent) badges += '<span class="ml-1 px-1.5 py-0.5 bg-primary-fixed text-on-primary-fixed text-[8px] font-bold rounded">PARENT</span>';
+    if (isChild) badges += '<span class="ml-1 px-1.5 py-0.5 bg-secondary-fixed text-on-secondary-container text-[8px] font-bold rounded">CHILD</span>';
+    if (isBulk) badges += `<span class="ml-1 px-1.5 py-0.5 bg-tertiary-fixed/30 text-on-tertiary-container text-[8px] font-bold rounded">${a.bulkQuantity} ${a.unitOfMeasure}</span>`;
+
+    rows += `<tr class="border-b border-surface-container hover:bg-primary-fixed/10 cursor-pointer asset-row transition-colors ${isChild ? 'bg-surface-container-low/50' : ''}" data-search="${(a.tempAssetId||'').toLowerCase()} ${(a.serialNumber||'').toLowerCase()} ${String(a.assetNumber)} ${(a.name||'').toLowerCase()}" onclick="openAssetModal('${a.id}')">
+      <td class="px-3 py-2 text-on-surface-variant text-center">${idx+1}</td>
+      <td class="px-3 py-2 font-mono text-sm">
+        <div class="flex items-center gap-1">
+          ${isChild ? '<span class="text-on-surface-variant text-[10px]">└─</span>' : ''}
+          ${isParent ? '<span class="material-symbols-outlined text-xs text-primary" style="font-variation-settings:\'FILL\' 1">account_tree</span>' : ''}
+          <span class="font-bold text-on-primary-fixed">${assetLabel}</span>
+          ${badges}
+        </div>
+      </td>
+      <td class="px-3 py-2 text-xs" title="${a.name||''}">${nameDisplay}</td>
+      <td class="px-3 py-2 font-mono text-[10px]" title="${a.serialNumber||''}">${truncSerial(a.serialNumber)}</td>
+      <td class="px-3 py-2 text-right">${formatCurrency(a.purchasePrice)}</td>
+      <td class="px-3 py-2 text-right">${formatCurrency(a.cgst||0)}</td>
+      <td class="px-3 py-2 text-right">${formatCurrency(a.sgst||0)}</td>
+      <td class="px-3 py-2 text-right font-bold">${formatCurrency(a.totalCost)}</td>
+      <td class="px-3 py-2 text-center">${a.assetImageUrl || Storage.getAssetImage(a.id) ? '<span class="material-symbols-outlined text-on-tertiary-container text-sm" style="font-variation-settings:\'FILL\' 1">photo_camera</span>' : '<span class="text-on-surface-variant text-[9px]">—</span>'}</td>
+    </tr>`;
+  });
+  const totalRow = `<tr class="bg-primary-container text-white font-bold sticky bottom-0">
+    <td colspan="4" class="px-3 py-3 text-sm">TOTAL (${assetIds.length} assets)</td>
+    <td class="px-3 py-3 text-right text-sm">${formatCurrency(sumUnit)}</td>
+    <td class="px-3 py-3 text-right text-sm">${formatCurrency(sumCgst)}</td>
+    <td class="px-3 py-3 text-right text-sm">${formatCurrency(sumSgst)}</td>
+    <td class="px-3 py-3 text-right text-sm">${formatCurrency(sumTotal)}</td>
+    <td class="px-3 py-3"></td>
+  </tr>`;
+  return `<table class="w-full text-xs">
+    <thead class="sticky top-0 z-10"><tr class="bg-surface-container-low">
+      <th class="px-3 py-2 text-[9px] font-bold uppercase text-on-surface-variant text-center">#</th>
+      <th class="px-3 py-2 text-[9px] font-bold uppercase text-on-surface-variant text-left">Asset No.</th>
+      <th class="px-3 py-2 text-[9px] font-bold uppercase text-on-surface-variant text-left">Name</th>
+      <th class="px-3 py-2 text-[9px] font-bold uppercase text-on-surface-variant text-left">Serial Number</th>
+      <th class="px-3 py-2 text-[9px] font-bold uppercase text-on-surface-variant text-right">Unit Price</th>
+      <th class="px-3 py-2 text-[9px] font-bold uppercase text-on-surface-variant text-right">CGST</th>
+      <th class="px-3 py-2 text-[9px] font-bold uppercase text-on-surface-variant text-right">SGST</th>
+      <th class="px-3 py-2 text-[9px] font-bold uppercase text-on-surface-variant text-right">Total</th>
+      <th class="px-3 py-2 text-[9px] font-bold uppercase text-on-surface-variant text-center">📷</th>
+    </tr></thead>
+    <tbody>${rows}${totalRow}</tbody>
+  </table>`
+}
+
+function truncSerial(s) { if (!s) return '—'; return s.length > 18 ? s.slice(0,16)+'…' : s; }
+
+function filterAssetTable() {
+  const q = (document.getElementById('asset-search')?.value || '').toLowerCase();
+  document.querySelectorAll('.asset-row').forEach(row => {
+    row.style.display = row.dataset.search.includes(q) ? '' : 'none';
+  });
+}
+
+/* ── Asset Detail Modal ── */
+function openAssetModal(assetId) {
+  const a = Storage.getAsset(assetId);
+  if (!a) return;
+  const ext = currentExt;
+  const isEditable = ext.status === 'draft';
+  const assetImg = Storage.getAssetImage(assetId);
+  const editAttr = isEditable ? '' : 'disabled';
+  
+  document.getElementById('modal-body').innerHTML = `
+    <div class="bg-primary-container text-white p-5 rounded-t-xl flex items-center justify-between">
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-wider text-primary-fixed-dim">Asset Details</p>
+        <h3 class="font-headline text-xl font-extrabold">${a.tempAssetId || 'AST-'+String(a.assetNumber).padStart(4,'0')}</h3>
+      </div>
+      <button onclick="closeModal()" class="p-1 hover:bg-white/10 rounded-lg"><span class="material-symbols-outlined text-white">close</span></button>
+    </div>
+    <div class="p-6 space-y-5">
+      <!-- Asset Info Grid -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <p class="field-label">Asset Name</p>
+          <input type="text" class="editable-field field-value" value="${a.name}" ${editAttr} onchange="updateAsset('${a.id}','name',this.value)"/>
+        </div>
+        <div>
+          <p class="field-label">Category</p>
+          <input type="text" class="editable-field field-value" value="${a.category}" ${editAttr} onchange="updateAsset('${a.id}','category',this.value)"/>
+        </div>
+        <div>
+          <p class="field-label">Serial Number</p>
+          <input type="text" class="editable-field field-value font-mono text-xs" value="${a.serialNumber || ''}" ${editAttr} onchange="updateAsset('${a.id}','serialNumber',this.value)"/>
+        </div>
+        <div>
+          <p class="field-label">HSN/SAC Code</p>
+          <input type="text" class="editable-field field-value font-mono text-xs" value="${a.hsnCode || ''}" ${editAttr} onchange="updateAsset('${a.id}','hsnCode',this.value)"/>
+        </div>
+      </div>
+      <!-- AI Auto-Categorization Hints -->
+      ${(() => {
+        const json = (currentExt?.extractionJson?.line_items || currentExt?.extractionJson?.assets_to_create || []);
+        const aiFields = a.aiSuggestions || {};
+        // Build confidence display
+        const fields = [
+          { key: 'category', label: 'Category', val: a.category, conf: a.categoryConfidence },
+          { key: 'subCategory', label: 'Sub-Category', val: a.subCategory, conf: a.subCategoryConfidence },
+          { key: 'assetClass', label: 'Asset Class', val: a.assetClass, conf: a.assetClassConfidence },
+          { key: 'hsnCode', label: 'HSN Code', val: a.hsnCode, conf: a.hsnConfidence },
+        ].filter(f => f.val || f.conf);
+        if (fields.length === 0) return '';
+        return `<div class="bg-tertiary-fixed/10 border border-on-tertiary-container/15 rounded-xl p-3">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-on-tertiary-container text-sm" style="font-variation-settings:'FILL' 1">auto_awesome</span>
+            <p class="text-[9px] font-bold uppercase tracking-wider text-on-tertiary-container">AI Auto-Classification</p>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            ${fields.map(f => {
+              const confPct = Math.round((f.conf || 0.85) * 100);
+              const cls = confPct >= 90 ? 'text-on-tertiary-container' : confPct >= 70 ? 'text-secondary' : 'text-on-surface-variant';
+              return `<div>
+                <p class="text-[9px] text-on-surface-variant">${f.label}</p>
+                <div class="flex items-center gap-1.5">
+                  <p class="text-xs font-bold text-on-primary-fixed flex-1">${f.val || '—'}</p>
+                  ${f.conf ? `<span class="text-[9px] font-bold ${cls}">${confPct}%</span>` : ''}
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      })()}
+      ${a.parentAssetId ? `
+
+      <!-- Parent-Child Indicator -->
+      <div class="bg-secondary-fixed/20 border border-secondary/20 rounded-xl p-3 flex items-center gap-3">
+        <span class="material-symbols-outlined text-on-secondary-container">account_tree</span>
+        <div class="text-xs">
+          <p class="font-bold text-on-secondary-container">Child Asset</p>
+          <p class="text-on-surface-variant">Part of parent <span class="font-mono font-bold cursor-pointer hover:underline" onclick="closeModal();openAssetModal('${a.parentAssetId}')">AST-${String(a.parentAssetNumber).padStart(4,'0')}</span> ${a.groupReason ? '— ' + a.groupReason : ''}</p>
+        </div>
+      </div>` : ''}
+      ${(() => {
+        // Check if this asset has children
+        const allAssets = Storage.getAssets();
+        const children = allAssets.filter(c => c.parentAssetId === a.id);
+        if (children.length === 0) return '';
+        return '<div class="bg-primary-fixed/20 border border-primary/20 rounded-xl p-3">' +
+          '<div class="flex items-center gap-2 mb-2"><span class="material-symbols-outlined text-on-primary-fixed text-sm">account_tree</span><p class="text-xs font-bold text-on-primary-fixed">Parent Asset — ' + children.length + ' child item(s)</p></div>' +
+          '<div class="space-y-1">' + children.map(c => 
+            '<div class="flex items-center gap-2 text-xs cursor-pointer hover:bg-white/50 rounded px-2 py-1" onclick="closeModal();openAssetModal(\'' + c.id + '\')">' +
+            '<span class="text-on-surface-variant">└─</span>' +
+            '<span class="font-mono font-bold">' + c.tempAssetId + '</span>' +
+            '<span class="text-on-surface-variant">' + (c.name || '') + '</span>' +
+            '<span class="ml-auto font-medium">' + formatCurrency(c.totalCost) + '</span></div>'
+          ).join('') + '</div></div>';
+      })()}
+      ${a.isBulkAsset ? `
+      <!-- Bulk Asset Indicator -->
+      <div class="bg-tertiary-fixed/15 border border-on-tertiary-container/15 rounded-xl p-3 flex items-center gap-3">
+        <span class="material-symbols-outlined text-on-tertiary-container">scale</span>
+        <div class="text-xs">
+          <p class="font-bold text-on-tertiary-container">Bulk / Weight-based Asset</p>
+          <p class="text-on-surface-variant">Quantity: <span class="font-bold">${a.bulkQuantity} ${a.unitOfMeasure}</span> — treated as single asset, not expanded per unit</p>
+        </div>
+      </div>` : ''}
+      <!-- Vendor & Invoice inherited from bill -->
+      <div class="bg-surface-container-low rounded-xl p-4">
+        <p class="text-[9px] font-bold uppercase tracking-wider text-on-surface-variant mb-2">Inherited from Invoice</p>
+        <div class="grid grid-cols-2 gap-3 text-xs">
+          <div><span class="text-on-surface-variant">Vendor</span><p class="font-medium">${a.vendor}</p></div>
+          <div><span class="text-on-surface-variant">Invoice #</span><p class="font-medium font-mono">${a.invoiceNumber}</p></div>
+          <div><span class="text-on-surface-variant">Invoice Date</span><p class="font-medium">${formatDate(a.invoiceDate)}</p></div>
+          <div><span class="text-on-surface-variant">Acquisition Date</span><p class="font-medium">${formatDate(a.acquisitionDate)}</p></div>
+        </div>
+      </div>
+      <!-- Cost Breakdown -->
+      <div class="bg-surface-container-low rounded-xl p-4">
+        <p class="text-[9px] font-bold uppercase tracking-wider text-on-surface-variant mb-2">Cost Breakdown (Per Unit)</p>
+        <div class="space-y-1.5">
+          <div class="flex justify-between text-sm">
+            <span class="text-on-surface-variant">Base Price</span>
+            ${isEditable 
+              ? `<input type="number" class="editable-field text-right w-32 text-sm font-medium" value="${a.purchasePrice}" onchange="updateAssetCost('${a.id}','purchasePrice',this.value)"/>`
+              : `<span class="font-medium">${formatCurrency(a.purchasePrice)}</span>`}
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-on-surface-variant">CGST (9%)</span>
+            ${isEditable 
+              ? `<input type="number" class="editable-field text-right w-32 text-sm font-medium" value="${a.cgst||0}" onchange="updateAssetCost('${a.id}','cgst',this.value)"/>`
+              : `<span class="font-medium">${formatCurrency(a.cgst||0)}</span>`}
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-on-surface-variant">SGST (9%)</span>
+            ${isEditable 
+              ? `<input type="number" class="editable-field text-right w-32 text-sm font-medium" value="${a.sgst||0}" onchange="updateAssetCost('${a.id}','sgst',this.value)"/>`
+              : `<span class="font-medium">${formatCurrency(a.sgst||0)}</span>`}
+          </div>
+          <div class="flex justify-between text-sm font-bold border-t border-outline-variant pt-2 mt-2">
+            <span>Total Cost</span>
+            <span class="font-headline text-lg">${formatCurrency(a.totalCost)}</span>
+          </div>
+        </div>
+      </div>
+      <!-- Asset Image Upload -->
+      <div>
+        <p class="field-label mb-2">Asset Photo (Optional)</p>
+        <div class="border-2 border-dashed border-outline-variant/40 rounded-xl p-4 text-center ${assetImg ? 'border-on-tertiary-container/30' : ''}">
+          ${assetImg 
+            ? `<img src="${assetImg}" class="max-h-48 mx-auto rounded-lg mb-3" alt="Asset photo"/>
+               <button onclick="removeAssetImage('${a.id}')" class="text-xs text-error hover:underline">Remove Photo</button>`
+            : `<label class="cursor-pointer block">
+                <span class="material-symbols-outlined text-3xl text-on-surface-variant block mb-2">add_a_photo</span>
+                <p class="text-xs text-on-surface-variant">Click or drag to upload asset photo</p>
+                <p class="text-[10px] text-on-surface-variant mt-1">This is optional — you can add it later</p>
+                <input type="file" accept="image/*" class="hidden" onchange="uploadAssetImage('${a.id}', this)"/>
+              </label>`}
+        </div>
+      </div>
+      <!-- Vendor Custom Fields -->
+      ${(() => {
+        const customFields = a.customFields || {};
+        const cfKeys = Object.keys(customFields);
+        const vendorProfile = Storage.matchVendorProfileSync(a.vendor);
+        if (cfKeys.length === 0 && !vendorProfile) return '';
+        // If profile exists but no custom fields on asset, apply now
+        if (cfKeys.length === 0 && vendorProfile) {
+          Storage.applyVendorCustomFields(a, vendorProfile);
+          Storage.saveAsset(a);
+          return renderCustomFieldsSection(a, isEditable);
+        }
+        return renderCustomFieldsSection(a, isEditable);
+      })()}
+      ${isEditable ? `
+        <button onclick="finalizeAsset('${a.id}')" class="w-full py-3 bg-on-tertiary-container text-white rounded-xl font-headline font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-all">
+          <span class="material-symbols-outlined">task_alt</span> Mark as Verified
+        </button>
+      ` : ''}
+    </div>`;
+  document.getElementById('asset-modal').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('asset-modal').classList.remove('active');
+  // Re-sync currentExt from cache then refresh detail view
+  if (currentExt) {
+    const fresh = Storage.getExtraction(currentExt.id);
+    if (fresh) currentExt = fresh;
+  }
+  renderDetail();
+}
+
+function updateAsset(id, field, value) {
+  Storage.updateAssetField(id, field, value);
+}
+
+async function updateAssetCost(id, field, value) {
+  const a = Storage.getAsset(id);
+  if (!a) return;
+  a[field] = parseFloat(value) || 0;
+  a.tax = (a.cgst||0) + (a.sgst||0) + (a.igst||0);
+  a.totalCost = a.purchasePrice + a.tax;
+  await Storage.saveAsset(a);
+  await Storage.addAuditEntry(null, id, 'cost_edited', `${field} updated to ${value}, total recalculated to ${a.totalCost}`);
+  // Refresh the total in modal
+  const totalEl = document.querySelector('.modal-content .font-headline.text-lg');
+  if (totalEl) totalEl.textContent = formatCurrency(a.totalCost);
+}
+
+function uploadAssetImage(assetId, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    Storage.saveAssetImage(assetId, e.target.result);
+    Storage.addAuditEntry(assetId, 'asset', 'image_uploaded', `Photo uploaded: ${file.name}`);
+    openAssetModal(assetId); // Refresh modal
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeAssetImage(assetId) {
+  Storage.removeAssetImage(assetId);
+  openAssetModal(assetId);
+}
+
+async function finalizeAsset(assetId) {
+  const a = Storage.getAsset(assetId);
+  if (!a) return;
+  a.status = 'verified';
+  await Storage.saveAsset(a);
+  await Storage.addAuditEntry(null, assetId, 'verified', 'Asset manually verified by user');
+  openAssetModal(assetId);
+}
+
+async function approveExtraction(id) {
+  await Storage.approveExtraction(id);
+  const ext = Storage.getExtraction(id);
+  const count = (ext?.assetIds || []).length;
+  showToast(`Extraction approved — ${count} asset${count !== 1 ? 's' : ''} verified & added to registry`, 'success');
+  setTimeout(() => { window.location.href = 'registry.html'; }, 1200);
+}
+async function rejectExtraction(id) {
+  if (!confirm('Reject this extraction? Assets will not be created.')) return;
+  await Storage.rejectExtraction(id);
+  showToast('Extraction rejected — all linked assets removed', 'error');
+  setTimeout(() => { window.location.href = 'review.html'; }, 1200);
+}
+
+/* ── Vendor Custom Fields Section ── */
+function renderCustomFieldsSection(asset, isEditable) {
+  const cf = asset.customFields || {};
+  const keys = Object.keys(cf);
+  if (keys.length === 0) return '';
+  const editAttr = isEditable ? '' : 'disabled';
+  return `<div class="bg-tertiary-fixed/5 border border-on-tertiary-container/15 rounded-xl p-4">
+    <div class="flex items-center gap-2 mb-3">
+      <span class="material-symbols-outlined text-on-tertiary-container text-sm">store</span>
+      <p class="text-[9px] font-bold uppercase tracking-wider text-on-tertiary-container">Vendor Custom Fields</p>
+      <span class="text-[9px] text-on-surface-variant ml-auto">Auto-populated from vendor profile</span>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      ${keys.map(key => {
+        const field = cf[key];
+        const inputId = `cf-${asset.id}-${key}`;
+        let inputHtml;
+        if (field.type === 'select' && field.options && field.options.length > 0) {
+          inputHtml = `<select id="${inputId}" class="editable-field field-value text-xs" ${editAttr} onchange="saveCustomField('${asset.id}','${key}',this.value)">
+            <option value="">— Select —</option>
+            ${field.options.map(o => `<option value="${o}" ${field.value === o ? 'selected' : ''}>${o}</option>`).join('')}
+          </select>`;
+        } else if (field.type === 'date') {
+          inputHtml = `<input type="date" id="${inputId}" class="editable-field field-value text-xs" value="${field.value || ''}" ${editAttr} onchange="saveCustomField('${asset.id}','${key}',this.value)"/>`;
+        } else if (field.type === 'number') {
+          inputHtml = `<input type="number" id="${inputId}" class="editable-field field-value text-xs" value="${field.value || ''}" ${editAttr} onchange="saveCustomField('${asset.id}','${key}',this.value)"/>`;
+        } else {
+          inputHtml = `<input type="text" id="${inputId}" class="editable-field field-value text-xs" value="${field.value || ''}" ${editAttr} onchange="saveCustomField('${asset.id}','${key}',this.value)"/>`;
+        }
+        return `<div>
+          <p class="field-label flex items-center gap-1">${field.label} ${field.required ? '<span class="text-error">*</span>' : ''}</p>
+          ${inputHtml}
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+async function saveCustomField(assetId, key, value) {
+  const a = Storage.getAsset(assetId);
+  if (!a || !a.customFields || !a.customFields[key]) return;
+  a.customFields[key].value = value;
+  await Storage.saveAsset(a);
+  await Storage.addAuditEntry(null, assetId, 'custom_field_edited', `Custom field "${a.customFields[key].label}" set to "${value}"`);
+}
+</script>
+</body></html>
