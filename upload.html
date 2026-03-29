@@ -397,7 +397,7 @@ async function startExtraction() {
         savedId = saved.id;
       }
 
-      Storage.saveInvoiceFile(savedId, file);
+      await Storage.saveInvoiceFile(savedId, file);
 
       _extracting = false;
       showToast('AI extraction complete \u2014 redirecting to review', 'success');
