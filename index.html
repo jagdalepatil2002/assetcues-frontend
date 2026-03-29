@@ -126,24 +126,32 @@
             <!-- Insight Rail (Right Side) -->
             <div class="col-span-12 lg:col-span-4 space-y-6">
                 
-                <!-- AI Engine Status -->
-                <div class="bg-on-primary-fixed-variant text-white p-6 rounded-2xl relative overflow-hidden shadow-lg group">
+                <!-- AssetCues AI Agent -->
+                <button onclick="document.getElementById('ac-agent-panel').classList.add('open')" class="w-full signature-gradient text-white p-6 rounded-2xl relative overflow-hidden shadow-lg group text-left cursor-pointer hover:shadow-xl transition-shadow">
                    <div class="relative z-10">
-                      <div class="flex justify-between items-start mb-6">
-                         <h4 class="font-headline text-lg font-bold">Copilot Engine</h4>
+                      <div class="flex justify-between items-start mb-4">
+                         <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur">
+                               <span class="material-symbols-outlined text-white" style="font-variation-settings:'FILL' 1">smart_toy</span>
+                            </div>
+                            <div>
+                               <h4 class="font-headline text-lg font-bold">AssetCues AI Agent</h4>
+                               <p class="text-[10px] text-white/70 uppercase tracking-widest font-bold">Powered by Gemini</p>
+                            </div>
+                         </div>
                          <span id="ai-status" class="text-[10px] font-extrabold bg-white/20 px-2.5 py-1 rounded uppercase tracking-widest flex items-center gap-2">
-                            <span class="w-1.5 h-1.5 bg-outline rounded-full"></span> BOOTING
+                            <span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> ONLINE
                          </span>
                       </div>
-                      <div class="space-y-4">
-                         <div class="w-full bg-slate-900/50 h-2 rounded-full overflow-hidden">
-                            <div id="ai-progress" class="bg-primary-fixed h-full w-0 transition-all duration-1000"></div>
-                         </div>
-                         <p class="text-[11px] font-bold text-primary-fixed uppercase tracking-widest leading-relaxed" id="ai-detail">Connecting to backend services...</p>
+                      <p class="text-sm text-white/80 leading-relaxed mb-4">Ask anything about your assets, invoices, vendors, depreciation, or compliance.</p>
+                      <div class="flex items-center gap-2 text-white/90 text-xs font-bold">
+                         <span class="material-symbols-outlined text-sm">chat</span>
+                         Open AI Agent Chat
+                         <span class="material-symbols-outlined text-sm ml-auto">arrow_forward</span>
                       </div>
                    </div>
-                   <span class="material-symbols-outlined absolute -bottom-6 -right-6 text-[120px] opacity-10 rotate-12 transition-transform group-hover:rotate-45 duration-1000">memory</span>
-                </div>
+                   <span class="material-symbols-outlined absolute -bottom-6 -right-6 text-[120px] opacity-10 rotate-12 transition-transform group-hover:rotate-45 duration-1000">smart_toy</span>
+                </button>
 
                 <!-- Processing Queue -->
                 <div class="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/20 cloud-shadow">
@@ -280,28 +288,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }).join('');
   }
 
-  // Copilot Engine Status
+  // AI Agent status
   try {
       const health = await Api.checkHealth();
       const aiStatus = document.getElementById('ai-status');
-      const aiProgress = document.getElementById('ai-progress');
-      const aiDetail = document.getElementById('ai-detail');
-      if (health.ok) {
-        aiStatus.innerHTML = '<span class="w-1.5 h-1.5 bg-tertiary-fixed rounded-full animate-pulse shadow-[0_0_8px_rgba(255,219,200,0.8)]"></span> <span class="text-tertiary-fixed font-bold">ONLINE</span>';
-        aiProgress.style.width = '100%';
-        aiProgress.classList.add('bg-tertiary-fixed');
-        aiProgress.classList.remove('bg-primary-fixed');
-        aiDetail.textContent = 'Models synchronized. Copilot is standing by.';
-      } else {
-        throw new Error('Offline');
+      if (health.ok && aiStatus) {
+        aiStatus.innerHTML = '<span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> ONLINE';
+      } else if (aiStatus) {
+        aiStatus.innerHTML = '<span class="w-1.5 h-1.5 bg-red-400 rounded-full"></span> OFFLINE';
       }
   } catch(e) {
       const aiStatus = document.getElementById('ai-status');
-      const aiProgress = document.getElementById('ai-progress');
-      const aiDetail = document.getElementById('ai-detail');
-      aiStatus.innerHTML = '<span class="w-1.5 h-1.5 bg-error rounded-full"></span> <span class="text-error-container">DISCONNECTED</span>';
-      aiProgress.style.width = '0%';
-      aiDetail.innerHTML = 'Backend unreachable. <button onclick="openSettings()" class="underline font-bold hover:text-white transition-colors">Configure Model URL</button>';
+      if (aiStatus) aiStatus.innerHTML = '<span class="w-1.5 h-1.5 bg-red-400 rounded-full"></span> OFFLINE';
   }
 
   // Queue (draft extractions)

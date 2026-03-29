@@ -241,17 +241,18 @@ function injectTopBar(title) {
   const header = document.getElementById('topbar');
   if (!header) return;
   header.innerHTML = `
-    <div class="flex items-center gap-8">
-      <img src="img/logo.png" alt="AssetCues" class="h-8 w-auto md:hidden" />
-      <div class="hidden md:flex items-center bg-surface-container-highest px-3 py-1.5 rounded-lg w-96 ml-64">
-        <span class="material-symbols-outlined text-outline mr-2">search</span>
-        <input class="bg-transparent border-none focus:ring-0 text-sm w-full placeholder-on-surface-variant outline-none" placeholder="Search assets, documents, or insights..." type="text"/>
-      </div>
-    </div>
     <div class="flex items-center gap-4">
       <button class="md:hidden p-2 text-on-surface-variant" onclick="toggleMobileSidebar()">
         <span class="material-symbols-outlined">menu</span>
       </button>
+      <img src="img/logo.png" alt="AssetCues" class="h-7 w-auto md:hidden" />
+      <h2 class="hidden md:block font-headline font-bold text-lg text-on-surface">${title}</h2>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="hidden md:flex items-center bg-surface-container-highest px-3 py-1.5 rounded-lg w-64">
+        <span class="material-symbols-outlined text-outline text-sm mr-2">search</span>
+        <input id="global-search" class="bg-transparent border-none focus:ring-0 text-sm w-full placeholder-on-surface-variant outline-none" placeholder="Search assets..." type="text" onkeydown="if(event.key==='Enter')globalSearch(this.value)"/>
+      </div>
       <div id="connection-badge" class="hidden md:flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full"></div>
       <button class="p-2 text-slate-600 hover:bg-slate-100 transition-colors rounded-full relative">
         <span class="material-symbols-outlined">notifications</span>
@@ -260,7 +261,7 @@ function injectTopBar(title) {
       <button onclick="openSettings()" class="hidden md:block p-2 text-slate-600 hover:bg-slate-100 transition-colors rounded-full">
         <span class="material-symbols-outlined">settings</span>
       </button>
-      <div class="h-8 w-8 rounded-full overflow-hidden ml-2 border border-outline-variant bg-primary-container text-white flex items-center justify-center text-xs font-bold">
+      <div class="h-8 w-8 rounded-full overflow-hidden border border-outline-variant bg-primary-container text-white flex items-center justify-center text-xs font-bold">
         AC
       </div>
     </div>
@@ -439,6 +440,39 @@ function animatePageContent(containerSelector) {
   }
 }
 window.animatePageContent = animatePageContent;
+
+/* ── Global Search ── */
+function globalSearch(query) {
+  if (!query || !query.trim()) return;
+  const q = query.trim().toLowerCase();
+  const assets = Storage.getAssets();
+  const match = assets.find(a =>
+    (a.tempAssetId || '').toLowerCase().includes(q) ||
+    (a.name || '').toLowerCase().includes(q) ||
+    (a.serialNumber || '').toLowerCase().includes(q) ||
+    (a.barcode || '').toLowerCase().includes(q) ||
+    String(a.assetId).includes(q) ||
+    (a.vendor || '').toLowerCase().includes(q) ||
+    (a.invoiceNumber || '').toLowerCase().includes(q)
+  );
+  if (match) {
+    window.location.href = `asset-detail.html?id=${match.id}`;
+  } else {
+    // Try extractions
+    const extractions = Storage.getExtractions();
+    const extMatch = extractions.find(e =>
+      (e.invoiceNumber || '').toLowerCase().includes(q) ||
+      (e.vendorName || '').toLowerCase().includes(q) ||
+      (e.fileName || '').toLowerCase().includes(q)
+    );
+    if (extMatch) {
+      window.location.href = `review-detail.html?id=${extMatch.id}`;
+    } else {
+      showToast(`No results for "${query}"`, 'info');
+    }
+  }
+}
+window.globalSearch = globalSearch;
 
 /* ── Mobile Sidebar Toggle ── */
 function toggleMobileSidebar() {
