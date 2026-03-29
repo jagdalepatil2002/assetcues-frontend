@@ -671,7 +671,90 @@
       const link = document.createElement('a');
       link.href = url; link.download = `qr_${id}.png`; link.click();
     }
-    function exportAssetPDF(id) { alert("PDF Export triggered (logic identical to old file, preserved behind the button)."); }
+    async function exportAssetPDF(id) {
+      const a = Storage.getAsset(id);
+      if (!a) return;
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pw = 210, margin = 14;
+      let y = 14;
+
+      // Header
+      doc.setFillColor(0, 93, 169);
+      doc.rect(0, 0, pw, 38, 'F');
+      doc.setTextColor(255);
+      doc.setFontSize(18); doc.setFont('helvetica','bold');
+      doc.text('AssetCues', margin, 14);
+      doc.setFontSize(9); doc.setFont('helvetica','normal');
+      doc.text('AI-Powered Asset Management', margin, 20);
+      doc.setFontSize(8);
+      doc.text(`Generated: ${new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })}`, margin, 34);
+      doc.text(`Status: ${(a.status || 'unknown').toUpperCase()}`, pw - margin - 30, 34);
+      y = 46;
+
+      // QR Code
+      const qrEl = document.getElementById('qr-canvas');
+      if (qrEl) {
+        const qrCanvas = qrEl.querySelector('canvas');
+        if (qrCanvas) { try { doc.addImage(qrCanvas.toDataURL('image/png'), 'PNG', pw-margin-28, 42, 28, 28); doc.setFontSize(7); doc.setTextColor(100); doc.text(a.tempAssetId||'', pw-margin-14, 73, {align:'center'}); } catch(e){} }
+      }
+
+      // Asset name
+      doc.setTextColor(0, 93, 169);
+      doc.setFontSize(14); doc.setFont('helvetica','bold');
+      const nameLines = doc.splitTextToSize(a.name || 'Unnamed Asset', pw - margin*2 - 35);
+      doc.text(nameLines, margin, y); y += nameLines.length * 6 + 2;
+      doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(100);
+      doc.text(`${a.tempAssetId||''} | ${a.category||''} | ${a.serialNumber||'No Serial'}`, margin, y); y += 8;
+
+      // Asset image
+      const assetImg = Storage.getAssetImage(id);
+      if (assetImg) { try { doc.addImage(assetImg, 'JPEG', margin, y, 50, 35); y += 38; } catch(e){} }
+
+      doc.setTextColor(0);
+      // Details table
+      doc.autoTable({ startY: y, head: [['Asset Details', '']], body: [
+        ['Asset Number', a.tempAssetId||'—'], ['Category', a.category||'—'], ['Sub-Category', a.subCategory||'—'],
+        ['Make / Model', `${a.make||'—'} / ${a.model||'—'}`], ['Serial Number', a.serialNumber||'—'],
+        ['HSN Code', a.hsnCode||'—'], ['Vendor', a.vendor||'—'], ['Invoice Number', a.invoiceNumber||'—'],
+        ['Acquisition Date', formatDate(a.acquisitionDate)||'—'],
+      ], styles:{fontSize:8.5,cellPadding:2.5}, headStyles:{fillColor:[0,93,169],textColor:255,fontStyle:'bold'},
+        alternateRowStyles:{fillColor:[243,243,243]}, columnStyles:{0:{fontStyle:'bold',cellWidth:45}}, margin:{left:margin,right:margin} });
+      y = doc.lastAutoTable.finalY + 6;
+
+      // Financial table
+      doc.autoTable({ startY: y, head: [['Financial Summary', '']], body: [
+        ['Purchase Price', formatCurrency(a.purchasePrice)], ['CGST', formatCurrency(a.cgst||0)],
+        ['SGST', formatCurrency(a.sgst||0)], ['IGST', formatCurrency(a.igst||0)],
+        ['Total Tax', formatCurrency(a.tax||0)], ['Total Cost', formatCurrency(a.totalCost)],
+      ], styles:{fontSize:8.5,cellPadding:2.5}, headStyles:{fillColor:[5,150,105],textColor:255,fontStyle:'bold'},
+        alternateRowStyles:{fillColor:[243,243,243]}, columnStyles:{0:{fontStyle:'bold',cellWidth:55},1:{halign:'right'}}, margin:{left:margin,right:margin} });
+      y = doc.lastAutoTable.finalY + 6;
+
+      // Depreciation
+      doc.autoTable({ startY: y, head: [['Depreciation', '']], body: [
+        ['Method', a.depreciationMethod==='WDV'?'Written Down Value':'Straight Line'],
+        ['Rate', `${a.depreciationRate||15}%`], ['Useful Life', `${a.usefulLifeYears||5} years`],
+        ['Salvage Value', formatCurrency(a.salvageValue||1)],
+      ], styles:{fontSize:8.5,cellPadding:2.5}, headStyles:{fillColor:[100,100,120],textColor:255,fontStyle:'bold'},
+        alternateRowStyles:{fillColor:[243,243,243]}, columnStyles:{0:{fontStyle:'bold',cellWidth:45}}, margin:{left:margin,right:margin} });
+      y = doc.lastAutoTable.finalY + 6;
+
+      // Linked invoices
+      try { const invoices = await Storage.getLinkedInvoices(id);
+        if (invoices && invoices.length > 0) { doc.autoTable({ startY: y, head: [['Linked Documents','Invoice #','Date','Amount']],
+          body: invoices.map(inv => [(inv.invoice_type||'purchase').toUpperCase(), inv.invoice_number||'—', formatDate(inv.invoice_date)||'—', inv.amount?formatCurrency(inv.amount):'—']),
+          styles:{fontSize:8.5,cellPadding:2.5}, headStyles:{fillColor:[0,93,169],textColor:255,fontStyle:'bold'}, alternateRowStyles:{fillColor:[243,243,243]}, margin:{left:margin,right:margin} }); }
+      } catch(e){}
+
+      // Footer
+      const pc = doc.getNumberOfPages();
+      for (let i=1;i<=pc;i++) { doc.setPage(i); doc.setFontSize(7); doc.setTextColor(150);
+        doc.text(`AssetCues — Asset Report — ${a.tempAssetId||''}`, margin, 290);
+        doc.text(`Page ${i} of ${pc}`, pw-margin, 290, {align:'right'}); }
+
+      doc.save(`${a.tempAssetId||'asset'}_report.pdf`);
+    }
 
   </script>
 </body>
