@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-  <title>Asset Details | AssetLedger</title>
+  <title>Asset Details | AssetCues</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link
     href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
@@ -146,7 +146,7 @@
   <div class="flex flex-1 overflow-hidden relative">
     <!-- Sidebar -->
     <aside id="sidebar"
-      class="h-[calc(100vh-64px)] w-64 md:flex flex-col py-6 bg-slate-50 border-r border-slate-200 hidden shrink-0 z-40">
+      class="h-[calc(100vh-64px)] w-64 flex flex-col py-6 bg-slate-50 border-r border-slate-200 shrink-0 z-40">
     </aside>
     <!-- Main Content -->
     <main class="flex-1 flex flex-col h-full overflow-y-auto" id="content-layout">
@@ -258,8 +258,8 @@
 
       // Warranty days
       let wdays = null;
-      if (a.warrantyExpiry) {
-        const exp = new Date(a.warrantyExpiry);
+      if (a.warrantyEndDate) {
+        const exp = new Date(a.warrantyEndDate);
         wdays = Math.ceil((exp - new Date()) / (1000 * 60 * 60 * 24));
       }
 
@@ -492,14 +492,14 @@
                            <!-- Warranty Inputs -->
                            <div>
                               <p class="text-[10px] font-bold uppercase text-on-surface-variant mb-1">Warranty Expiry</p>
-                              <input type="date" value="${a.warrantyExpiry || ''}" onchange="saveField('${a.id}','warrantyExpiry',this.value)" class="w-full text-xs bg-surface-container-low border-none rounded focus:ring-1 focus:ring-primary px-2 py-1" />
+                              <input type="date" value="${a.warrantyEndDate || ''}" onchange="saveField('${a.id}','warrantyEndDate',this.value)" class="w-full text-xs bg-surface-container-low border-none rounded focus:ring-1 focus:ring-primary px-2 py-1" />
                            </div>
                            <div class="border-t border-surface-container pt-3">
                               <p class="text-[10px] font-bold uppercase text-on-surface-variant mb-1">AMC Provider</p>
                               <input type="text" value="${a.amcProvider || ''}" placeholder="e.g. HP India" onchange="saveField('${a.id}','amcProvider',this.value)" class="w-full text-xs bg-surface-container-low border-none rounded focus:ring-1 focus:ring-primary px-2 py-1 mb-2" />
                               <div class="grid grid-cols-2 gap-2">
-                                 <div><label class="text-[9px] text-on-surface-variant">AMC Start</label><input type="date" value="${a.amcStart || ''}" onchange="saveField('${a.id}','amcStart',this.value)" class="w-full text-[10px] bg-surface-container-low border-none rounded focus:ring-1 focus:ring-primary px-1.5 py-1" /></div>
-                                 <div><label class="text-[9px] text-on-surface-variant">AMC End</label><input type="date" value="${a.amcEnd || ''}" onchange="saveField('${a.id}','amcEnd',this.value)" class="w-full text-[10px] bg-surface-container-low border-none rounded focus:ring-1 focus:ring-primary px-1.5 py-1" /></div>
+                                 <div><label class="text-[9px] text-on-surface-variant">AMC Start</label><input type="date" value="${a.amcStartDate|| ''}" onchange="saveField('${a.id}','amcStartDate',this.value)" class="w-full text-[10px] bg-surface-container-low border-none rounded focus:ring-1 focus:ring-primary px-1.5 py-1" /></div>
+                                 <div><label class="text-[9px] text-on-surface-variant">AMC End</label><input type="date" value="${a.amcEndDate|| ''}" onchange="saveField('${a.id}','amcEndDate',this.value)" class="w-full text-[10px] bg-surface-container-low border-none rounded focus:ring-1 focus:ring-primary px-1.5 py-1" /></div>
                               </div>
                            </div>
                        </div>
@@ -615,9 +615,15 @@
       a.salvageValue = parseFloat(document.getElementById('dep-salvage').value) || 1;
       await Storage.saveAsset(a);
       renderDepSchedule(a, { method: a.depreciationMethod, rate: a.depreciationRate, life: a.usefulLifeYears, salvage: a.salvageValue });
+      showToast('Depreciation settings saved', 'success');
     }
 
-    async function saveField(assetId, field, value) { const a = Storage.getAsset(assetId); if (!a) return; a[field] = value; await Storage.saveAsset(a); }
+    async function saveField(assetId, field, value) {
+      const a = Storage.getAsset(assetId); if (!a) return;
+      a[field] = value;
+      await Storage.saveAsset(a);
+      showToast('Saved', 'success');
+    }
 
     // Links
     let pendingLink = null;
@@ -654,13 +660,30 @@
     async function deleteManageItem(id) { if (!confirm('Delete?')) return; if (_mT === 'location') { await Storage.deleteLocation(id); } else { await Storage.deleteDepartment(id); } renderManageList(); }
 
     // Photo Upload
-    function uploadPhoto(id, inp) {
+    async function uploadPhoto(id, inp) {
       const f = inp.files[0]; if (!f) return;
-      const r = new FileReader(); r.onload = async e => { Storage.saveAssetImage(id, e.target.result); await Storage.addAuditEntry(null, id, 'image_uploaded', 'Photo added'); const a = Storage.getAsset(id); if (a) renderAsset(a); }; r.readAsDataURL(f);
+      showToast('Uploading image...', 'info');
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          await Storage.saveAssetImage(id, e.target.result);
+          await Storage.addAuditEntry(null, id, 'image_uploaded', `Photo added: ${f.name}`);
+          await Storage.fetchAssets(); // refresh cache with new image URL
+          const a = await Storage.getAssetAsync(id);
+          if (a) renderAsset(a);
+          showToast('Image saved successfully', 'success');
+        } catch(err) {
+          showToast('Image upload failed: ' + err.message, 'error');
+        }
+      };
+      reader.readAsDataURL(f);
     }
-    function removePhoto(id) {
+    async function removePhoto(id) {
       if (!confirm("Remove photo?")) return;
-      Storage.removeAssetImage(id); const a = Storage.getAsset(id); if (a) renderAsset(a);
+      await Storage.removeAssetImage(id);
+      const a = await Storage.getAssetAsync(id);
+      if (a) renderAsset(a);
+      showToast('Image removed', 'info');
     }
 
     // Extras

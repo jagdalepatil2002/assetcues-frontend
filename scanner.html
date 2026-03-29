@@ -2,7 +2,7 @@
 <html lang="en" class="light"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Scan Asset | AssetLedger</title>
+<title>Scan Asset | AssetCues</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -70,7 +70,7 @@
 
 <div class="flex flex-1 overflow-hidden relative">
   <!-- Sidebar -->
-  <aside id="sidebar" class="h-[calc(100vh-64px)] w-64 md:flex flex-col py-6 bg-slate-50 border-r border-slate-200 hidden shrink-0 z-40"></aside>
+  <aside id="sidebar" class="h-[calc(100vh-64px)] w-64 flex flex-col py-6 bg-slate-50 border-r border-slate-200 shrink-0 z-40"></aside>
   
   <!-- Main Content Area -->
   <main class="flex-1 flex flex-col h-full overflow-y-auto bg-surface" id="content">
@@ -226,12 +226,22 @@
 
 <script>
 let html5QrcodeScanner = null;
-let scanHistory = JSON.parse(localStorage.getItem('ac_scan_history') || '[]');
+let scanHistory = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
   await Storage.init();
   injectSidebar('scanner.html');
   injectTopBar('Scan Asset');
+  // Load scan history from Supabase
+  try {
+    const audits = await Supabase.query('physical_audits', { order: 'scanned_at.desc', limit: 50 });
+    scanHistory = (audits || []).map(a => ({
+      assetId: a.asset_id,
+      assetUrl: `asset-detail.html?id=${a.asset_id}`,
+      label: a.notes || `Asset ${a.asset_id}`,
+      scannedAt: a.scanned_at,
+    }));
+  } catch(e) { console.warn('Scan history load failed:', e); }
   renderRecentScans();
   
   // Need to wait slightly for UI to settle before initializing html5Qrcode over ID #reader
@@ -292,7 +302,8 @@ function onScanSuccess(decodedText) {
   } catch(e) {
     // raw lookup
     const assets = Storage.getAssets();
-    const match = assets.find(a => a.id === decodedText || (a.tempAssetId||'').toLowerCase() === decodedText.toLowerCase() || a.assetNumber === parseInt(decodedText.replace(/\D/g,'')));
+    const dt = decodedText.toLowerCase().trim();
+    const match = assets.find(a => a.id === decodedText || (a.tempAssetId||'').toLowerCase() === dt || a.assetNumber === parseInt(decodedText.replace(/\D/g,'')) || (a.serialNumber||'').toLowerCase() === dt || (a.barcode||'').toLowerCase() === dt || String(a.assetId) === decodedText);
     if (match) { assetId = match.id; assetUrl = `asset-detail.html?id=${assetId}`; }
   }
 
@@ -308,10 +319,15 @@ function onScanSuccess(decodedText) {
   const asset = assetId ? Storage.getAsset(assetId) : null;
   const assetLabel = asset ? `${asset.tempAssetId || 'Asset'} — ${asset.name}` : `ID: ${assetId}`;
 
-  // Save to history
+  // Save to Supabase physical_audits
   const scanEntry = { assetId, assetUrl, label: assetLabel, scannedAt: new Date().toISOString() };
   scanHistory = [scanEntry, ...scanHistory.filter(s => s.assetId !== assetId)].slice(0, 50);
-  localStorage.setItem('ac_scan_history', JSON.stringify(scanHistory));
+  if (assetId) {
+    Supabase.insert('physical_audits', {
+      asset_id: assetId, audit_method: 'qr_scan',
+      notes: assetLabel, scanned_at: new Date().toISOString(),
+    }).catch(e => console.warn('Scan save failed:', e));
+  }
 
   // Show UI Result
   document.getElementById('status-text').textContent = 'Matched';
@@ -345,7 +361,8 @@ function manualLookup() {
   errEl.classList.add('hidden');
 
   const assets = Storage.getAssets();
-  const match = assets.find(a => a.id === val || (a.tempAssetId||'').toLowerCase() === val.toLowerCase() || a.assetNumber === parseInt(val.replace(/\D/g,'')));
+  const vl = val.toLowerCase().trim();
+  const match = assets.find(a => a.id === val || (a.tempAssetId||'').toLowerCase() === vl || a.assetNumber === parseInt(val.replace(/\D/g,'')) || (a.serialNumber||'').toLowerCase() === vl || (a.barcode||'').toLowerCase() === vl || String(a.assetId) === val);
 
   if (match) {
     onScanSuccess(`asset-detail.html?id=${match.id}`);
@@ -360,10 +377,11 @@ function updateStatusDot(colorCls, animCls) {
   if (dot) dot.className = `w-2 h-2 rounded-full ${colorCls} ${animCls}`;
 }
 
-function clearHistory() {
+async function clearHistory() {
     scanHistory = [];
-    localStorage.removeItem('ac_scan_history');
+    await Supabase.deleteWhere('physical_audits');
     renderRecentScans();
+    showToast('Scan history cleared', 'info');
 }
 
 function renderRecentScans() {

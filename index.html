@@ -61,7 +61,7 @@
 
 <div class="flex flex-1 overflow-hidden relative">
   <!-- Sidebar -->
-  <aside id="sidebar" class="h-[calc(100vh-64px)] w-64 md:flex flex-col py-6 bg-slate-50 border-r border-slate-200 hidden shrink-0 z-40"></aside>
+  <aside id="sidebar" class="h-[calc(100vh-64px)] w-64 flex flex-col py-6 bg-slate-50 border-r border-slate-200 shrink-0 z-40"></aside>
   
   <!-- Main Content Area -->
   <main class="flex-1 overflow-y-auto bg-surface" id="content">
@@ -327,14 +327,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const now = new Date();
   const in90 = new Date(now); in90.setDate(in90.getDate() + 90);
   const expiring = allAssets.filter(a => {
-    if (!a.warrantyExpiry) return false;
-    const exp = new Date(a.warrantyExpiry);
+    if (!a.warrantyEndDate) return false;
+    const exp = new Date(a.warrantyEndDate);
     return exp >= now && exp <= in90;
-  }).sort((a,b) => new Date(a.warrantyExpiry) - new Date(b.warrantyExpiry)).slice(0, 4);
+  }).sort((a,b) => new Date(a.warrantyEndDate) - new Date(b.warrantyEndDate)).slice(0, 4);
 
   if (expiring.length > 0) {
     document.getElementById('warranty-widget').innerHTML = expiring.map(a => {
-      const exp = new Date(a.warrantyExpiry);
+      const exp = new Date(a.warrantyEndDate);
       const days = Math.ceil((exp - now) / (1000*60*60*24));
       const cls = days <= 30 ? 'bg-error-container text-on-error-container border-error/20' : 'bg-secondary-fixed text-on-secondary-container border-secondary/20';
       return `<a href="asset-detail.html?id=${a.id}" class="flex items-center justify-between p-3 rounded-xl hover:bg-surface-container-lowest transition-colors no-underline group bg-surface-container-low/50 border border-transparent hover:border-outline-variant/20">

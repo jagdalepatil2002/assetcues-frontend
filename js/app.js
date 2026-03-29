@@ -78,8 +78,8 @@
 
     /* Mobile responsiveness */
     @media (max-width: 768px) {
-      #sidebar { transform: translateX(-100%); position: fixed; z-index: 999; width: 260px; }
-      #sidebar.open { transform: translateX(0); }
+      #sidebar { transform: translateX(-100%) !important; position: fixed !important; z-index: 999 !important; width: 260px !important; height: 100vh !important; top: 0 !important; }
+      #sidebar.open { transform: translateX(0) !important; }
       .sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:998; }
       .sidebar-overlay.active { display:block; }
       main { margin-left: 0 !important; padding-bottom: 88px !important; }

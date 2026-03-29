@@ -55,7 +55,7 @@ tailwind.config = {
 <header id="topbar" class="shrink-0 flex justify-between items-center w-full px-6 md:px-8 py-3 bg-white border-b border-surface-container z-30"></header>
 <div class="flex flex-1 overflow-hidden relative">
   <!-- Sidebar -->
-  <aside id="sidebar" class="h-[calc(100vh-64px)] w-64 md:flex flex-col py-6 bg-slate-50 border-r border-slate-200 hidden shrink-0 z-20"></aside>
+  <aside id="sidebar" class="h-[calc(100vh-64px)] w-64 flex flex-col py-6 bg-slate-50 border-r border-slate-200 shrink-0 z-20"></aside>
   <!-- Main -->
   <main class="flex-1 flex flex-col h-full overflow-hidden" id="content-layout">
     <div class="flex items-center justify-center h-full"><p class="text-on-surface-variant animate-pulse">Loading extraction...</p></div>
@@ -273,7 +273,7 @@ function editableField(fieldId, value, editable, extraClass='') {
     onfocus="this.select()" />`;
 }
 
-function onFieldEdit(el) {
+async function onFieldEdit(el) {
   const field = el.dataset.field;
   const original = el.dataset.original;
   const newVal = el.value.trim();
@@ -281,10 +281,11 @@ function onFieldEdit(el) {
     el.classList.add('edited');
     editedFields[field] = newVal;
     const ext = currentExt;
-    (ext.assetIds || []).forEach(aid => {
+    const assets = (ext.assetIds || []).length > 0 ? ext.assetIds : Storage.getAssets().filter(a => a.extractionId === ext.id).map(a => a.id);
+    for (const aid of assets) {
       const mapping = { vendor_name:'vendor', vendor_gstin:'vendorGstin', vendor_pan:'vendorPan', invoice_number:'invoiceNumber', invoice_date:'invoiceDate' };
-      if (mapping[field]) Storage.updateAssetField(aid, mapping[field], newVal);
-    });
+      if (mapping[field]) await Storage.updateAssetField(aid, mapping[field], newVal);
+    }
   } else {
     el.classList.remove('edited');
     delete editedFields[field];
@@ -379,12 +380,12 @@ function openAssetModal(assetId) {
     </div>
     <div class="p-6 space-y-4">
       <div class="grid grid-cols-2 gap-4">
-        <div><label class="text-[10px] uppercase font-bold text-on-surface-variant">Asset Name</label><input type="text" class="editable-field" value="${a.name}" onchange="Storage.updateAssetField('${a.id}','name',this.value)"/></div>
-        <div><label class="text-[10px] uppercase font-bold text-on-surface-variant">Serial</label><input type="text" class="editable-field font-mono text-xs" value="${a.serialNumber||''}" onchange="Storage.updateAssetField('${a.id}','serialNumber',this.value)"/></div>
+        <div><label class="text-[10px] uppercase font-bold text-on-surface-variant">Asset Name</label><input type="text" class="editable-field" value="${a.name}" onchange="Storage.updateAssetField('${a.id}','name',this.value).then(()=>showToast('Saved','success'))"/></div>
+        <div><label class="text-[10px] uppercase font-bold text-on-surface-variant">Serial</label><input type="text" class="editable-field font-mono text-xs" value="${a.serialNumber||''}" onchange="Storage.updateAssetField('${a.id}','serialNumber',this.value).then(()=>showToast('Saved','success'))"/></div>
       </div>
       <div class="grid grid-cols-3 gap-4 border-t border-surface-container pt-4">
         <div><p class="text-[10px] uppercase font-bold text-on-surface-variant">Unit Price</p><p class="text-sm font-bold">${formatCurrency(a.purchasePrice)}</p></div>
-        <div><p class="text-[10px] uppercase font-bold text-on-surface-variant">Tax</p><p class="text-sm font-bold">${formatCurrency((a.cgst||0)+(a.sgst||0))}</p></div>
+        <div><p class="text-[10px] uppercase font-bold text-on-surface-variant">Tax</p><p class="text-sm font-bold">${formatCurrency((a.cgst||0)+(a.sgst||0)+(a.igst||0))}</p></div>
         <div><p class="text-[10px] uppercase font-bold text-on-surface-variant">Total Cost</p><p class="text-sm font-bold text-primary">${formatCurrency(a.totalCost)}</p></div>
       </div>
     </div>`;

@@ -2,7 +2,7 @@
 <html lang="en" class="light"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Audit Reports | AssetLedger</title>
+<title>Audit Reports | AssetCues</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -56,7 +56,7 @@
 
 <div class="flex flex-1 overflow-hidden relative">
   <!-- Sidebar -->
-  <aside id="sidebar" class="h-[calc(100vh-64px)] w-64 md:flex flex-col py-6 bg-slate-50 border-r border-slate-200 hidden shrink-0 z-40"></aside>
+  <aside id="sidebar" class="h-[calc(100vh-64px)] w-64 flex flex-col py-6 bg-slate-50 border-r border-slate-200 shrink-0 z-40"></aside>
   
   <!-- Main Content Area -->
   <main class="flex-1 flex flex-col h-full overflow-y-auto bg-surface" id="content">
@@ -285,8 +285,16 @@ function updateDashboardDashboard() {
       const cost = a.purchasePrice || 0;
       totalCost += cost;
       const rate = (a.depreciationRate || 15) / 100;
-      // Simple approx
-      depSoFar += (cost * rate); 
+      const salvage = a.salvageValue || 1;
+      const life = a.usefulLifeYears || 5;
+      const method = a.depreciationMethod || 'SLM';
+      const acqDate = new Date(a.acquisitionDate || a.createdAt || new Date());
+      const yearsElapsed = Math.max(0, (Date.now() - acqDate) / (365.25*24*60*60*1000));
+      if (method === 'WDV') {
+        depSoFar += cost * (1 - Math.pow(1 - rate, Math.min(yearsElapsed, life)));
+      } else {
+        depSoFar += Math.min(((cost - salvage) / life) * yearsElapsed, cost - salvage);
+      }
   }
   
   document.getElementById('dash-val').textContent = formatCurrency(Math.floor(totalCost));
@@ -411,9 +419,12 @@ function renderDepreciationRegister(assets) {
   const rows = assets.map(a => {
     const rate = (a.depreciationRate || 15) / 100;
     const method = a.depreciationMethod || 'SLM';
-    const opening = a.purchasePrice || 0;
-    const dep = method === 'WDV' ? opening * rate : (opening / (a.usefulLifeYears || 5));
-    const closing = Math.max(opening - dep, a.salvageValue || 1);
+    const cost = a.purchasePrice || 0;
+    const salvage = a.salvageValue || 1;
+    const life = a.usefulLifeYears || 5;
+    const opening = cost; // For current FY opening
+    const dep = method === 'WDV' ? opening * rate : ((cost - salvage) / life);
+    const closing = Math.max(opening - dep, salvage);
     totalOpening += opening; totalDep += dep; totalClosing += closing;
     return [a.tempAssetId||'', a.name||'', opening, method, dep, closing, rate];
   });

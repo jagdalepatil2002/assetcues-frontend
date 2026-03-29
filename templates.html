@@ -2,7 +2,7 @@
 <html lang="en" class="light"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Template Library | AssetLedger</title>
+<title>Template Library | AssetCues</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -70,7 +70,7 @@
 
 <div class="flex flex-1 overflow-hidden relative">
   <!-- Sidebar -->
-  <aside id="sidebar" class="h-[calc(100vh-64px)] w-64 md:flex flex-col py-6 bg-slate-50 border-r border-slate-200 hidden shrink-0 z-40"></aside>
+  <aside id="sidebar" class="h-[calc(100vh-64px)] w-64 flex flex-col py-6 bg-slate-50 border-r border-slate-200 shrink-0 z-40"></aside>
   
   <!-- Main Content Area -->
   <main class="flex-1 overflow-y-auto bg-surface" id="content">
@@ -127,9 +127,9 @@
                         <div class="space-y-6">
                             <div>
                                 <p class="text-[10px] font-bold text-on-surface-variant uppercase mb-1">Total Platform Mappings</p>
-                                <p class="text-3xl font-extrabold font-headline text-on-surface" id="insight-maps">1,402</p>
+                                <p class="text-3xl font-extrabold font-headline text-on-surface" id="insight-maps">${Storage.getAssets().length}</p>
                                 <p class="text-xs text-primary mt-1 flex items-center gap-1 font-bold">
-                                    <span class="material-symbols-outlined text-sm">trending_up</span> +12% this month
+                                    <span class="material-symbols-outlined text-sm">inventory_2</span> Total assets managed
                                 </p>
                             </div>
                             <div>
