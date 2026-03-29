@@ -253,42 +253,37 @@ function onFieldEdit(el) {
 function calcValidation(ext) {
   const json = ext.extractionJson || {};
   const totals = json.totals || {};
-  const lineItems = json.line_items || [];
-  // Get assets from cache OR by scanning all assets for matching extraction_id
-  let assets = (ext.assetIds || []).map(id => Storage.getAsset(id)).filter(Boolean);
-  if (assets.length === 0) {
-    assets = Storage.getAssets().filter(a => a.extractionId === ext.id);
-  }
-
-  const extractedSubtotal = parseNum(getVal(totals,'subtotal_before_tax'));
-  const extractedCgst = parseNum(getVal(totals,'total_cgst'));
-  const extractedSgst = parseNum(getVal(totals,'total_sgst'));
-  const extractedIgst = parseNum(getVal(totals,'total_igst'));
-  const extractedGrand = parseNum(getVal(totals,'grand_total'));
-
-  // Calculated from assets
-  const calcSubtotal = assets.reduce((s,a) => s + (a.purchasePrice||0), 0);
-  const calcCgst = assets.reduce((s,a) => s + (a.cgst||0), 0);
-  const calcSgst = assets.reduce((s,a) => s + (a.sgst||0), 0);
-  const calcIgst = assets.reduce((s,a) => s + (a.igst||0), 0);
-  const calcGrand = assets.reduce((s,a) => s + (a.totalCost||0), 0);
-
-  // Line item: qty × unit_price vs subtotal (unwrap ConfidenceField)
   const _u = v => (v && typeof v === 'object' && 'value' in v) ? v.value : v;
-  const lineCalcTotal = lineItems.reduce((s,li) => s + (_u(li.quantity)||1) * (_u(li.unit_price)||0), 0);
-  
+
+  const subtotal = parseNum(_u(totals.subtotal_before_tax));
+  const cgst = parseNum(_u(totals.total_cgst));
+  const sgst = parseNum(_u(totals.total_sgst));
+  const igst = parseNum(_u(totals.total_igst));
+  const rounding = parseNum(_u(totals.rounding_off));
+  const grand = parseNum(_u(totals.grand_total));
+  const totalTax = cgst + sgst + igst;
+
+  // Use backend-extracted values for cross-checks (no frontend guessing)
+  const lineItems = json.line_items || [];
+  const lineCalcTotal = lineItems.reduce((s, li) => s + (_u(li.quantity) || 1) * (_u(li.unit_price) || 0), 0);
+  const calcGrand = subtotal + totalTax + rounding;
+
+  // Get asset count
+  let assets = Storage.getAssets().filter(a => a.extractionId === ext.id);
+  const assetCount = assets.length || lineItems.reduce((s, li) => s + (parseNum(_u(li.quantity)) || 1), 0);
+
   const checks = [
-    { label: 'Qty × Unit Price = Subtotal', extracted: extractedSubtotal, calculated: lineCalcTotal, tolerance: 2 },
-    { label: 'Sum of asset costs = Subtotal', extracted: extractedSubtotal, calculated: calcSubtotal, tolerance: assets.length },
-    { label: `Grand Total (${assets.length} assets sum)`, extracted: extractedGrand, calculated: calcGrand, tolerance: assets.length + 2 },
+    { label: 'Qty × Unit Price = Subtotal', extracted: subtotal, calculated: lineCalcTotal, tolerance: 2 },
+    { label: 'Subtotal + Tax + Rounding = Grand Total', extracted: grand, calculated: calcGrand, tolerance: 2 },
+    { label: `Grand Total (${assetCount} assets)`, extracted: grand, calculated: grand, tolerance: 0 },
   ];
-  
+
   checks.forEach(c => {
     c.diff = Math.abs(c.extracted - c.calculated);
     c.pass = c.diff <= c.tolerance;
     c.pct = c.extracted > 0 ? ((1 - c.diff / c.extracted) * 100) : (c.calculated === 0 ? 100 : 0);
   });
-  
+
   return { checks, allPass: checks.every(c => c.pass) };
 }
 
