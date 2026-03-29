@@ -17,7 +17,7 @@ tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-tertiary-container"
   .field-value{font-size:0.8rem;font-weight:500;color:#131b2e}
   .editable-field{border:1px solid transparent;border-radius:0.375rem;padding:0.25rem 0.4rem;transition:all 0.15s;background:transparent;width:100%}
   .editable-field:hover{border-color:#c6c6cd;background:#f2f4f6}
-  .editable-field:focus{border-color:#000;background:#fff;outline:none;box-shadow:0 0 0 2px rgba(0,0,0,0.1)}
+  .editable-field:focus{border-color:#4f46e5;background:#fff;outline:none;box-shadow:0 0 0 2px rgba(79,70,229,0.15)}
   .editable-field.edited{background:#dae2fd;border-color:#bec6e0}
   .match-pass{color:#009668;font-weight:700}.match-fail{color:#ba1a1a;font-weight:700}
   /* mobile handled by app.js global CSS */
@@ -207,7 +207,7 @@ function renderDetail() {
             </button>
           ` : ext.status === 'approved' ? `
             <div class="flex-1 py-4 bg-tertiary-fixed/20 text-on-tertiary-container rounded-xl font-bold text-sm flex items-center justify-center gap-2">
-              <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">check_circle</span> Finalized — ${(ext.assetIds||[]).length} assets in registry
+              <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">check_circle</span> Finalized — ${(ext.assetIds||[]).length || Storage.getAssets().filter(a=>a.extractionId===ext.id).length} assets in registry
             </div>
             <a href="registry.html" class="py-4 px-6 bg-primary text-white rounded-xl font-bold text-sm flex items-center gap-2 no-underline hover:opacity-90">View Registry</a>
           ` : `
