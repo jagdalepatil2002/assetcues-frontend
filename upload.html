@@ -232,11 +232,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Wire quota with real data
   const exts = Storage.getExtractions();
   const assets = Storage.getAssets();
-  const totalPages = exts.reduce((s, e) => s + (parseInt(e.pageCount) || 1), 0);
-  document.getElementById('quota-used').textContent = (isNaN(totalPages) || totalPages == null) ? '0' : String(totalPages);
+  const totalPages = exts.length; // pageCount not stored in DB; 1 extraction = 1+ pages
+  document.getElementById('quota-used').textContent = totalPages;
   document.getElementById('quota-invoices').textContent = exts.length;
   document.getElementById('quota-assets').textContent = assets.length;
-  const pct = Math.min(Math.round((totalPages / 100) * 100), 100); // relative to recent usage
+  const pct = Math.min(Math.round((totalPages / 100) * 100), 100);
   document.getElementById('quota-bar').style.width = pct + '%';
   document.getElementById('quota-detail').textContent = `${exts.length} invoice${exts.length !== 1 ? 's' : ''} processed. ${assets.length} assets created.`;
 
