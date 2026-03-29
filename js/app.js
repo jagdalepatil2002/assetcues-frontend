@@ -274,8 +274,9 @@ function injectTopBar(title) {
       </div>
     </div>
   `;
-  // Check connection
+  // Check connection now + every 5 min
   checkConnection();
+  setInterval(checkConnection, 5 * 60 * 1000);
 }
 
 async function checkConnection() {
