@@ -1,174 +1,270 @@
 <!DOCTYPE html>
-<html lang="en" class="light"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Asset Details | AssetLedger</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-<script src="js/theme.js"></script>
-<script id="tailwind-config">
+<html lang="en" class="light">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>Asset Details | AssetLedger</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+    rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <script src="js/theme.js"></script>
+  <script id="tailwind-config">
     tailwind.config = {
-        darkMode: "class",
-        theme: {
-            extend: {
-                colors: {
-                    "error-container": "#ffdad6", "secondary-fixed-dim": "#adc8f2", "on-primary-container": "#fefcff",
-                    "on-error": "#ffffff", "tertiary-fixed-dim": "#ffb68b", "surface-container-lowest": "#ffffff",
-                    "on-secondary-container": "#415b7f", "surface-dim": "#dadada", "surface-bright": "#f9f9f9",
-                    "surface-container": "#eeeeee", "on-primary-fixed-variant": "#004884", "surface-variant": "#e2e2e2",
-                    "on-background": "#1a1c1c", "primary-fixed": "#d4e3ff", "primary-container": "#0176d3",
-                    "error": "#ba1a1a", "tertiary-container": "#bc5800", "primary-fixed-dim": "#a4c9ff",
-                    "inverse-surface": "#2f3131", "tertiary": "#964500", "on-tertiary": "#ffffff",
-                    "inverse-primary": "#a4c9ff", "on-tertiary-fixed-variant": "#753400", "on-secondary-fixed": "#001c39",
-                    "on-surface-variant": "#414752", "on-secondary-fixed-variant": "#2d486b", "surface-container-high": "#e8e8e8",
-                    "surface-container-highest": "#e2e2e2", "outline-variant": "#c0c7d4", "surface-tint": "#005fac",
-                    "primary": "#005da9", "secondary-container": "#b9d3fe", "on-tertiary-container": "#fffcff",
-                    "on-primary": "#ffffff", "outline": "#717784", "on-surface": "#1a1c1c",
-                    "surface-container-low": "#f3f3f3", "background": "#f9f9f9", "on-error-container": "#93000a",
-                    "on-tertiary-fixed": "#321200", "secondary-fixed": "#d4e3ff", "secondary": "#466084",
-                    "surface": "#f9f9f9", "on-primary-fixed": "#001c39", "inverse-on-surface": "#f1f1f1",
-                    "tertiary-fixed": "#ffdbc8", "on-secondary": "#ffffff"
-                },
-                fontFamily: {
-                    "headline": ["Manrope"],
-                    "body": ["Inter"],
-                    "label": ["Inter"]
-                },
-                borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
-            },
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "error-container": "#ffdad6", "secondary-fixed-dim": "#adc8f2", "on-primary-container": "#fefcff",
+            "on-error": "#ffffff", "tertiary-fixed-dim": "#ffb68b", "surface-container-lowest": "#ffffff",
+            "on-secondary-container": "#415b7f", "surface-dim": "#dadada", "surface-bright": "#f9f9f9",
+            "surface-container": "#eeeeee", "on-primary-fixed-variant": "#004884", "surface-variant": "#e2e2e2",
+            "on-background": "#1a1c1c", "primary-fixed": "#d4e3ff", "primary-container": "#0176d3",
+            "error": "#ba1a1a", "tertiary-container": "#bc5800", "primary-fixed-dim": "#a4c9ff",
+            "inverse-surface": "#2f3131", "tertiary": "#964500", "on-tertiary": "#ffffff",
+            "inverse-primary": "#a4c9ff", "on-tertiary-fixed-variant": "#753400", "on-secondary-fixed": "#001c39",
+            "on-surface-variant": "#414752", "on-secondary-fixed-variant": "#2d486b", "surface-container-high": "#e8e8e8",
+            "surface-container-highest": "#e2e2e2", "outline-variant": "#c0c7d4", "surface-tint": "#005fac",
+            "primary": "#005da9", "secondary-container": "#b9d3fe", "on-tertiary-container": "#fffcff",
+            "on-primary": "#ffffff", "outline": "#717784", "on-surface": "#1a1c1c",
+            "surface-container-low": "#f3f3f3", "background": "#f9f9f9", "on-error-container": "#93000a",
+            "on-tertiary-fixed": "#321200", "secondary-fixed": "#d4e3ff", "secondary": "#466084",
+            "surface": "#f9f9f9", "on-primary-fixed": "#001c39", "inverse-on-surface": "#f1f1f1",
+            "tertiary-fixed": "#ffdbc8", "on-secondary": "#ffffff"
+          },
+          fontFamily: {
+            "headline": ["Manrope"],
+            "body": ["Inter"],
+            "label": ["Inter"]
+          },
+          borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
         },
+      },
     }
-</script>
-<style>
-    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-    .signature-gradient { background: linear-gradient(135deg, #005DA9 0%, #0176D3 100%); }
-    .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); }
+  </script>
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+
+    .signature-gradient {
+      background: linear-gradient(135deg, #005DA9 0%, #0176D3 100%);
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(20px);
+    }
+
     /* Tabs */
-    .rtab { transition: all 0.2s; }
-    .rtab.active { background: var(--tw-colors-surface-container-lowest); font-weight: bold; color: var(--tw-colors-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-    .rtab-panel { display: none; }
-    .rtab-panel.active { display: block; animation: fadeIn 0.3s; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-    /* Modals */
-    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s}
-    .modal-overlay.active{opacity:1;pointer-events:all}
-    .modal-content{background:#fff;border-radius:1rem;max-width:500px;width:95%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);transform:scale(0.95);transition:transform 0.2s}
-    .modal-overlay.active .modal-content{transform:scale(1)}
-    /* QR */
-    #qr-canvas img { display: block !important; margin: auto; }
-</style>
-</head>
-<body class="bg-surface font-body text-on-surface flex flex-col h-screen overflow-hidden">
-<!-- Topbar -->
-<header id="topbar" class="shrink-0 flex justify-between items-center w-full px-6 md:px-8 py-3 bg-white border-b border-surface-container z-50"></header>
-<div class="flex flex-1 overflow-hidden relative">
-  <!-- Sidebar -->
-  <aside id="sidebar" class="h-[calc(100vh-64px)] w-64 md:flex flex-col py-6 bg-slate-50 border-r border-slate-200 hidden shrink-0 z-40"></aside>
-  <!-- Main Content -->
-  <main class="flex-1 flex flex-col h-full overflow-y-auto" id="content-layout">
-     <p class="text-center py-20 text-on-surface-variant font-bold animate-pulse">Loading Asset Details...</p>
-  </main>
-</div>
-
-<!-- Manage Location/Department Modal -->
-<div id="manage-modal" class="modal-overlay" onclick="if(event.target===this)closeManageModal()">
-  <div class="modal-content p-6 shrink-0">
-    <div class="flex justify-between items-center mb-4">
-      <h3 id="manage-modal-title" class="font-headline font-bold text-lg"></h3>
-      <button onclick="closeManageModal()" class="p-1 hover:bg-surface-container rounded-lg"><span class="material-symbols-outlined">close</span></button>
-    </div>
-    <div id="manage-modal-list" class="space-y-2 max-h-64 overflow-y-auto mb-4"></div>
-    <div class="flex gap-2">
-      <input id="manage-modal-input" type="text" placeholder="Enter name..." class="flex-1 px-3 py-2 rounded-lg border border-outline-variant/30 text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
-      <button onclick="addManageItem()" class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold">Add</button>
-    </div>
-  </div>
-</div>
-
-<!-- Add Linked Invoice Modal -->
-<div id="link-modal" class="modal-overlay" onclick="if(event.target===this)closeLinkModal()">
-  <div class="modal-content p-6">
-    <div class="flex items-center justify-between mb-5">
-      <h4 class="font-headline font-bold text-on-primary-fixed">Link Document</h4>
-      <button onclick="closeLinkModal()" class="p-1 hover:bg-surface-container rounded-lg"><span class="material-symbols-outlined">close</span></button>
-    </div>
-    <div class="space-y-4">
-      <div>
-        <label class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant block mb-1.5">Document Type</label>
-        <select id="link-type" class="w-full px-3 py-2.5 rounded-xl border border-outline-variant/30 text-sm font-medium">
-          <option value="purchase">Original Purchase Invoice</option>
-          <option value="warranty">Warranty Certificate</option>
-          <option value="amc">AMC Contract</option>
-          <option value="repair">Repair / Service Invoice</option>
-          <option value="insurance">Insurance Policy</option>
-          <option value="other">Other Document</option>
-        </select>
-      </div>
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <label class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant block mb-1.5">Document No.</label>
-          <input id="link-invoice" type="text" placeholder="e.g. INV-2024-001" class="w-full px-3 py-2.5 rounded-xl border border-outline-variant/30 text-sm font-medium focus:ring-2 focus:ring-primary focus:outline-none"/>
-        </div>
-        <div>
-          <label class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant block mb-1.5">Document Date</label>
-          <input id="link-date" type="date" class="w-full px-3 py-2.5 rounded-xl border border-outline-variant/30 text-sm font-medium focus:ring-2 focus:ring-primary focus:outline-none"/>
-        </div>
-      </div>
-      <div>
-        <label class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant block mb-1.5">Amount (₹)</label>
-        <input id="link-amount" type="number" placeholder="0" class="w-full px-3 py-2.5 rounded-xl border border-outline-variant/30 text-sm font-medium focus:ring-2 focus:ring-primary focus:outline-none"/>
-      </div>
-      <div>
-        <label class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant block mb-1.5">Description</label>
-        <textarea id="link-desc" rows="2" placeholder="Brief description..." class="w-full px-3 py-2.5 rounded-xl border border-outline-variant/30 text-sm resize-none focus:ring-2 focus:ring-primary focus:outline-none"></textarea>
-      </div>
-      <button onclick="submitLinkInvoice()" class="w-full py-3 bg-primary text-white rounded-xl font-headline font-bold text-sm hover:opacity-90 transition-all">Link Document</button>
-    </div>
-  </div>
-</div>
-
-<script src="js/supabase.js"></script>
-<script src="js/storage.js"></script>
-<script src="js/api.js"></script>
-<script src="js/app.js"></script>
-
-<script>
-let currentAssetId = null;
-
-document.addEventListener('DOMContentLoaded', async () => {
-    await Storage.init();
-    injectSidebar('registry.html');
-    injectTopBar('Asset Details');
-    
-    const id = new URLSearchParams(window.location.search).get('id');
-    if (!id) { window.location.href = 'registry.html'; return; }
-    
-    const asset = await Storage.getAssetAsync(id);
-    if (!asset) { document.getElementById('content-layout').innerHTML = '<p class="text-center py-20 text-error">Asset not found</p>'; return; }
-    currentAssetId = id;
-    renderAsset(asset);
-});
-
-async function renderAsset(a) {
-    currentAssetId = a.id;
-    const auditLog = await Storage.getAuditLog(a.id);
-    
-    const totalTax = a.tax || 0;
-    const { currentValue, depSoFar } = computeDepreciation(a);
-    
-    // Warranty days
-    let wdays = null;
-    if(a.warrantyExpiry) {
-      const exp = new Date(a.warrantyExpiry);
-      wdays = Math.ceil((exp - new Date()) / (1000*60*60*24));
+    .rtab {
+      transition: all 0.2s;
     }
-    
-    // HTML structure using Stitch Desktop Layout
-    document.getElementById('content-layout').innerHTML = `
+
+    .rtab.active {
+      background: var(--tw-colors-surface-container-lowest);
+      font-weight: bold;
+      color: var(--tw-colors-primary);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .rtab-panel {
+      display: none;
+    }
+
+    .rtab-panel.active {
+      display: block;
+      animation: fadeIn 0.3s;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(5px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: all
+    }
+
+    .modal-content {
+      background: #fff;
+      border-radius: 1rem;
+      max-width: 500px;
+      width: 95%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      transform: scale(0.95);
+      transition: transform 0.2s
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: scale(1)
+    }
+
+    /* QR */
+    #qr-canvas img {
+      display: block !important;
+      margin: auto;
+    }
+  </style>
+</head>
+
+<body class="bg-surface font-body text-on-surface flex flex-col h-screen overflow-hidden">
+  <!-- Topbar -->
+  <header id="topbar"
+    class="shrink-0 flex justify-between items-center w-full px-6 md:px-8 py-3 bg-white border-b border-surface-container z-50">
+  </header>
+  <div class="flex flex-1 overflow-hidden relative">
+    <!-- Sidebar -->
+    <aside id="sidebar"
+      class="h-[calc(100vh-64px)] w-64 md:flex flex-col py-6 bg-slate-50 border-r border-slate-200 hidden shrink-0 z-40">
+    </aside>
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-full overflow-y-auto" id="content-layout">
+      <p class="text-center py-20 text-on-surface-variant font-bold animate-pulse">Loading Asset Details...</p>
+    </main>
+  </div>
+
+  <!-- Manage Location/Department Modal -->
+  <div id="manage-modal" class="modal-overlay" onclick="if(event.target===this)closeManageModal()">
+    <div class="modal-content p-6 shrink-0">
+      <div class="flex justify-between items-center mb-4">
+        <h3 id="manage-modal-title" class="font-headline font-bold text-lg"></h3>
+        <button onclick="closeManageModal()" class="p-1 hover:bg-surface-container rounded-lg"><span
+            class="material-symbols-outlined">close</span></button>
+      </div>
+      <div id="manage-modal-list" class="space-y-2 max-h-64 overflow-y-auto mb-4"></div>
+      <div class="flex gap-2">
+        <input id="manage-modal-input" type="text" placeholder="Enter name..."
+          class="flex-1 px-3 py-2 rounded-lg border border-outline-variant/30 text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
+        <button onclick="addManageItem()"
+          class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold">Add</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Linked Invoice Modal -->
+  <div id="link-modal" class="modal-overlay" onclick="if(event.target===this)closeLinkModal()">
+    <div class="modal-content p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h4 class="font-headline font-bold text-on-primary-fixed">Link Document</h4>
+        <button onclick="closeLinkModal()" class="p-1 hover:bg-surface-container rounded-lg"><span
+            class="material-symbols-outlined">close</span></button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant block mb-1.5">Document
+            Type</label>
+          <select id="link-type"
+            class="w-full px-3 py-2.5 rounded-xl border border-outline-variant/30 text-sm font-medium">
+            <option value="purchase">Original Purchase Invoice</option>
+            <option value="warranty">Warranty Certificate</option>
+            <option value="amc">AMC Contract</option>
+            <option value="repair">Repair / Service Invoice</option>
+            <option value="insurance">Insurance Policy</option>
+            <option value="other">Other Document</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant block mb-1.5">Document
+              No.</label>
+            <input id="link-invoice" type="text" placeholder="e.g. INV-2024-001"
+              class="w-full px-3 py-2.5 rounded-xl border border-outline-variant/30 text-sm font-medium focus:ring-2 focus:ring-primary focus:outline-none" />
+          </div>
+          <div>
+            <label class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant block mb-1.5">Document
+              Date</label>
+            <input id="link-date" type="date"
+              class="w-full px-3 py-2.5 rounded-xl border border-outline-variant/30 text-sm font-medium focus:ring-2 focus:ring-primary focus:outline-none" />
+          </div>
+        </div>
+        <div>
+          <label class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant block mb-1.5">Amount
+            (₹)</label>
+          <input id="link-amount" type="number" placeholder="0"
+            class="w-full px-3 py-2.5 rounded-xl border border-outline-variant/30 text-sm font-medium focus:ring-2 focus:ring-primary focus:outline-none" />
+        </div>
+        <div>
+          <label
+            class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant block mb-1.5">Description</label>
+          <textarea id="link-desc" rows="2" placeholder="Brief description..."
+            class="w-full px-3 py-2.5 rounded-xl border border-outline-variant/30 text-sm resize-none focus:ring-2 focus:ring-primary focus:outline-none"></textarea>
+        </div>
+        <button onclick="submitLinkInvoice()"
+          class="w-full py-3 bg-primary text-white rounded-xl font-headline font-bold text-sm hover:opacity-90 transition-all">Link
+          Document</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/supabase.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+
+  <script>
+    let currentAssetId = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Storage.init();
+      injectSidebar('registry.html');
+      injectTopBar('Asset Details');
+
+      const id = new URLSearchParams(window.location.search).get('id');
+      if (!id) { window.location.href = 'registry.html'; return; }
+
+      const asset = await Storage.getAssetAsync(id);
+      if (!asset) { document.getElementById('content-layout').innerHTML = '<p class="text-center py-20 text-error">Asset not found</p>'; return; }
+      currentAssetId = id;
+      renderAsset(asset);
+    });
+
+    async function renderAsset(a) {
+      currentAssetId = a.id;
+      const auditLog = await Storage.getAuditLog(a.id);
+
+      const totalTax = a.tax || 0;
+      const { currentValue, depSoFar } = computeDepreciation(a);
+
+      // Warranty days
+      let wdays = null;
+      if (a.warrantyExpiry) {
+        const exp = new Date(a.warrantyExpiry);
+        wdays = Math.ceil((exp - new Date()) / (1000 * 60 * 60 * 24));
+      }
+
+      // HTML structure using Stitch Desktop Layout
+      document.getElementById('content-layout').innerHTML = `
       <div class="px-8 py-6 w-full max-w-[1600px] mx-auto min-h-full">
         <!-- Breadcrumbs & Header -->
         <div class="flex justify-between items-start mb-8">
@@ -178,14 +274,14 @@ async function renderAsset(a) {
                     <span>/</span>
                     <span>${a.category || 'Asset'}</span>
                     <span>/</span>
-                    <span class="text-primary font-bold">${a.tempAssetId || a.id.slice(0,8)}</span>
+                    <span class="text-primary font-bold">${a.tempAssetId || a.id.slice(0, 8)}</span>
                 </nav>
                 <div class="flex items-center gap-4">
                   <h1 class="text-4xl font-extrabold font-headline tracking-tight text-on-surface">${a.name || 'Unnamed Asset'}</h1>
                   ${statusBadge(a.status)}
                 </div>
                 <div class="flex items-center gap-3 mt-2 text-sm text-outline">
-                    <span>ID: <span class="font-mono font-bold">${a.tempAssetId || a.id.slice(0,8)}</span></span>
+                    <span>ID: <span class="font-mono font-bold">${a.tempAssetId || a.id.slice(0, 8)}</span></span>
                     <span>•</span>
                     <span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">location_on</span> <span id="loc-display">Loading...</span></span>
                 </div>
@@ -204,20 +300,20 @@ async function renderAsset(a) {
                 <div class="grid grid-cols-12 gap-6 h-auto md:h-[400px]">
                     <div class="col-span-12 md:col-span-8 bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm relative group border border-outline-variant/10">
                         ${(() => {
-                           const img = Storage.getAssetImage(a.id);
-                           if(img) return `
+          const img = Storage.getAssetImage(a.id);
+          if (img) return `
                              <img src="${img}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Asset"/>
                              <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
                                <button onclick="removePhoto('${a.id}')" class="bg-red-500/80 backdrop-blur-md text-white px-4 py-2 rounded-full flex items-center gap-2 hover:bg-red-500 transition-colors text-xs font-bold"><span class="material-symbols-outlined text-[14px]">delete</span> Remove Photo</button>
                              </div>`;
-                           return `
+          return `
                              <div class="w-full h-full bg-surface-container-low flex flex-col items-center justify-center p-8 text-center border-dashed border-2 border-outline-variant/30 hover:bg-surface-container transition-colors cursor-pointer" onclick="document.getElementById('photo-upload').click()">
                                 <span class="material-symbols-outlined text-4xl text-outline mb-2">add_a_photo</span>
                                 <h3 class="font-bold text-on-surface">Upload Asset Photo</h3>
                                 <p class="text-xs text-on-surface-variant max-w-xs mt-2">Add a physical photo for verification and auditing purposes.</p>
                                 <input type="file" id="photo-upload" class="hidden" accept="image/*" onchange="uploadPhoto('${a.id}', this)" />
                              </div>`;
-                        })()}
+        })()}
                     </div>
                     <div class="col-span-12 md:col-span-4 flex flex-col gap-6">
                         <!-- AI Confidence pseudo Health -->
@@ -227,10 +323,10 @@ async function renderAsset(a) {
                                 <span class="material-symbols-outlined text-white/50" style="font-variation-settings:'FILL' 1">auto_awesome</span>
                             </div>
                             <div class="flex items-end justify-between mt-4">
-                                <span class="text-6xl font-black font-headline tracking-tighter">${Math.round((a.confidence||0)*100)}<span class="text-2xl font-normal opacity-60">%</span></span>
+                                <span class="text-6xl font-black font-headline tracking-tighter">${Math.round((a.confidence || 0) * 100)}<span class="text-2xl font-normal opacity-60">%</span></span>
                             </div>
                             <div class="w-full bg-white/20 h-1.5 rounded-full overflow-hidden mt-4">
-                                <div class="bg-white h-full" style="width:${(a.confidence||0)*100}%"></div>
+                                <div class="bg-white h-full" style="width:${(a.confidence || 0) * 100}%"></div>
                             </div>
                         </div>
                         <div class="flex-1 bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-outline-variant/10 flex flex-col justify-center">
@@ -255,32 +351,32 @@ async function renderAsset(a) {
                         <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
                             <h3 class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-5 flex items-center gap-2"><span class="material-symbols-outlined text-primary text-[16px]">settings_input_component</span> Core Details</h3>
                             <div class="space-y-4 text-sm">
-                                <div class="flex justify-between items-center pb-3 border-b border-surface-container"><span class="text-on-surface-variant w-1/3">Category</span><span class="font-bold text-right">${a.category||'—'}</span></div>
-                                <div class="flex justify-between items-center pb-3 border-b border-surface-container"><span class="text-on-surface-variant w-1/3">Sub-Category</span><span class="font-bold text-right">${a.subCategory||'—'}</span></div>
-                                <div class="flex justify-between items-center pb-3 border-b border-surface-container"><span class="text-on-surface-variant w-1/3">Make/Model</span><span class="font-bold text-right">${a.make||'—'} / ${a.model||'—'}</span></div>
-                                <div class="flex justify-between items-center pb-3 border-b border-surface-container"><span class="text-on-surface-variant w-1/3">Serial #</span><span class="font-mono font-bold text-right">${a.serialNumber||'—'}</span></div>
-                                <div class="flex justify-between items-center"><span class="text-on-surface-variant w-1/3">HSN Code</span><span class="font-mono font-bold text-right">${a.hsnCode||'—'}</span></div>
+                                <div class="flex justify-between items-center pb-3 border-b border-surface-container"><span class="text-on-surface-variant w-1/3">Category</span><span class="font-bold text-right">${a.category || '—'}</span></div>
+                                <div class="flex justify-between items-center pb-3 border-b border-surface-container"><span class="text-on-surface-variant w-1/3">Sub-Category</span><span class="font-bold text-right">${a.subCategory || '—'}</span></div>
+                                <div class="flex justify-between items-center pb-3 border-b border-surface-container"><span class="text-on-surface-variant w-1/3">Make/Model</span><span class="font-bold text-right">${a.make || '—'} / ${a.model || '—'}</span></div>
+                                <div class="flex justify-between items-center pb-3 border-b border-surface-container"><span class="text-on-surface-variant w-1/3">Serial #</span><span class="font-mono font-bold text-right">${a.serialNumber || '—'}</span></div>
+                                <div class="flex justify-between items-center"><span class="text-on-surface-variant w-1/3">HSN Code</span><span class="font-mono font-bold text-right">${a.hsnCode || '—'}</span></div>
                             </div>
                         </div>
                         <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
                             <h3 class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-5 flex items-center gap-2"><span class="material-symbols-outlined text-primary text-[16px]">domain</span> Procurement & Tracking</h3>
                             <div class="space-y-4 text-sm">
-                                <div class="flex justify-between items-center pb-3 border-b border-surface-container"><span class="text-on-surface-variant w-1/3">Vendor</span><span class="font-bold text-right truncate pl-4">${a.vendor||'—'}</span></div>
-                                <div class="flex justify-between items-center pb-3 border-b border-surface-container"><span class="text-on-surface-variant w-1/3">Invoice #</span><span class="font-bold text-right">${a.invoiceNumber||'—'}</span></div>
+                                <div class="flex justify-between items-center pb-3 border-b border-surface-container"><span class="text-on-surface-variant w-1/3">Vendor</span><span class="font-bold text-right truncate pl-4">${a.vendor || '—'}</span></div>
+                                <div class="flex justify-between items-center pb-3 border-b border-surface-container"><span class="text-on-surface-variant w-1/3">Invoice #</span><span class="font-bold text-right">${a.invoiceNumber || '—'}</span></div>
                                 <div class="flex justify-between items-center pb-3 border-b border-surface-container"><span class="text-on-surface-variant w-1/3">Acq. Date</span><span class="font-bold text-right">${formatDate(a.acquisitionDate)}</span></div>
                                 
                                 <div class="flex flex-col pb-3 border-b border-surface-container">
                                   <div class="flex justify-between mb-1"><span class="text-on-surface-variant">Location</span><button class="text-[9px] font-bold text-primary uppercase" onclick="openManageModal('location')">Manage</button></div>
                                   <select id="loc-select" onchange="saveField('${a.id}','locationId',this.value); updateLocationUI()" class="w-full text-sm bg-surface-container-low border-none rounded-lg px-2 py-1.5 focus:ring-primary focus:outline-none font-bold">
                                     <option value="">— Unassigned —</option>
-                                    ${(Storage.getLocations ? Storage.getLocations() : []).map(l => `<option value="${l.id}" ${a.locationId===l.id?'selected':''}>${l.name}</option>`).join('')}
+                                    ${(Storage.getLocations ? Storage.getLocations() : []).map(l => `<option value="${l.id}" ${a.locationId === l.id ? 'selected' : ''}>${l.name}</option>`).join('')}
                                   </select>
                                 </div>
                                 <div class="flex flex-col border-b border-surface-container pb-1">
                                   <div class="flex justify-between mb-1"><span class="text-on-surface-variant">Department</span><button class="text-[9px] font-bold text-primary uppercase" onclick="openManageModal('department')">Manage</button></div>
                                   <select id="dept-select" onchange="saveField('${a.id}','departmentId',this.value)" class="w-full text-sm bg-surface-container-low border-none rounded-lg px-2 py-1.5 focus:ring-primary focus:outline-none font-bold">
                                     <option value="">— Unassigned —</option>
-                                    ${(Storage.getDepartments ? Storage.getDepartments() : []).map(d => `<option value="${d.id}" ${a.departmentId===d.id?'selected':''}>${d.name}</option>`).join('')}
+                                    ${(Storage.getDepartments ? Storage.getDepartments() : []).map(d => `<option value="${d.id}" ${a.departmentId === d.id ? 'selected' : ''}>${d.name}</option>`).join('')}
                                   </select>
                                 </div>
                             </div>
@@ -294,21 +390,21 @@ async function renderAsset(a) {
                         <div>
                             <label class="text-[10px] font-bold uppercase text-on-surface-variant block mb-1">Method</label>
                             <select id="dep-method" onchange="updateDepreciation('${a.id}')" class="w-full text-sm px-3 py-2.5 rounded-lg border border-outline-variant/30 bg-white font-medium focus:ring-2 focus:ring-primary focus:outline-none">
-                              <option value="SLM" ${a.depreciationMethod==='SLM'?'selected':''}>Straight Line</option>
-                              <option value="WDV" ${a.depreciationMethod==='WDV'?'selected':''}>WDV</option>
+                              <option value="SLM" ${a.depreciationMethod === 'SLM' ? 'selected' : ''}>Straight Line</option>
+                              <option value="WDV" ${a.depreciationMethod === 'WDV' ? 'selected' : ''}>WDV</option>
                             </select>
                         </div>
                         <div>
                             <label class="text-[10px] font-bold uppercase text-on-surface-variant block mb-1">Rate %</label>
-                            <input id="dep-rate" type="number" value="${a.depreciationRate||15}" onchange="updateDepreciation('${a.id}')" class="w-full text-sm px-3 py-2.5 rounded-lg border border-outline-variant/30 font-medium focus:ring-primary focus:outline-none"/>
+                            <input id="dep-rate" type="number" value="${a.depreciationRate || 15}" onchange="updateDepreciation('${a.id}')" class="w-full text-sm px-3 py-2.5 rounded-lg border border-outline-variant/30 font-medium focus:ring-primary focus:outline-none"/>
                         </div>
                         <div>
                             <label class="text-[10px] font-bold uppercase text-on-surface-variant block mb-1">Useful Life (yrs)</label>
-                            <input id="dep-life" type="number" value="${a.usefulLifeYears||5}" onchange="updateDepreciation('${a.id}')" class="w-full text-sm px-3 py-2.5 rounded-lg border border-outline-variant/30 font-medium focus:ring-primary focus:outline-none"/>
+                            <input id="dep-life" type="number" value="${a.usefulLifeYears || 5}" onchange="updateDepreciation('${a.id}')" class="w-full text-sm px-3 py-2.5 rounded-lg border border-outline-variant/30 font-medium focus:ring-primary focus:outline-none"/>
                         </div>
                         <div>
                             <label class="text-[10px] font-bold uppercase text-on-surface-variant block mb-1">Salvage Value</label>
-                            <input id="dep-salvage" type="number" value="${a.salvageValue||1}" onchange="updateDepreciation('${a.id}')" class="w-full text-sm px-3 py-2.5 rounded-lg border border-outline-variant/30 font-medium focus:ring-primary focus:outline-none"/>
+                            <input id="dep-salvage" type="number" value="${a.salvageValue || 1}" onchange="updateDepreciation('${a.id}')" class="w-full text-sm px-3 py-2.5 rounded-lg border border-outline-variant/30 font-medium focus:ring-primary focus:outline-none"/>
                         </div>
                     </div>
                     <div id="dep-schedule-table"></div>
@@ -321,22 +417,22 @@ async function renderAsset(a) {
                     </div>
                     <div class="relative pl-6 space-y-8 border-l-2 border-surface-container">
                         ${auditLog.length > 0 ? auditLog.map((log, i) => {
-                           const isFirst = i===0;
-                           const icon = { created:'auto_awesome', approved:'check_circle', ai_extracted:'neurology' }[log.action] || 'event';
-                           const iconColor = isFirst ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container text-on-surface-variant';
-                           const ringColor = isFirst ? 'border-primary-container' : 'border-surface-container';
-                           return `
-                            <div class="relative ${isFirst?'':'opacity-70'}">
+          const isFirst = i === 0;
+          const icon = { created: 'auto_awesome', approved: 'check_circle', ai_extracted: 'neurology' }[log.action] || 'event';
+          const iconColor = isFirst ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container text-on-surface-variant';
+          const ringColor = isFirst ? 'border-primary-container' : 'border-surface-container';
+          return `
+                            <div class="relative ${isFirst ? '' : 'opacity-70'}">
                                 <span class="absolute -left-10 top-0 w-8 h-8 rounded-full ${iconColor} flex items-center justify-center border-4 border-white">
                                     <span class="material-symbols-outlined text-[14px]" style="font-variation-settings:'FILL' 1">${icon}</span>
                                 </span>
                                 <div>
-                                    <p class="text-sm font-bold text-on-surface capitalize">${log.action.replace(/_/g,' ')}</p>
+                                    <p class="text-sm font-bold text-on-surface capitalize">${log.action.replace(/_/g, ' ')}</p>
                                     <p class="text-[11px] text-on-surface-variant mt-0.5">${formatDate(log.timestamp)} • User Action</p>
                                     ${log.details ? `<p class="text-xs mt-2 text-on-surface bg-surface-container-low p-2 rounded-lg italic border border-outline-variant/10">"${log.details}"</p>` : ''}
                                 </div>
                             </div>`;
-                        }).join('') : '<p class="text-sm text-on-surface-variant">No history found</p>'}
+        }).join('') : '<p class="text-sm text-on-surface-variant">No history found</p>'}
                     </div>
                 </div>
 
@@ -364,7 +460,7 @@ async function renderAsset(a) {
                     <div class="p-3 bg-white/10 rounded-lg border border-white/10 mb-4">
                         <p class="text-xs leading-relaxed">The warranty for this asset expires soon. Would you like to check AMC renewals?</p>
                         <div class="flex flex-wrap gap-2 mt-2">
-                           <span class="px-2 py-0.5 bg-error/40 text-white text-[10px] font-bold rounded">Expires in ${wdays} day${wdays>1?'s':''}</span>
+                           <span class="px-2 py-0.5 bg-error/40 text-white text-[10px] font-bold rounded">Expires in ${wdays} day${wdays > 1 ? 's' : ''}</span>
                         </div>
                     </div>
                 </div>` : ''}
@@ -396,14 +492,14 @@ async function renderAsset(a) {
                            <!-- Warranty Inputs -->
                            <div>
                               <p class="text-[10px] font-bold uppercase text-on-surface-variant mb-1">Warranty Expiry</p>
-                              <input type="date" value="${a.warrantyExpiry||''}" onchange="saveField('${a.id}','warrantyExpiry',this.value)" class="w-full text-xs bg-surface-container-low border-none rounded focus:ring-1 focus:ring-primary px-2 py-1" />
+                              <input type="date" value="${a.warrantyExpiry || ''}" onchange="saveField('${a.id}','warrantyExpiry',this.value)" class="w-full text-xs bg-surface-container-low border-none rounded focus:ring-1 focus:ring-primary px-2 py-1" />
                            </div>
                            <div class="border-t border-surface-container pt-3">
                               <p class="text-[10px] font-bold uppercase text-on-surface-variant mb-1">AMC Provider</p>
-                              <input type="text" value="${a.amcProvider||''}" placeholder="e.g. HP India" onchange="saveField('${a.id}','amcProvider',this.value)" class="w-full text-xs bg-surface-container-low border-none rounded focus:ring-1 focus:ring-primary px-2 py-1 mb-2" />
+                              <input type="text" value="${a.amcProvider || ''}" placeholder="e.g. HP India" onchange="saveField('${a.id}','amcProvider',this.value)" class="w-full text-xs bg-surface-container-low border-none rounded focus:ring-1 focus:ring-primary px-2 py-1 mb-2" />
                               <div class="grid grid-cols-2 gap-2">
-                                 <div><label class="text-[9px] text-on-surface-variant">AMC Start</label><input type="date" value="${a.amcStart||''}" onchange="saveField('${a.id}','amcStart',this.value)" class="w-full text-[10px] bg-surface-container-low border-none rounded focus:ring-1 focus:ring-primary px-1.5 py-1" /></div>
-                                 <div><label class="text-[9px] text-on-surface-variant">AMC End</label><input type="date" value="${a.amcEnd||''}" onchange="saveField('${a.id}','amcEnd',this.value)" class="w-full text-[10px] bg-surface-container-low border-none rounded focus:ring-1 focus:ring-primary px-1.5 py-1" /></div>
+                                 <div><label class="text-[9px] text-on-surface-variant">AMC Start</label><input type="date" value="${a.amcStart || ''}" onchange="saveField('${a.id}','amcStart',this.value)" class="w-full text-[10px] bg-surface-container-low border-none rounded focus:ring-1 focus:ring-primary px-1.5 py-1" /></div>
+                                 <div><label class="text-[9px] text-on-surface-variant">AMC End</label><input type="date" value="${a.amcEnd || ''}" onchange="saveField('${a.id}','amcEnd',this.value)" class="w-full text-[10px] bg-surface-container-low border-none rounded focus:ring-1 focus:ring-primary px-1.5 py-1" /></div>
                               </div>
                            </div>
                        </div>
@@ -417,165 +513,167 @@ async function renderAsset(a) {
             </div>
         </div>
       </div>`;
-    
-    // UI Helpers
-    setTimeout(() => updateLocationUI(), 100);
 
-    // QR Logic
-    setTimeout(() => {
+      // UI Helpers
+      setTimeout(() => updateLocationUI(), 100);
+
+      // QR Logic
+      setTimeout(() => {
         const qrEl = document.getElementById('qr-canvas');
         if (qrEl && typeof QRCode !== 'undefined') {
-            qrEl.innerHTML = '';
-            new QRCode(qrEl, { text: `${window.location.origin}${window.location.pathname.replace(/[^/]*$/, '')}asset-detail.html?id=${a.id}`, width: 120, height: 120, colorDark: '#1a1c1c', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H, });
+          qrEl.innerHTML = '';
+          new QRCode(qrEl, { text: `${window.location.origin}${window.location.pathname.replace(/[^/]*$/, '')}asset-detail.html?id=${a.id}`, width: 120, height: 120, colorDark: '#1a1c1c', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H, });
         }
-    }, 100);
+      }, 100);
 
-    // Initial render of tabs
-    setTimeout(() => renderDepSchedule(a), 100);
-    setTimeout(() => loadLinkedInvoices(a.id), 120);
-}
+      // Initial render of tabs
+      setTimeout(() => renderDepSchedule(a), 100);
+      setTimeout(() => loadLinkedInvoices(a.id), 120);
+    }
 
-// ------------------------
-// Functionality Methods migrated exactly as they were
-// ------------------------
+    // ------------------------
+    // Functionality Methods migrated exactly as they were
+    // ------------------------
 
-function statusBadge(status) {
-  const map = { active: 'bg-green-100 text-green-700', retired: 'bg-red-100 text-red-700', draft: 'bg-yellow-100 text-yellow-700' };
-  const cls = map[status] || 'bg-slate-100 text-slate-700';
-  return `<span class="px-2.5 py-1 ${cls} text-[10px] font-bold uppercase tracking-wider rounded">${status || 'unknown'}</span>`;
-}
+    function statusBadge(status) {
+      const map = { active: 'bg-green-100 text-green-700', retired: 'bg-red-100 text-red-700', draft: 'bg-yellow-100 text-yellow-700' };
+      const cls = map[status] || 'bg-slate-100 text-slate-700';
+      return `<span class="px-2.5 py-1 ${cls} text-[10px] font-bold uppercase tracking-wider rounded">${status || 'unknown'}</span>`;
+    }
 
-function updateLocationUI() {
-  const select = document.getElementById('loc-select');
-  if(!select) return;
-  const t = select.options[select.selectedIndex].text;
-  document.getElementById('loc-display').innerText = select.value ? t : 'Unassigned';
-}
+    function updateLocationUI() {
+      const select = document.getElementById('loc-select');
+      if (!select) return;
+      const t = select.options[select.selectedIndex].text;
+      document.getElementById('loc-display').innerText = select.value ? t : 'Unassigned';
+    }
 
-function switchTab(name, btn) {
-  document.querySelectorAll('.rtab').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.rtab-panel').forEach(p => p.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('tab-' + name).classList.add('active');
-}
+    function switchTab(name, btn) {
+      document.querySelectorAll('.rtab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.rtab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + name).classList.add('active');
+    }
 
-// Data formatters
-function formatCurrency(val) { return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(val || 0); }
-function formatDate(isoStr) { if (!isoStr) return '—'; const d = new Date(isoStr); return isNaN(d) ? isoStr : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); }
+    // Data formatters
+    function formatCurrency(val) { return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(val || 0); }
+    function formatDate(isoStr) { if (!isoStr) return '—'; const d = new Date(isoStr); return isNaN(d) ? isoStr : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); }
 
-// Core logic hooks
-function computeDepreciation(a, overrides = {}) {
-  const method = overrides.method || a.depreciationMethod || 'SLM';
-  const rate = (overrides.rate || a.depreciationRate || 15) / 100;
-  const life = overrides.life || a.usefulLifeYears || 5;
-  const salvage = overrides.salvage !== undefined ? overrides.salvage : (a.salvageValue || 1);
-  const cost = a.purchasePrice || 0;
-  const acqDate = a.acquisitionDate ? new Date(a.acquisitionDate) : new Date();
-  const now = new Date();
-  const yearsElapsed = Math.max(0, (now - acqDate) / (1000*60*60*24*365));
-  let currentValue = cost, depSoFar = 0, yr = 0;
-  while (yr < yearsElapsed && currentValue > salvage) {
-    const dep = method === 'WDV' ? (currentValue - salvage) * rate : (cost - salvage) / life;
-    const actual = Math.min(dep, currentValue - salvage);
-    currentValue = Math.max(currentValue - actual, salvage);
-    depSoFar += actual;
-    yr++;
-  }
-  return { currentValue: Math.round(currentValue), depSoFar: Math.round(depSoFar) };
-}
+    // Core logic hooks
+    function computeDepreciation(a, overrides = {}) {
+      const method = overrides.method || a.depreciationMethod || 'SLM';
+      const rate = (overrides.rate || a.depreciationRate || 15) / 100;
+      const life = overrides.life || a.usefulLifeYears || 5;
+      const salvage = overrides.salvage !== undefined ? overrides.salvage : (a.salvageValue || 1);
+      const cost = a.purchasePrice || 0;
+      const acqDate = a.acquisitionDate ? new Date(a.acquisitionDate) : new Date();
+      const now = new Date();
+      const yearsElapsed = Math.max(0, (now - acqDate) / (1000 * 60 * 60 * 24 * 365));
+      let currentValue = cost, depSoFar = 0, yr = 0;
+      while (yr < yearsElapsed && currentValue > salvage) {
+        const dep = method === 'WDV' ? (currentValue - salvage) * rate : (cost - salvage) / life;
+        const actual = Math.min(dep, currentValue - salvage);
+        currentValue = Math.max(currentValue - actual, salvage);
+        depSoFar += actual;
+        yr++;
+      }
+      return { currentValue: Math.round(currentValue), depSoFar: Math.round(depSoFar) };
+    }
 
-function renderDepSchedule(a, overrides = {}) {
-  const method = overrides.method || document.getElementById('dep-method')?.value || a.depreciationMethod || 'SLM';
-  const rate = parseFloat(overrides.rate || document.getElementById('dep-rate')?.value || a.depreciationRate || 15);
-  const life = parseInt(overrides.life || document.getElementById('dep-life')?.value || a.usefulLifeYears || 5);
-  const salvage = parseFloat(overrides.salvage || document.getElementById('dep-salvage')?.value || a.salvageValue || 1);
-  const cost = a.purchasePrice || 0;
-  const acqDate = a.acquisitionDate ? new Date(a.acquisitionDate) : new Date();
-  const fyStart = acqDate.getMonth() >= 3 ? acqDate.getFullYear() : acqDate.getFullYear() - 1;
-  let rows = '', opening = cost, today = new Date().getFullYear() * 12 + new Date().getMonth();
-  
-  for (let yr = 0; yr < Math.min(life, 10); yr++) {
-    if (opening <= salvage) break;
-    const fyYear = fyStart + yr, fy = `FY ${fyYear}-${String(fyYear+1).slice(-2)}`;
-    const isCurrent = today >= (fyYear*12+3) && today < ((fyYear+1)*12+3);
-    const isPast = today >= ((fyYear+1)*12+3);
-    const dep = method === 'WDV' ? (opening - salvage) * (rate/100) : ((cost - salvage) / life);
-    const actualDep = Math.min(dep, opening - salvage);
-    const closing = Math.max(opening - actualDep, salvage);
-    const rC = isPast ? 'opacity-60 bg-surface' : isCurrent ? 'bg-primary/5 border-l-2 border-l-primary font-bold' : '';
-    rows += `<tr class="border-b border-surface-container ${rC}"><td class="py-3 px-4">${fy} ${isCurrent ? '<span class="text-[8px] bg-primary text-white px-1 ml-1 rounded">NOW</span>':''}</td><td class="py-3 px-4 text-right">${formatCurrency(opening)}</td><td class="py-3 px-4 text-right text-error">-${formatCurrency(actualDep)}</td><td class="py-3 px-4 text-right">${formatCurrency(closing)}</td></tr>`;
-    opening = closing;
-  }
-  const el = document.getElementById('dep-schedule-table');
-  if(!el) return;
-  el.innerHTML = `<div class="rounded-xl border border-surface-container overflow-hidden bg-white"><table class="w-full text-sm text-left"><thead class="bg-surface-container-low text-[10px] font-bold uppercase tracking-wider text-on-surface-variant border-b border-surface-container"><tr><th class="py-3 px-4">Period</th><th class="py-3 px-4 text-right">Opening</th><th class="py-3 px-4 text-right">Depreciation</th><th class="py-3 px-4 text-right">Closing WDV</th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="text-center py-6 text-xs italic text-on-surface-variant">No schedule</td></tr>'}</tbody></table></div>`;
-}
+    function renderDepSchedule(a, overrides = {}) {
+      const method = overrides.method || document.getElementById('dep-method')?.value || a.depreciationMethod || 'SLM';
+      const rate = parseFloat(overrides.rate || document.getElementById('dep-rate')?.value || a.depreciationRate || 15);
+      const life = parseInt(overrides.life || document.getElementById('dep-life')?.value || a.usefulLifeYears || 5);
+      const salvage = parseFloat(overrides.salvage || document.getElementById('dep-salvage')?.value || a.salvageValue || 1);
+      const cost = a.purchasePrice || 0;
+      const acqDate = a.acquisitionDate ? new Date(a.acquisitionDate) : new Date();
+      const fyStart = acqDate.getMonth() >= 3 ? acqDate.getFullYear() : acqDate.getFullYear() - 1;
+      let rows = '', opening = cost, today = new Date().getFullYear() * 12 + new Date().getMonth();
 
-async function updateDepreciation(assetId) {
-  const a = Storage.getAsset(assetId); if(!a) return;
-  a.depreciationMethod = document.getElementById('dep-method').value;
-  a.depreciationRate = parseFloat(document.getElementById('dep-rate').value)||15;
-  a.usefulLifeYears = parseInt(document.getElementById('dep-life').value)||5;
-  a.salvageValue = parseFloat(document.getElementById('dep-salvage').value)||1;
-  await Storage.saveAsset(a);
-  renderDepSchedule(a, { method:a.depreciationMethod, rate:a.depreciationRate, life:a.usefulLifeYears, salvage:a.salvageValue });
-}
+      for (let yr = 0; yr < Math.min(life, 10); yr++) {
+        if (opening <= salvage) break;
+        const fyYear = fyStart + yr, fy = `FY ${fyYear}-${String(fyYear + 1).slice(-2)}`;
+        const isCurrent = today >= (fyYear * 12 + 3) && today < ((fyYear + 1) * 12 + 3);
+        const isPast = today >= ((fyYear + 1) * 12 + 3);
+        const dep = method === 'WDV' ? (opening - salvage) * (rate / 100) : ((cost - salvage) / life);
+        const actualDep = Math.min(dep, opening - salvage);
+        const closing = Math.max(opening - actualDep, salvage);
+        const rC = isPast ? 'opacity-60 bg-surface' : isCurrent ? 'bg-primary/5 border-l-2 border-l-primary font-bold' : '';
+        rows += `<tr class="border-b border-surface-container ${rC}"><td class="py-3 px-4">${fy} ${isCurrent ? '<span class="text-[8px] bg-primary text-white px-1 ml-1 rounded">NOW</span>' : ''}</td><td class="py-3 px-4 text-right">${formatCurrency(opening)}</td><td class="py-3 px-4 text-right text-error">-${formatCurrency(actualDep)}</td><td class="py-3 px-4 text-right">${formatCurrency(closing)}</td></tr>`;
+        opening = closing;
+      }
+      const el = document.getElementById('dep-schedule-table');
+      if (!el) return;
+      el.innerHTML = `<div class="rounded-xl border border-surface-container overflow-hidden bg-white"><table class="w-full text-sm text-left"><thead class="bg-surface-container-low text-[10px] font-bold uppercase tracking-wider text-on-surface-variant border-b border-surface-container"><tr><th class="py-3 px-4">Period</th><th class="py-3 px-4 text-right">Opening</th><th class="py-3 px-4 text-right">Depreciation</th><th class="py-3 px-4 text-right">Closing WDV</th></tr></thead><tbody>${rows || '<tr><td colspan="4" class="text-center py-6 text-xs italic text-on-surface-variant">No schedule</td></tr>'}</tbody></table></div>`;
+    }
 
-async function saveField(assetId, field, value) { const a = Storage.getAsset(assetId); if(!a) return; a[field] = value; await Storage.saveAsset(a); }
+    async function updateDepreciation(assetId) {
+      const a = Storage.getAsset(assetId); if (!a) return;
+      a.depreciationMethod = document.getElementById('dep-method').value;
+      a.depreciationRate = parseFloat(document.getElementById('dep-rate').value) || 15;
+      a.usefulLifeYears = parseInt(document.getElementById('dep-life').value) || 5;
+      a.salvageValue = parseFloat(document.getElementById('dep-salvage').value) || 1;
+      await Storage.saveAsset(a);
+      renderDepSchedule(a, { method: a.depreciationMethod, rate: a.depreciationRate, life: a.usefulLifeYears, salvage: a.salvageValue });
+    }
 
-// Links
-let pendingLink = null;
-function openLinkModal(id) { pendingLink = id; document.getElementById('link-modal').classList.add('active'); }
-function closeLinkModal() { document.getElementById('link-modal').classList.remove('active'); pendingLink = null; }
-async function submitLinkInvoice() {
-  if(!pendingLink) return;
-  const t = document.getElementById('link-type').value, v = document.getElementById('link-invoice').value.trim(), d = document.getElementById('link-date').value;
-  if(!v) { alert("Document number required"); return; }
-  await Storage.linkInvoice(pendingLink, { invoice_type:t, invoice_number:v, invoice_date:d, amount:parseFloat(document.getElementById('link-amount').value)||null, description:document.getElementById('link-desc').value.trim() });
-  closeLinkModal(); loadLinkedInvoices(pendingLink);
-}
-async function loadLinkedInvoices(id) {
-  const el = document.getElementById('linked-invoices-list');
-  try{
-    const lns = await Storage.getLinkedInvoices(id);
-    if(!lns || !lns.length){ el.innerHTML = '<p class="text-xs text-on-surface-variant py-4 text-center border border-dashed rounded-lg border-outline-variant/30">No linked documents found.</p>'; return; }
-    const cMap = { purchase: 'bg-primary font-bold text-white', warranty: 'bg-green-600 text-white', amc: 'bg-purple-600 text-white' };
-    el.innerHTML = lns.map(l => `<div class="p-4 bg-surface-container-lowest border border-outline-variant/10 rounded-xl mb-3 flex justify-between items-center hover:border-primary/50 transition-colors"><div class="flex flex-col gap-1"><span class="text-[9px] uppercase px-2 py-0.5 rounded w-fit ${cMap[l.invoice_type||l.link_type]||'bg-surface-variant text-on-surface-variant'}">${(l.invoice_type||l.link_type||'Other')}</span><p class="text-sm font-bold">${l.invoice_number||l.invoiceNumber||'—'}</p><p class="text-[11px] text-on-surface-variant">${formatDate(l.invoice_date||l.date)} ${l.amount?'- '+formatCurrency(l.amount):''}</p></div><button class="text-primary hover:bg-primary/10 p-2 rounded-lg cursor-pointer"><span class="material-symbols-outlined text-[18px]">download</span></button></div>`).join('');
-  }catch(e){ el.innerHTML = '<p class="text-xs text-error">Failed to load</p>'; }
-}
+    async function saveField(assetId, field, value) { const a = Storage.getAsset(assetId); if (!a) return; a[field] = value; await Storage.saveAsset(a); }
 
-// Manage List Modal
-let _mT = null;
-function openManageModal(t){ _mT=t; document.getElementById('manage-modal-title').innerText=`Manage ${t==='location'?'Locations':'Departments'}`; document.getElementById('manage-modal-input').value=''; document.getElementById('manage-modal').classList.add('active'); renderManageList(); }
-function closeManageModal(){ document.getElementById('manage-modal').classList.remove('active'); _mT=null; if(currentAssetId){ Storage.getAssetAsync(currentAssetId).then(a=>renderAsset(a));} }
-function renderManageList(){
-  const els = _mT==='location'?Storage.getLocations():Storage.getDepartments();
-  const list = document.getElementById('manage-modal-list');
-  if(!els || !els.length) { list.innerHTML="<p class='text-xs text-on-surface-variant text-center'>No items</p>"; return; }
-  list.innerHTML = els.map(e => `<div class="flex justify-between items-center py-2 px-3 bg-surface-container-low rounded mb-1.5"><span class="text-sm font-bold">${e.name}</span><button onclick="deleteManageItem('${e.id}')" class="text-error"><span class="material-symbols-outlined text-[16px]">delete</span></button></div>`).join('');
-}
-async function addManageItem(){ const v=document.getElementById('manage-modal-input').value.trim(); if(!v) return; if(_mT==='location'){ await Storage.saveLocation({name:v}); await Storage.fetchLocations(); }else{ await Storage.saveDepartment({name:v}); await Storage.fetchDepartments(); } document.getElementById('manage-modal-input').value=''; renderManageList(); }
-async function deleteManageItem(id){ if(!confirm('Delete?'))return; if(_mT==='location'){await Storage.deleteLocation(id);}else{await Storage.deleteDepartment(id);} renderManageList(); }
+    // Links
+    let pendingLink = null;
+    function openLinkModal(id) { pendingLink = id; document.getElementById('link-modal').classList.add('active'); }
+    function closeLinkModal() { document.getElementById('link-modal').classList.remove('active'); pendingLink = null; }
+    async function submitLinkInvoice() {
+      if (!pendingLink) return;
+      const t = document.getElementById('link-type').value, v = document.getElementById('link-invoice').value.trim(), d = document.getElementById('link-date').value;
+      if (!v) { alert("Document number required"); return; }
+      await Storage.linkInvoice(pendingLink, { invoice_type: t, invoice_number: v, invoice_date: d, amount: parseFloat(document.getElementById('link-amount').value) || null, description: document.getElementById('link-desc').value.trim() });
+      closeLinkModal(); loadLinkedInvoices(pendingLink);
+    }
+    async function loadLinkedInvoices(id) {
+      const el = document.getElementById('linked-invoices-list');
+      try {
+        const lns = await Storage.getLinkedInvoices(id);
+        if (!lns || !lns.length) { el.innerHTML = '<p class="text-xs text-on-surface-variant py-4 text-center border border-dashed rounded-lg border-outline-variant/30">No linked documents found.</p>'; return; }
+        const cMap = { purchase: 'bg-primary font-bold text-white', warranty: 'bg-green-600 text-white', amc: 'bg-purple-600 text-white' };
+        el.innerHTML = lns.map(l => `<div class="p-4 bg-surface-container-lowest border border-outline-variant/10 rounded-xl mb-3 flex justify-between items-center hover:border-primary/50 transition-colors"><div class="flex flex-col gap-1"><span class="text-[9px] uppercase px-2 py-0.5 rounded w-fit ${cMap[l.invoice_type || l.link_type] || 'bg-surface-variant text-on-surface-variant'}">${(l.invoice_type || l.link_type || 'Other')}</span><p class="text-sm font-bold">${l.invoice_number || l.invoiceNumber || '—'}</p><p class="text-[11px] text-on-surface-variant">${formatDate(l.invoice_date || l.date)} ${l.amount ? '- ' + formatCurrency(l.amount) : ''}</p></div><button class="text-primary hover:bg-primary/10 p-2 rounded-lg cursor-pointer"><span class="material-symbols-outlined text-[18px]">download</span></button></div>`).join('');
+      } catch (e) { el.innerHTML = '<p class="text-xs text-error">Failed to load</p>'; }
+    }
 
-// Photo Upload
-function uploadPhoto(id, inp){
-    const f=inp.files[0]; if(!f) return;
-    const r=new FileReader(); r.onload=async e=>{ Storage.saveAssetImage(id, e.target.result); await Storage.addAuditEntry(null, id, 'image_uploaded', 'Photo added'); const a=Storage.getAsset(id); if(a) renderAsset(a); }; r.readAsDataURL(f);
-}
-function removePhoto(id){
-    if(!confirm("Remove photo?")) return;
-    Storage.removeAssetImage(id); const a=Storage.getAsset(id); if(a) renderAsset(a);
-}
+    // Manage List Modal
+    let _mT = null;
+    function openManageModal(t) { _mT = t; document.getElementById('manage-modal-title').innerText = `Manage ${t === 'location' ? 'Locations' : 'Departments'}`; document.getElementById('manage-modal-input').value = ''; document.getElementById('manage-modal').classList.add('active'); renderManageList(); }
+    function closeManageModal() { document.getElementById('manage-modal').classList.remove('active'); _mT = null; if (currentAssetId) { Storage.getAssetAsync(currentAssetId).then(a => renderAsset(a)); } }
+    function renderManageList() {
+      const els = _mT === 'location' ? Storage.getLocations() : Storage.getDepartments();
+      const list = document.getElementById('manage-modal-list');
+      if (!els || !els.length) { list.innerHTML = "<p class='text-xs text-on-surface-variant text-center'>No items</p>"; return; }
+      list.innerHTML = els.map(e => `<div class="flex justify-between items-center py-2 px-3 bg-surface-container-low rounded mb-1.5"><span class="text-sm font-bold">${e.name}</span><button onclick="deleteManageItem('${e.id}')" class="text-error"><span class="material-symbols-outlined text-[16px]">delete</span></button></div>`).join('');
+    }
+    async function addManageItem() { const v = document.getElementById('manage-modal-input').value.trim(); if (!v) return; if (_mT === 'location') { await Storage.saveLocation({ name: v }); await Storage.fetchLocations(); } else { await Storage.saveDepartment({ name: v }); await Storage.fetchDepartments(); } document.getElementById('manage-modal-input').value = ''; renderManageList(); }
+    async function deleteManageItem(id) { if (!confirm('Delete?')) return; if (_mT === 'location') { await Storage.deleteLocation(id); } else { await Storage.deleteDepartment(id); } renderManageList(); }
 
-// Extras
-function downloadQR(id) {
-    const canvas = document.querySelector('#qr-canvas canvas');
-    if (!canvas) return;
-    const url = canvas.toDataURL('image/png');
-    const link = document.createElement('a');
-    link.href = url; link.download = `qr_${id}.png`; link.click();
-}
-function exportAssetPDF(id) { alert("PDF Export triggered (logic identical to old file, preserved behind the button)."); }
+    // Photo Upload
+    function uploadPhoto(id, inp) {
+      const f = inp.files[0]; if (!f) return;
+      const r = new FileReader(); r.onload = async e => { Storage.saveAssetImage(id, e.target.result); await Storage.addAuditEntry(null, id, 'image_uploaded', 'Photo added'); const a = Storage.getAsset(id); if (a) renderAsset(a); }; r.readAsDataURL(f);
+    }
+    function removePhoto(id) {
+      if (!confirm("Remove photo?")) return;
+      Storage.removeAssetImage(id); const a = Storage.getAsset(id); if (a) renderAsset(a);
+    }
 
-</script>
-</body></html>
+    // Extras
+    function downloadQR(id) {
+      const canvas = document.querySelector('#qr-canvas canvas');
+      if (!canvas) return;
+      const url = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = url; link.download = `qr_${id}.png`; link.click();
+    }
+    function exportAssetPDF(id) { alert("PDF Export triggered (logic identical to old file, preserved behind the button)."); }
+
+  </script>
+</body>
+
+</html>

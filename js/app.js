@@ -51,6 +51,31 @@
     .modal-enter { animation: modalFadeIn 0.25s ease-out; }
     @keyframes modalFadeIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
 
+    /* AI Agent Chat Widget */
+    #ac-agent-fab { position:fixed; bottom:100px; right:24px; z-index:900; width:56px; height:56px; border-radius:50%;
+      background:linear-gradient(135deg,#005DA9,#0176D3); color:#fff; border:none; cursor:pointer;
+      box-shadow:0 4px 20px rgba(0,93,169,0.35); display:flex; align-items:center; justify-content:center;
+      transition:all 0.2s; }
+    #ac-agent-fab:hover { transform:scale(1.08); box-shadow:0 6px 28px rgba(0,93,169,0.45); }
+    #ac-agent-panel { position:fixed; bottom:170px; right:24px; z-index:901; width:380px; max-width:calc(100vw - 32px);
+      max-height:500px; background:#fff; border-radius:16px; box-shadow:0 12px 48px rgba(0,0,0,0.15);
+      display:none; flex-direction:column; overflow:hidden; border:1px solid #c0c7d4; }
+    #ac-agent-panel.open { display:flex; animation:modalFadeIn 0.25s ease-out; }
+    #ac-agent-messages { flex:1; overflow-y:auto; padding:16px; space-y:12px; min-height:200px; max-height:340px; }
+    .agent-msg { padding:10px 14px; border-radius:12px; font-size:13px; line-height:1.5; max-width:90%; margin-bottom:10px; }
+    .agent-msg.user { background:#005da9; color:#fff; margin-left:auto; border-bottom-right-radius:4px; }
+    .agent-msg.bot { background:#f3f3f3; color:#1a1c1c; margin-right:auto; border-bottom-left-radius:4px; }
+    .agent-msg.bot strong { color:#005da9; }
+    .agent-typing { display:flex; gap:4px; padding:10px 14px; }
+    .agent-typing span { width:6px; height:6px; background:#005da9; border-radius:50%; animation:agentBounce 1.2s infinite; }
+    .agent-typing span:nth-child(2) { animation-delay:0.15s; }
+    .agent-typing span:nth-child(3) { animation-delay:0.3s; }
+    @keyframes agentBounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-8px)} }
+    @media(max-width:768px) {
+      #ac-agent-fab { bottom:90px; right:16px; width:48px; height:48px; }
+      #ac-agent-panel { bottom:150px; right:16px; width:calc(100vw - 32px); max-height:60vh; }
+    }
+
     /* Mobile responsiveness */
     @media (max-width: 768px) {
       #sidebar { transform: translateX(-100%); position: fixed; z-index: 999; width: 260px; }
@@ -448,3 +473,120 @@ document.addEventListener('click', (e) => {
     if (overlay) overlay.classList.remove('active');
   }
 });
+
+/* ── AssetCues AI Agent Chat Widget ── */
+(function initAgentWidget() {
+  if (document.getElementById('ac-agent-fab')) return;
+
+  // FAB button
+  const fab = document.createElement('button');
+  fab.id = 'ac-agent-fab';
+  fab.title = 'AssetCues AI Agent';
+  fab.innerHTML = '<span class="material-symbols-outlined text-2xl" style="font-variation-settings:\'FILL\' 1">smart_toy</span>';
+  fab.onclick = () => {
+    const panel = document.getElementById('ac-agent-panel');
+    panel.classList.toggle('open');
+  };
+  document.body.appendChild(fab);
+
+  // Chat panel
+  const panel = document.createElement('div');
+  panel.id = 'ac-agent-panel';
+  panel.innerHTML = `
+    <div class="flex items-center gap-3 px-4 py-3 border-b border-outline-variant/20 bg-surface-container-low">
+      <div class="w-8 h-8 signature-gradient rounded-lg flex items-center justify-center">
+        <span class="material-symbols-outlined text-white text-sm" style="font-variation-settings:'FILL' 1">smart_toy</span>
+      </div>
+      <div class="flex-1">
+        <h4 class="text-sm font-bold text-on-surface">AssetCues AI Agent</h4>
+        <p class="text-[10px] text-on-surface-variant">Ask anything about your assets</p>
+      </div>
+      <button onclick="document.getElementById('ac-agent-panel').classList.remove('open')" class="p-1 text-on-surface-variant hover:text-on-surface">
+        <span class="material-symbols-outlined text-sm">close</span>
+      </button>
+    </div>
+    <div id="ac-agent-messages">
+      <div class="agent-msg bot">Hello! I'm your <strong>AssetCues AI Agent</strong>. Ask me anything about your assets, invoices, vendors, or compliance data.</div>
+    </div>
+    <div class="flex items-center gap-2 p-3 border-t border-outline-variant/20">
+      <input id="ac-agent-input" type="text" placeholder="Ask about your assets..."
+        class="flex-1 px-3 py-2 bg-surface-container-highest border-none rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+        onkeydown="if(event.key==='Enter')sendAgentMessage()" />
+      <button onclick="sendAgentMessage()" class="w-9 h-9 signature-gradient rounded-lg flex items-center justify-center text-white shrink-0">
+        <span class="material-symbols-outlined text-sm">send</span>
+      </button>
+    </div>
+  `;
+  document.body.appendChild(panel);
+})();
+
+function _buildAgentContext() {
+  const assets = Storage.getAssets();
+  const extractions = Storage.getExtractions();
+  const vendors = Storage.getVendorProfiles ? Storage.getVendorProfiles() : [];
+
+  const totalValue = assets.reduce((s, a) => s + (a.totalCost || 0), 0);
+  const totalTax = assets.reduce((s, a) => s + (a.tax || 0), 0);
+  const categories = {};
+  const statusCounts = {};
+  const vendorCounts = {};
+  assets.forEach(a => {
+    categories[a.category || 'Unknown'] = (categories[a.category || 'Unknown'] || 0) + 1;
+    statusCounts[a.status || 'unknown'] = (statusCounts[a.status || 'unknown'] || 0) + 1;
+    vendorCounts[a.vendor || 'Unknown'] = (vendorCounts[a.vendor || 'Unknown'] || 0) + 1;
+  });
+
+  return `ASSET MANAGEMENT DATA SUMMARY:
+- Total assets: ${assets.length}
+- Total asset value: ₹${totalValue.toLocaleString('en-IN')}
+- Total tax paid: ₹${totalTax.toLocaleString('en-IN')}
+- Assets by category: ${JSON.stringify(categories)}
+- Assets by status: ${JSON.stringify(statusCounts)}
+- Assets by vendor: ${JSON.stringify(vendorCounts)}
+- Total extractions/invoices: ${extractions.length}
+- Extractions: ${extractions.map(e => `${e.invoiceNumber || 'N/A'} from ${e.vendorName || 'Unknown'} (${e.status})`).join('; ')}
+- Vendor profiles: ${vendors.map(v => v.vendor_name || v.name).join(', ') || 'None'}
+- Top 5 assets: ${assets.slice(0, 5).map(a => `${a.tempAssetId}: ${a.name} (₹${(a.totalCost||0).toLocaleString('en-IN')}, ${a.status})`).join('; ')}`;
+}
+
+async function sendAgentMessage() {
+  const input = document.getElementById('ac-agent-input');
+  const messages = document.getElementById('ac-agent-messages');
+  const question = input.value.trim();
+  if (!question) return;
+
+  // Add user message
+  messages.innerHTML += `<div class="agent-msg user">${question}</div>`;
+  input.value = '';
+
+  // Add typing indicator
+  messages.innerHTML += `<div class="agent-typing" id="agent-typing"><span></span><span></span><span></span></div>`;
+  messages.scrollTop = messages.scrollHeight;
+
+  try {
+    const baseUrl = Storage.getSettings().apiUrl || 'https://assetcues-backend.onrender.com';
+    const context = _buildAgentContext();
+    const res = await fetch(`${baseUrl}/api/v1/agent/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, context }),
+    });
+
+    const typing = document.getElementById('agent-typing');
+    if (typing) typing.remove();
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    // Simple markdown-to-html: bold, bullets, line breaks
+    let answer = (data.answer || 'No response').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^\- /gm, '• ').replace(/\n/g, '<br>');
+    messages.innerHTML += `<div class="agent-msg bot">${answer}</div>`;
+  } catch (e) {
+    const typing = document.getElementById('agent-typing');
+    if (typing) typing.remove();
+    messages.innerHTML += `<div class="agent-msg bot" style="color:#ba1a1a">Sorry, I couldn't process that. Make sure the backend is running.</div>`;
+  }
+  messages.scrollTop = messages.scrollHeight;
+}
+window.sendAgentMessage = sendAgentMessage;
