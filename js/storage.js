@@ -878,6 +878,16 @@ const Storage = {
     return await Supabase.insert('departments', dept);
   },
 
+  async deleteLocation(id) {
+    await Supabase.delete('locations', id);
+    await this.fetchLocations();
+  },
+
+  async deleteDepartment(id) {
+    await Supabase.delete('departments', id);
+    await this.fetchDepartments();
+  },
+
   // ─── TEMPLATES ─────────────────────────────────────
   async fetchTemplates() {
     try {

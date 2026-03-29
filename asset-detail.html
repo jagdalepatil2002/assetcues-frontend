@@ -47,6 +47,19 @@ tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-tertiary-container"
   </div>
 </main>
 
+<!-- Manage Location/Department Modal -->
+<div id="manage-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[999] hidden">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative modal-enter">
+    <button onclick="closeManageModal()" class="absolute top-4 right-4 p-1 text-on-surface-variant hover:text-on-surface"><span class="material-symbols-outlined">close</span></button>
+    <h3 id="manage-modal-title" class="font-headline font-bold text-lg mb-4"></h3>
+    <div id="manage-modal-list" class="space-y-2 max-h-64 overflow-y-auto mb-4"></div>
+    <div class="flex gap-2">
+      <input id="manage-modal-input" type="text" placeholder="Enter name..." class="flex-1 px-3 py-2 rounded-lg border border-outline-variant/30 text-sm focus:ring-2 focus:ring-primary focus:outline-none" />
+      <button onclick="addManageItem()" class="px-4 py-2 btn-glow rounded-lg text-sm font-bold">Add</button>
+    </div>
+  </div>
+</div>
+
 <!-- Add Linked Invoice Modal -->
 <div id="link-modal" class="modal-overlay" onclick="if(event.target===this)closeLinkModal()">
   <div class="modal-content p-6">
@@ -217,15 +230,21 @@ async function renderAsset(a) {
             <div><p class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Asset Tag</p><p class="text-sm font-medium mt-1 font-mono">${a.tempAssetId || '—'}</p></div>
             <div><p class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Invoice Number</p><p class="text-sm font-medium mt-1">${a.invoiceNumber || '—'}</p></div>
             <div>
-              <p class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">Location</p>
-              <select onchange="saveField('${a.id}','locationId',this.value)" class="w-full text-sm bg-surface-container-low border-none rounded-lg px-2 py-1.5 font-medium focus:ring-2 focus:ring-primary focus:outline-none">
+              <div class="flex items-center justify-between mb-1">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Location</p>
+                <button onclick="openManageModal('location')" class="text-[9px] font-bold text-primary hover:underline">+ Manage</button>
+              </div>
+              <select id="loc-select" onchange="saveField('${a.id}','locationId',this.value)" class="w-full text-sm bg-surface-container-low border-none rounded-lg px-2 py-1.5 font-medium focus:ring-2 focus:ring-primary focus:outline-none">
                 <option value="">— Select —</option>
                 ${(Storage.getLocations ? Storage.getLocations() : []).map(l => `<option value="${l.id}" ${a.locationId===l.id?'selected':''}>${l.name}</option>`).join('')}
               </select>
             </div>
             <div>
-              <p class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">Department</p>
-              <select onchange="saveField('${a.id}','departmentId',this.value)" class="w-full text-sm bg-surface-container-low border-none rounded-lg px-2 py-1.5 font-medium focus:ring-2 focus:ring-primary focus:outline-none">
+              <div class="flex items-center justify-between mb-1">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Department</p>
+                <button onclick="openManageModal('department')" class="text-[9px] font-bold text-primary hover:underline">+ Manage</button>
+              </div>
+              <select id="dept-select" onchange="saveField('${a.id}','departmentId',this.value)" class="w-full text-sm bg-surface-container-low border-none rounded-lg px-2 py-1.5 font-medium focus:ring-2 focus:ring-primary focus:outline-none">
                 <option value="">— Select —</option>
                 ${(Storage.getDepartments ? Storage.getDepartments() : []).map(d => `<option value="${d.id}" ${a.departmentId===d.id?'selected':''}>${d.name}</option>`).join('')}
               </select>
@@ -836,6 +855,76 @@ async function exportAssetPDF(id) {
   }
 
   doc.save(`${a.tempAssetId || 'asset'}_report.pdf`);
+}
+
+/* ── Manage Locations & Departments Modal ── */
+let _manageType = null;
+
+function openManageModal(type) {
+  _manageType = type;
+  const modal = document.getElementById('manage-modal');
+  const title = document.getElementById('manage-modal-title');
+  title.textContent = type === 'location' ? 'Manage Locations' : 'Manage Departments';
+  document.getElementById('manage-modal-input').value = '';
+  modal.classList.remove('hidden');
+  renderManageList();
+}
+
+function closeManageModal() {
+  document.getElementById('manage-modal').classList.add('hidden');
+  _manageType = null;
+  // Refresh the asset page to update dropdowns
+  if (currentAssetId) {
+    Storage.getAssetAsync(currentAssetId).then(a => { if (a) renderAsset(a); });
+  }
+}
+
+function renderManageList() {
+  const list = document.getElementById('manage-modal-list');
+  const items = _manageType === 'location' ? Storage.getLocations() : Storage.getDepartments();
+  if (!items || items.length === 0) {
+    list.innerHTML = '<p class="text-xs text-on-surface-variant text-center py-4">No items yet. Add one below.</p>';
+    return;
+  }
+  list.innerHTML = items.map(item => `
+    <div class="flex items-center justify-between py-2 px-3 bg-surface-container-low rounded-lg">
+      <div>
+        <p class="text-sm font-medium">${item.name}</p>
+        ${item.city ? `<p class="text-[10px] text-on-surface-variant">${item.city}, ${item.state || ''}</p>` : ''}
+        ${item.cost_center ? `<p class="text-[10px] text-on-surface-variant">${item.cost_center}${item.head_name ? ' · ' + item.head_name : ''}</p>` : ''}
+      </div>
+      <button onclick="deleteManageItem('${item.id}')" class="p-1 text-on-surface-variant hover:text-error transition-colors">
+        <span class="material-symbols-outlined text-sm">delete</span>
+      </button>
+    </div>
+  `).join('');
+}
+
+async function addManageItem() {
+  const input = document.getElementById('manage-modal-input');
+  const name = input.value.trim();
+  if (!name) return;
+  if (_manageType === 'location') {
+    await Storage.saveLocation({ name });
+    await Storage.fetchLocations();
+  } else {
+    await Storage.saveDepartment({ name });
+    await Storage.fetchDepartments();
+  }
+  input.value = '';
+  showToast(`${_manageType === 'location' ? 'Location' : 'Department'} "${name}" added`, 'success');
+  renderManageList();
+}
+
+async function deleteManageItem(id) {
+  if (!confirm('Delete this item?')) return;
+  if (_manageType === 'location') {
+    await Storage.deleteLocation(id);
+  } else {
+    await Storage.deleteDepartment(id);
+  }
+  showToast('Deleted', 'info');
+  renderManageList();
 }
 </script>
 </body></html>
