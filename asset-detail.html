@@ -762,6 +762,11 @@
       const link = document.createElement('a');
       link.href = url; link.download = `qr_${id}.png`; link.click();
     }
+    function fmtPDF(n) {
+      // jsPDF Helvetica doesn't support ₹ — use Rs. instead
+      if (n == null || isNaN(n)) return 'Rs. 0';
+      return 'Rs. ' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+    }
     async function exportAssetPDF(id) {
       const a = Storage.getAsset(id);
       if (!a) return;
@@ -815,9 +820,9 @@
 
       // Financial table
       doc.autoTable({ startY: y, head: [['Financial Summary', '']], body: [
-        ['Purchase Price', formatCurrency(a.purchasePrice)], ['CGST', formatCurrency(a.cgst||0)],
-        ['SGST', formatCurrency(a.sgst||0)], ['IGST', formatCurrency(a.igst||0)],
-        ['Total Tax', formatCurrency(a.tax||0)], ['Total Cost', formatCurrency(a.totalCost)],
+        ['Purchase Price', fmtPDF(a.purchasePrice)], ['CGST', fmtPDF(a.cgst||0)],
+        ['SGST', fmtPDF(a.sgst||0)], ['IGST', fmtPDF(a.igst||0)],
+        ['Total Tax', fmtPDF(a.tax||0)], ['Total Cost', fmtPDF(a.totalCost)],
       ], styles:{fontSize:8.5,cellPadding:2.5}, headStyles:{fillColor:[5,150,105],textColor:255,fontStyle:'bold'},
         alternateRowStyles:{fillColor:[243,243,243]}, columnStyles:{0:{fontStyle:'bold',cellWidth:55},1:{halign:'right'}}, margin:{left:margin,right:margin} });
       y = doc.lastAutoTable.finalY + 6;
@@ -826,7 +831,7 @@
       doc.autoTable({ startY: y, head: [['Depreciation', '']], body: [
         ['Method', a.depreciationMethod==='WDV'?'Written Down Value':'Straight Line'],
         ['Rate', `${a.depreciationRate||15}%`], ['Useful Life', `${a.usefulLifeYears||5} years`],
-        ['Salvage Value', formatCurrency(a.salvageValue||1)],
+        ['Salvage Value', fmtPDF(a.salvageValue||1)],
       ], styles:{fontSize:8.5,cellPadding:2.5}, headStyles:{fillColor:[100,100,120],textColor:255,fontStyle:'bold'},
         alternateRowStyles:{fillColor:[243,243,243]}, columnStyles:{0:{fontStyle:'bold',cellWidth:45}}, margin:{left:margin,right:margin} });
       y = doc.lastAutoTable.finalY + 6;
@@ -834,7 +839,7 @@
       // Linked invoices
       try { const invoices = await Storage.getLinkedInvoices(id);
         if (invoices && invoices.length > 0) { doc.autoTable({ startY: y, head: [['Linked Documents','Invoice #','Date','Amount']],
-          body: invoices.map(inv => [(inv.invoice_type||'purchase').toUpperCase(), inv.invoice_number||'—', formatDate(inv.invoice_date)||'—', inv.amount?formatCurrency(inv.amount):'—']),
+          body: invoices.map(inv => [(inv.invoice_type||'purchase').toUpperCase(), inv.invoice_number||'—', formatDate(inv.invoice_date)||'—', inv.amount?fmtPDF(inv.amount):'—']),
           styles:{fontSize:8.5,cellPadding:2.5}, headStyles:{fillColor:[0,93,169],textColor:255,fontStyle:'bold'}, alternateRowStyles:{fillColor:[243,243,243]}, margin:{left:margin,right:margin} }); }
       } catch(e){}
 
