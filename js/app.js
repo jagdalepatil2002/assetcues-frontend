@@ -422,7 +422,7 @@ window.animateCount = animateCount;
 function confidenceRing(c) {
   if (c == null) return `<span class="text-xs text-on-surface-variant">N/A</span>`;
   const pct = Math.round(c * 100);
-  const color = pct >= 90 ? '#059669' : pct >= 70 ? '#4f46e5' : '#dc2626';
+  const color = pct >= 90 ? '#059669' : pct >= 70 ? '#005da9' : '#dc2626';
   return `<div class="confidence-ring" style="--ring-pct:${pct}%;--ring-color:${color}"><span style="color:${color}">${pct}%</span></div>`;
 }
 window.confidenceRing = confidenceRing;
