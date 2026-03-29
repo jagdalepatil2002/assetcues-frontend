@@ -380,10 +380,10 @@
 
                 <!-- Tabs Section -->
                 <div class="bg-surface-container-low p-1.5 rounded-xl flex gap-1 w-full overflow-x-auto hide-scrollbar">
-                    <button class="rtab active px-6 py-2 rounded-lg text-sm text-on-surface-variant" onclick="switchTab('specs',this)">Technical Specs</button>
-                    <button class="rtab px-6 py-2 rounded-lg text-sm text-on-surface-variant" onclick="switchTab('depreciation',this)">Depreciation Schedule</button>
-                    <button class="rtab px-6 py-2 rounded-lg text-sm text-on-surface-variant" onclick="switchTab('history',this)">Service & Audit History</button>
-                    <button class="rtab px-6 py-2 rounded-lg text-sm text-on-surface-variant" onclick="switchTab('links',this)">Linked Documents</button>
+                    <button class="rtab active px-5 py-2 rounded-lg text-sm text-on-surface-variant whitespace-nowrap" onclick="switchTab('specs',this)">Specs</button>
+                    <button class="rtab px-5 py-2 rounded-lg text-sm text-on-surface-variant whitespace-nowrap" onclick="switchTab('depreciation',this)">Depreciation</button>
+                    <button class="rtab px-5 py-2 rounded-lg text-sm text-on-surface-variant whitespace-nowrap" onclick="switchTab('history',this)">Audit History</button>
+                    <button class="rtab px-5 py-2 rounded-lg text-sm text-on-surface-variant whitespace-nowrap" onclick="switchTab('links',this)">Linked Docs</button>
                 </div>
 
                 <!-- Specs Tab -->
@@ -544,7 +544,7 @@
             <!-- Right Column: Rail & KPI -->
             <div class="col-span-12 xl:col-span-4 space-y-6">
                 <!-- Copilot Suggestion -->
-                ${wdays && wdays < 60 && !wdays.expired ? `
+                ${wdays !== null && wdays > 0 && wdays < 60 ? `
                 <div class="bg-gradient-to-br from-slate-900 to-blue-900 text-white p-6 rounded-xl shadow-lg relative overflow-hidden">
                     <div class="absolute -top-12 -right-12 w-40 h-40 bg-blue-500/20 blur-[80px]"></div>
                     <div class="flex items-center gap-3 mb-4">
@@ -720,12 +720,13 @@
     }
 
     async function updateCategory(assetId, val) {
-      saveField(assetId, 'category', val);
+      const a = Storage.getAsset(assetId); if (!a) return;
+      a.category = val;
+      a.subCategory = '';
+      await Storage.saveAsset(a);
       const subSelect = document.getElementById('subcat-select');
-      if (subSelect) {
-        subSelect.innerHTML = _getSubCategoryOptions(val, '');
-        saveField(assetId, 'subCategory', '');
-      }
+      if (subSelect) subSelect.innerHTML = _getSubCategoryOptions(val, '');
+      showToast('Saved', 'success');
     }
 
     async function saveSerialNumber(assetId, serial) {
