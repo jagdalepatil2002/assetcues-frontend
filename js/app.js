@@ -48,6 +48,24 @@
     /* Smooth modal */
     .modal-enter { animation: modalFadeIn 0.25s ease-out; }
     @keyframes modalFadeIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      #sidebar { transform: translateX(-100%); position: fixed; z-index: 999; width: 260px; }
+      #sidebar.open { transform: translateX(0); }
+      .sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:998; }
+      .sidebar-overlay.active { display:block; }
+      main { margin-left: 0 !important; }
+      .px-6, .px-8 { padding-left: 16px !important; padding-right: 16px !important; }
+      .grid-cols-12 { grid-template-columns: 1fr !important; }
+      .lg\\:col-span-8, .lg\\:col-span-7, .lg\\:col-span-4, .lg\\:col-span-5 { grid-column: span 1 !important; }
+      h3.text-3xl { font-size: 1.25rem !important; }
+      h3.text-4xl { font-size: 1.5rem !important; }
+      .text-2xl { font-size: 1.125rem !important; }
+      table { font-size: 12px; }
+      table th, table td { padding: 6px 8px !important; }
+      .hidden-mobile { display: none !important; }
+    }
   `;
   document.head.appendChild(style);
 })();
@@ -156,7 +174,7 @@ function injectTopBar(title) {
   if (!header) return;
   header.innerHTML = `
     <div class="flex items-center gap-4">
-      <button class="md:hidden p-2 text-on-surface-variant" onclick="document.getElementById('sidebar').classList.toggle('-translate-x-full')">
+      <button class="md:hidden p-2 text-on-surface-variant" onclick="toggleMobileSidebar()">
         <span class="material-symbols-outlined">menu</span>
       </button>
       <h2 class="font-headline font-bold text-2xl tracking-tight text-on-primary-fixed">${title}</h2>
@@ -342,3 +360,37 @@ function animatePageContent(containerSelector) {
   }
 }
 window.animatePageContent = animatePageContent;
+
+/* ── Mobile Sidebar Toggle ── */
+function toggleMobileSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
+  const isOpen = sidebar.classList.contains('open');
+  if (isOpen) {
+    sidebar.classList.remove('open');
+    const overlay = document.querySelector('.sidebar-overlay');
+    if (overlay) overlay.classList.remove('active');
+  } else {
+    sidebar.classList.add('open');
+    let overlay = document.querySelector('.sidebar-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.className = 'sidebar-overlay';
+      overlay.onclick = toggleMobileSidebar;
+      document.body.appendChild(overlay);
+    }
+    overlay.classList.add('active');
+  }
+}
+window.toggleMobileSidebar = toggleMobileSidebar;
+
+// Close sidebar on any nav click (mobile)
+document.addEventListener('click', (e) => {
+  const link = e.target.closest('#sidebar a[href]');
+  if (link && window.innerWidth < 768) {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) sidebar.classList.remove('open');
+    const overlay = document.querySelector('.sidebar-overlay');
+    if (overlay) overlay.classList.remove('active');
+  }
+});

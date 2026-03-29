@@ -18,7 +18,7 @@ tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-tertiary-container"
   .drop-zone.drag-over * { pointer-events: none; }
   @keyframes pulse-glow { 0%,100%{box-shadow:0 0 0 0 rgba(79,70,229,0.3)} 50%{box-shadow:0 0 0 14px rgba(79,70,229,0)} }
   .extracting { animation: pulse-glow 1.8s ease-in-out infinite; }
-  @media (max-width: 768px) { #sidebar { transform: translateX(-100%); position: fixed; z-index: 999; } }
+  /* mobile handled by app.js global CSS */
 </style>
 </head>
 <body class="font-body text-on-surface">

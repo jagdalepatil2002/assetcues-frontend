@@ -13,7 +13,7 @@ tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-tertiary-container"
   .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle}
   body{background:#f7f9fb}
   a{text-decoration:none}
-  @media(max-width:768px){#sidebar{transform:translateX(-100%);position:fixed;z-index:999}}
+  /* mobile handled by app.js global CSS */
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s}
   .modal-overlay.active{opacity:1;pointer-events:all}
   .modal-content{background:#fff;border-radius:1rem;max-width:640px;width:95%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);transform:scale(0.95);transition:transform 0.2s}
