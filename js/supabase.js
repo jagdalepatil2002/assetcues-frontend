@@ -125,6 +125,7 @@ const Supabase = {
 
   async rpc(fnName, params = {}) {
     const url = `${SUPABASE_URL}/rest/v1/rpc/${fnName}`;
+    console.log(`%c[SUPABASE] RPC ${fnName}`, 'color:#7c3aed;font-weight:bold', params);
     const res = await fetch(url, {
       method: 'POST',
       headers: this._headers(),
@@ -135,7 +136,9 @@ const Supabase = {
       console.error(`Supabase rpc error [${fnName}]:`, err);
       return null;
     }
-    return res.json();
+    const text = await res.text();
+    if (!text) return true; // void functions return empty body
+    try { return JSON.parse(text); } catch { return true; }
   },
 
   // File upload to Supabase Storage

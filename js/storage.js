@@ -245,8 +245,9 @@ const Storage = {
 
     // Bulk delete all linked data via DB function (single call, FK-safe)
     console.log(`[STORAGE]    🗑️  Deleting extraction + all linked data...`);
-    const rpcResult = await Supabase.rpc('delete_extraction_cascade', { p_extraction_id: id });
-    if (rpcResult === null) {
+    let rpcResult = null;
+    try { rpcResult = await Supabase.rpc('delete_extraction_cascade', { p_extraction_id: id }); } catch(e) { console.warn('RPC failed:', e); }
+    if (!rpcResult) {
       // RPC not available — fallback to sequential deletes
       console.warn('[STORAGE]    RPC unavailable, using fallback...');
       await Supabase.deleteWhere('asset_invoices', { extraction_id: id });
