@@ -302,9 +302,9 @@
                         ${(() => {
           const img = Storage.getAssetImage(a.id);
           if (img) return `
-                             <img src="${img}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Asset"/>
-                             <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
-                               <button onclick="removePhoto('${a.id}')" class="bg-red-500/80 backdrop-blur-md text-white px-4 py-2 rounded-full flex items-center gap-2 hover:bg-red-500 transition-colors text-xs font-bold"><span class="material-symbols-outlined text-[14px]">delete</span> Remove Photo</button>
+                             <img src="${img}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 cursor-pointer" onclick="window.open('${img}', '_blank')" alt="Asset"/>
+                             <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6 pointer-events-none">
+                               <button onclick="removePhoto('${a.id}')" class="bg-red-500/80 backdrop-blur-md text-white px-4 py-2 rounded-full flex items-center gap-2 hover:bg-red-500 transition-colors text-xs font-bold pointer-events-auto"><span class="material-symbols-outlined text-[14px]">delete</span> Remove Photo</button>
                              </div>`;
           return `
                              <div class="w-full h-full bg-surface-container-low flex flex-col items-center justify-center p-8 text-center border-dashed border-2 border-outline-variant/30 hover:bg-surface-container transition-colors cursor-pointer" onclick="document.getElementById('photo-upload').click()">
@@ -357,7 +357,7 @@
                                     <button class="text-[9px] font-bold text-primary uppercase" onclick="openManageModal('category')">Manage</button>
                                   </div>
                                   <div class="flex items-center gap-2">
-                                    <select id="cat-select" onchange="saveField('${a.id}','category',this.value)" class="flex-1 text-sm bg-surface-container-low border-none rounded-lg px-2 py-1.5 focus:ring-primary focus:outline-none font-bold">
+                                    <select id="cat-select" onchange="updateCategory('${a.id}', this.value)" class="flex-1 text-sm bg-surface-container-low border-none rounded-lg px-2 py-1.5 focus:ring-primary focus:outline-none font-bold">
                                       ${_getCategoryOptions(a.category)}
                                     </select>
                                     ${a.category ? `<span class="text-[9px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded shrink-0" title="AI predicted">AI</span>` : ''}
@@ -678,6 +678,15 @@
       showToast('Saved', 'success');
     }
 
+    async function updateCategory(assetId, val) {
+      saveField(assetId, 'category', val);
+      const subSelect = document.getElementById('subcat-select');
+      if (subSelect) {
+        subSelect.innerHTML = _getSubCategoryOptions(val, '');
+        saveField(assetId, 'subCategory', '');
+      }
+    }
+
     async function saveSerialNumber(assetId, serial) {
       const val = serial.trim();
       if (!val) {
@@ -722,8 +731,25 @@
         const lns = await Storage.getLinkedInvoices(id);
         if (!lns || !lns.length) { el.innerHTML = '<p class="text-xs text-on-surface-variant py-4 text-center border border-dashed rounded-lg border-outline-variant/30">No linked documents found.</p>'; return; }
         const cMap = { purchase: 'bg-primary font-bold text-white', warranty: 'bg-green-600 text-white', amc: 'bg-purple-600 text-white' };
-        el.innerHTML = lns.map(l => `<div class="p-4 bg-surface-container-lowest border border-outline-variant/10 rounded-xl mb-3 flex justify-between items-center hover:border-primary/50 transition-colors"><div class="flex flex-col gap-1"><span class="text-[9px] uppercase px-2 py-0.5 rounded w-fit ${cMap[l.invoice_type || l.link_type] || 'bg-surface-variant text-on-surface-variant'}">${(l.invoice_type || l.link_type || 'Other')}</span><p class="text-sm font-bold">${l.invoice_number || l.invoiceNumber || '—'}</p><p class="text-[11px] text-on-surface-variant">${formatDate(l.invoice_date || l.date)} ${l.amount ? '- ' + formatCurrency(l.amount) : ''}</p></div><button class="text-primary hover:bg-primary/10 p-2 rounded-lg cursor-pointer"><span class="material-symbols-outlined text-[18px]">download</span></button></div>`).join('');
+        el.innerHTML = lns.map(l => `<div class="p-4 bg-surface-container-lowest border border-outline-variant/10 rounded-xl mb-3 flex justify-between items-center hover:border-primary/50 transition-colors"><div class="flex flex-col gap-1"><span class="text-[9px] uppercase px-2 py-0.5 rounded w-fit ${cMap[l.invoice_type || l.link_type] || 'bg-surface-variant text-on-surface-variant'}">${(l.invoice_type || l.link_type || 'Other')}</span><p class="text-sm font-bold">${l.invoice_number || l.invoiceNumber || '—'}</p><p class="text-[11px] text-on-surface-variant">${formatDate(l.invoice_date || l.date)} ${l.amount ? '- ' + formatCurrency(l.amount) : ''}</p></div><button onclick="downloadLinkedDocument('${l.file_url || ''}', '${l.extraction_id || ''}')" class="text-primary hover:bg-primary/10 p-2 rounded-lg cursor-pointer"><span class="material-symbols-outlined text-[18px]">download</span></button></div>`).join('');
       } catch (e) { el.innerHTML = '<p class="text-xs text-error">Failed to load</p>'; }
+    }
+
+    async function downloadLinkedDocument(fileUrl, extractionId) {
+      if (fileUrl && fileUrl !== 'null' && fileUrl !== 'undefined') {
+        window.open(fileUrl, '_blank');
+        return;
+      }
+      if (extractionId && extractionId !== 'null' && extractionId !== 'undefined') {
+        try {
+          const ext = await Storage.getExtractionAsync(extractionId);
+          if (ext && ext.fileUrl) {
+            window.open(ext.fileUrl, '_blank');
+            return;
+          }
+        } catch(e) { console.error('Error fetching extraction file', e); }
+      }
+      alert('No physical file found for this document.');
     }
 
     // Category/Subcategory helpers (stored in localStorage as org config)
@@ -768,7 +794,8 @@
     function _getManageItems() {
       if (_mT === 'location') return Storage.getLocations().map(l => ({ id: l.id, name: l.name, db: true }));
       if (_mT === 'department') return Storage.getDepartments().map(d => ({ id: d.id, name: d.name, db: true }));
-      const custom = _getCustomItems(_mT === 'category' ? 'categories' : 'subcategories_general');
+      const cat = document.getElementById('cat-select')?.value || 'general';
+      const custom = _getCustomItems(_mT === 'category' ? 'categories' : 'subcategories_' + cat);
       return custom.map((name, i) => ({ id: String(i), name, db: false }));
     }
     function renderManageList() {
@@ -783,12 +810,24 @@
       if (_mT === 'location') { await Storage.saveLocation({ name: v }); await Storage.fetchLocations(); }
       else if (_mT === 'department') { await Storage.saveDepartment({ name: v }); await Storage.fetchDepartments(); }
       else if (_mT === 'category') { const arr = _getCustomItems('categories'); if (!arr.includes(v)) { arr.push(v); _saveCustomItems('categories', arr); } }
-      else if (_mT === 'subcategory') { const key = 'subcategories_general'; const arr = _getCustomItems(key); if (!arr.includes(v)) { arr.push(v); _saveCustomItems(key, arr); } }
+      else if (_mT === 'subcategory') { 
+          const cat = document.getElementById('cat-select')?.value || 'general';
+          const key = 'subcategories_' + cat; 
+          const arr = _getCustomItems(key); 
+          if (!arr.includes(v)) { arr.push(v); _saveCustomItems(key, arr); } 
+      }
       document.getElementById('manage-modal-input').value = '';
       renderManageList();
     }
     async function deleteManageItem(id) { if (!confirm('Delete?')) return; if (_mT === 'location') { await Storage.deleteLocation(id); } else { await Storage.deleteDepartment(id); } renderManageList(); }
-    function deleteCustomItem(name) { if (!confirm('Delete?')) return; const key = _mT === 'category' ? 'categories' : 'subcategories_general'; const arr = _getCustomItems(key).filter(i => i !== name); _saveCustomItems(key, arr); renderManageList(); }
+    function deleteCustomItem(name) { 
+      if (!confirm('Delete?')) return; 
+      const cat = document.getElementById('cat-select')?.value || 'general';
+      const key = _mT === 'category' ? 'categories' : 'subcategories_' + cat; 
+      const arr = _getCustomItems(key).filter(i => i !== name); 
+      _saveCustomItems(key, arr); 
+      renderManageList(); 
+    }
 
     // Photo Upload
     async function syncSerialFromExtraction(assetId, extractionId) {

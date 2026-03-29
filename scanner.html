@@ -294,38 +294,42 @@ async function startScanner(flip = false) {
   html5QrcodeScanner = new Html5Qrcode('reader');
 
   try {
-    if (availableCameras.length === 0) {
-      availableCameras = await Html5Qrcode.getCameras() || [];
-      if (availableCameras.length > 0) {
-        // Try to default to back camera
-        let backCam = availableCameras.findIndex(c => c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('environment'));
-        currentCameraIndex = backCam >= 0 ? backCam : (availableCameras.length > 1 ? 1 : 0);
-      }
-    }
-  } catch(e) {}
-
-  if (flip && availableCameras.length > 1) {
-    currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
-  }
-
-  try {
-    if (availableCameras.length > 0) {
+    if (flip && availableCameras.length > 1) {
+      currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
       await html5QrcodeScanner.start(availableCameras[currentCameraIndex].id, config, onScanSuccess, () => {});
-    } else {
-      await html5QrcodeScanner.start({ facingMode: 'environment' }, config, onScanSuccess, () => {});
-    }
-    onStarted();
-  } catch(e1) {
-    // If targeted start fails, fallback to robust scanning strategy
-    try {
-      if (availableCameras.length > 0) {
-        await html5QrcodeScanner.start(availableCameras[0].id, config, onScanSuccess, () => {});
-      } else {
-        onFailed(e1); return;
-      }
       onStarted();
-    } catch(e2) {
-      onFailed(e2);
+      return;
+    }
+
+    // Default start (attempts rear camera first)
+    await html5QrcodeScanner.start({ facingMode: 'environment' }, config, onScanSuccess, () => {});
+    onStarted();
+    
+    // Once permissions are granted by the start above, cache available cameras in background
+    if (availableCameras.length === 0) {
+      Html5Qrcode.getCameras().then(c => { availableCameras = c || []; }).catch(()=>{});
+    }
+  } catch (e1) {
+    // Fallback if environment facingMode fails
+    try {
+      await html5QrcodeScanner.start({ facingMode: 'user' }, config, onScanSuccess, () => {});
+      onStarted();
+      if (availableCameras.length === 0) {
+        Html5Qrcode.getCameras().then(c => { availableCameras = c || []; }).catch(()=>{});
+      }
+    } catch (e2) {
+      // Final fallback: just try first available camera by ID if we somehow have it
+      try {
+        if (availableCameras.length === 0) availableCameras = await Html5Qrcode.getCameras() || [];
+        if (availableCameras.length > 0) {
+           await html5QrcodeScanner.start(availableCameras[0].id, config, onScanSuccess, () => {});
+           onStarted();
+        } else {
+           onFailed(e2);
+        }
+      } catch (e3) {
+        onFailed(e3);
+      }
     }
   }
 }
@@ -349,10 +353,13 @@ function onScanSuccess(decodedText) {
     // raw lookup (Plain text QR: AST-1004, S/N, Barcode, etc)
     const assets = Storage.getAssets();
     const dt = decodedText.toLowerCase().trim();
+    const parsedNum = parseInt(decodedText.replace(/\D/g, ''), 10);
+    const numToMatch = isNaN(parsedNum) ? -1 : parsedNum;
+    
     const match = assets.find(a => 
       a.id === decodedText || 
       (a.tempAssetId||'').toLowerCase() === dt || 
-      a.assetNumber === parseInt(decodedText.replace(/\D/g,'') || 0) || 
+      a.assetNumber === numToMatch || 
       (a.serialNumber||'').toLowerCase() === dt || 
       (a.barcode||'').toLowerCase() === dt || 
       String(a.assetId) === decodedText
