@@ -341,14 +341,30 @@ function formatCurrency(val) { return new Intl.NumberFormat('en-IN',{style:'curr
 function formatDate(isoStr) { if(!isoStr) return '—'; const d = new Date(isoStr); return isNaN(d) ? isoStr : d.toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}); }
 
 async function approveExtraction(id) {
-  await Storage.approveExtraction(id);
-  showToast('Extraction approved & synced', 'success');
-  setTimeout(() => { window.location.href = 'registry.html'; }, 1000);
+  try {
+    const btn = event.target.closest('button');
+    if (btn) { btn.disabled = true; btn.textContent = 'Processing...'; }
+    await Storage.approveExtraction(id);
+    showToast('Extraction approved & synced', 'success');
+    setTimeout(() => { window.location.href = 'registry.html'; }, 1200);
+  } catch(e) {
+    console.error('Approve failed:', e);
+    showToast('Approval failed: ' + e.message, 'error');
+    const btn = event.target.closest('button');
+    if (btn) { btn.disabled = false; btn.textContent = 'Approve & Sync'; }
+  }
 }
 async function rejectExtraction(id) {
-  if (confirm('Reject this extraction?')) {
+  if (!confirm('Reject this extraction? Assets will be removed.')) return;
+  try {
+    const btn = event.target.closest('button');
+    if (btn) { btn.disabled = true; btn.textContent = 'Rejecting...'; }
     await Storage.rejectExtraction(id);
-    window.location.href = 'review.html';
+    showToast('Extraction rejected', 'error');
+    setTimeout(() => { window.location.href = 'review.html'; }, 1200);
+  } catch(e) {
+    console.error('Reject failed:', e);
+    showToast('Rejection failed: ' + e.message, 'error');
   }
 }
 
