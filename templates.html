@@ -214,23 +214,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   injectSidebar('templates.html');
   injectTopBar('Template Library');
   
-  // Custom TopBar handling is somewhat handled by local header, but we'll try to sync or replace
-  const topbar = document.getElementById('topbar');
-  if (topbar) {
-     const profileHTML = `<div class="flex items-center gap-4">
-        <button class="p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors relative"><span class="material-symbols-outlined">notifications</span></button>
-        <button class="p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors"><span class="material-symbols-outlined">settings</span></button>
-        <div class="h-8 w-[1px] bg-slate-200 mx-2"></div>
-        <div class="flex items-center gap-3">
-          <div class="text-right hidden sm:block">
-             <p class="text-xs font-bold text-on-surface leading-none">Admin User</p>
-             <p class="text-[10px] text-on-surface-variant">Fleet Admin</p>
-          </div>
-          <div class="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm">AU</div>
-        </div>
-      </div>`;
-     topbar.insertAdjacentHTML('beforeend', profileHTML);
-  }
+  // Topbar already injected by injectTopBar() above
 
   await loadTemplates();
 });
