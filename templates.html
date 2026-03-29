@@ -212,6 +212,7 @@ const CAT_STYLES = {
 document.addEventListener('DOMContentLoaded', async () => {
   await Storage.init();
   injectSidebar('templates.html');
+  injectTopBar('Template Library');
   
   // Custom TopBar handling is somewhat handled by local header, but we'll try to sync or replace
   const topbar = document.getElementById('topbar');

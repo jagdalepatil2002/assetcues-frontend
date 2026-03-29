@@ -218,6 +218,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
   await Storage.init();
   injectSidebar('registry.html');
+  injectTopBar('Asset Registry');
   
   // Custom TopBar handling
   const topbar = document.getElementById('topbar');

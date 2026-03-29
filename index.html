@@ -184,6 +184,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
   await Storage.init();
   injectSidebar('index.html');
+  injectTopBar('Intelligence Hub');
 
   // Inject Profile into Topbar
   const topbar = document.getElementById('topbar');
