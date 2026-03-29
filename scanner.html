@@ -99,7 +99,7 @@
             <!-- Camera Feed Section (Digital Twin Interface) -->
             <div class="col-span-12 lg:col-span-8 space-y-6">
                 <!-- Camera Container -->
-                <div class="relative rounded-xl overflow-hidden bg-on-background shadow-xl border border-outline-variant/10 aspect-video group">
+                <div class="relative rounded-xl overflow-hidden bg-on-background shadow-xl border border-outline-variant/10 aspect-[4/5] md:aspect-video group">
                     <div id="reader" class="absolute inset-0 z-10"></div>
                     
                     <!-- HUD Elements (Z-index 20 over video) -->
@@ -255,7 +255,9 @@ function startScanner() {
   document.getElementById('match-card').classList.remove('ring-2', 'ring-primary');
 
   html5QrcodeScanner = new Html5Qrcode('reader');
-  const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: window.innerWidth > 768 ? 16/9 : 1.0, disableFlip: false };
+  const isMobile = window.innerWidth < 768;
+  const boxSize = isMobile ? Math.min(window.innerWidth - 80, 300) : 250;
+  const config = { fps: 10, qrbox: { width: boxSize, height: boxSize }, aspectRatio: isMobile ? 4/5 : 16/9, disableFlip: false };
 
   html5QrcodeScanner.start(
     { facingMode: 'environment' }, config, onScanSuccess, 
