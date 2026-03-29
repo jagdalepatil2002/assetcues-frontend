@@ -280,9 +280,6 @@ function calcValidation(ext) {
   const checks = [
     { label: 'Qty × Unit Price = Subtotal', extracted: extractedSubtotal, calculated: lineCalcTotal, tolerance: 2 },
     { label: 'Sum of asset costs = Subtotal', extracted: extractedSubtotal, calculated: calcSubtotal, tolerance: assets.length },
-    { label: 'CGST matches', extracted: extractedCgst, calculated: calcCgst, tolerance: assets.length },
-    { label: 'SGST matches', extracted: extractedSgst, calculated: calcSgst, tolerance: assets.length },
-    { label: 'Subtotal + Taxes = Grand Total', extracted: extractedGrand, calculated: calcSubtotal + calcCgst + calcSgst + calcIgst, tolerance: assets.length + 2 },
     { label: `Grand Total (${assets.length} assets sum)`, extracted: extractedGrand, calculated: calcGrand, tolerance: assets.length + 2 },
   ];
   
