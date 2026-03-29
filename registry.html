@@ -137,24 +137,24 @@
             <div class="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/20 cloud-shadow relative overflow-hidden group">
                 <div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
                 <p class="text-[10px] font-extrabold uppercase tracking-widest text-on-surface-variant mb-4 flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[16px]">show_chart</span> Depot Depr. Avg
+                    <span class="material-symbols-outlined text-[16px]">show_chart</span> Avg Asset Cost
                 </p>
                 <div class="flex items-end justify-between">
-                    <h3 class="font-headline text-3xl font-extrabold text-on-surface" id="depr-rate">—</h3>
-                    <span class="text-[10px] uppercase font-bold text-on-surface-variant bg-surface-container px-2 py-1 rounded">IT Fleet</span>
+                    <h3 class="font-headline text-2xl font-extrabold text-on-surface" id="depr-rate">—</h3>
+                    <span class="text-[10px] uppercase font-bold text-on-surface-variant bg-surface-container px-2 py-1 rounded">Per Unit</span>
                 </div>
             </div>
             
             <div class="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/20 cloud-shadow relative overflow-hidden group">
                 <div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary"></div>
                 <p class="text-[10px] font-extrabold uppercase tracking-widest text-on-surface-variant mb-4 flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[16px]">verified</span> Compliance Score
+                    <span class="material-symbols-outlined text-[16px]">verified</span> Invoice Coverage
                 </p>
                 <div class="flex items-end justify-between">
                     <h3 class="font-headline text-3xl font-extrabold text-on-surface flex items-baseline">
                         <span id="compliance-score">—</span><span class="text-base text-on-surface-variant ml-1">%</span>
                     </h3>
-                    <span class="text-[10px] uppercase font-bold text-on-surface-variant bg-surface-container px-2 py-1 rounded">HSN match</span>
+                    <span class="text-[10px] uppercase font-bold text-on-surface-variant bg-surface-container px-2 py-1 rounded">With Invoice Ref</span>
                 </div>
             </div>
 
@@ -174,15 +174,15 @@
         <!-- Master Data Table -->
         <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/20 cloud-shadow flex flex-col pt-2 relative overflow-hidden h-[700px]">
             <div class="overflow-x-auto overflow-y-auto h-full relative">
-                <table class="w-full text-left border-collapse whitespace-nowrap">
+                <table class="w-full text-left border-collapse table-fixed">
                     <thead class="sticky top-0 z-10 bg-surface-container-low shadow-[0_1px_0_rgba(0,0,0,0.05)]">
                         <tr>
-                            <th class="text-[10px] font-extrabold uppercase tracking-widest text-on-surface-variant px-6 py-4">Asset Name & Info</th>
-                            <th class="text-[10px] font-extrabold uppercase tracking-widest text-on-surface-variant px-4 py-4">Category</th>
-                            <th class="text-[10px] font-extrabold uppercase tracking-widest text-on-surface-variant px-4 py-4">Acq. Date</th>
-                            <th class="text-[10px] font-extrabold uppercase tracking-widest text-on-surface-variant px-4 py-4 text-right">Unit Cost</th>
-                            <th class="text-[10px] font-extrabold uppercase tracking-widest text-on-surface-variant px-4 py-4">Serial / HSN</th>
-                            <th class="text-[10px] font-extrabold uppercase tracking-widest text-on-surface-variant px-6 py-4 text-right">Status</th>
+                            <th class="text-[10px] font-extrabold uppercase tracking-widest text-on-surface-variant px-6 py-4 w-[220px]">Asset Name & Info</th>
+                            <th class="text-[10px] font-extrabold uppercase tracking-widest text-on-surface-variant px-3 py-4 w-[130px]">Category</th>
+                            <th class="text-[10px] font-extrabold uppercase tracking-widest text-on-surface-variant px-3 py-4 w-[100px]">Acq. Date</th>
+                            <th class="text-[10px] font-extrabold uppercase tracking-widest text-on-surface-variant px-3 py-4 w-[110px] text-right">Unit Cost</th>
+                            <th class="text-[10px] font-extrabold uppercase tracking-widest text-on-surface-variant px-3 py-4 w-[120px]">Serial / HSN</th>
+                            <th class="text-[10px] font-extrabold uppercase tracking-widest text-on-surface-variant px-3 py-4 w-[100px] text-right">Status</th>
                         </tr>
                     </thead>
                     <tbody id="asset-tbody" class="divide-y divide-surface-container/50">
@@ -297,13 +297,13 @@ function renderTable() {
 
     return `
     <tr class="border-b border-surface-container/50 hover:bg-surface-container-lowest transition-colors cursor-pointer group cursor-pointer ${rowClass}" onclick="window.location='asset-detail.html?id=${a.id}'">
-      <td class="px-6 py-4">
-        <div class="flex items-center gap-4">
+      <td class="px-6 py-4 w-[220px] max-w-[220px]">
+        <div class="flex items-center gap-3">
           <div class="w-10 h-10 ${iconBg} rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
             ${iconHTML}
           </div>
-          <div class="min-w-0 pr-4">
-            <p class="font-headline font-extrabold text-[15px] tracking-tight text-on-surface truncate group-hover:text-primary transition-colors">${isChild ? '<span class="text-on-surface-variant/50 mr-1.5 font-normal">└─</span>' : ''}${a.name}</p>
+          <div class="min-w-0 flex-1">
+            <p class="font-headline font-extrabold text-[13px] tracking-tight text-on-surface truncate group-hover:text-primary transition-colors" title="${a.name}">${isChild ? '<span class="text-on-surface-variant/50 mr-1.5 font-normal">└─</span>' : ''}${a.name}</p>
             <div class="flex items-center gap-2 mt-0.5">
               <span class="text-[11px] font-extrabold text-on-surface-variant font-mono uppercase tracking-widest bg-surface-container-low px-1.5 py-0.5 rounded shadow-sm">${assetTag}</span>
               ${isChild ? '<span class="px-1.5 py-0.5 bg-secondary text-white text-[8px] font-extrabold uppercase tracking-widest rounded shadow-sm">Child</span>' : ''}
@@ -313,20 +313,20 @@ function renderTable() {
           </div>
         </div>
       </td>
-      <td class="px-4 py-4">
-        <span class="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded bg-surface-container-high text-on-surface-variant border border-outline-variant/20 shadow-sm">${a.category || 'N/A'}</span>
+      <td class="px-3 py-4 w-[130px] max-w-[130px]">
+        <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-1 rounded bg-surface-container-high text-on-surface-variant border border-outline-variant/20 shadow-sm truncate block max-w-full" title="${a.category || ''}">${a.category || 'N/A'}</span>
       </td>
-      <td class="px-4 py-4 font-mono text-[13px] font-bold text-on-surface/80">${formatDate(a.acquisitionDate)}</td>
-      <td class="px-4 py-4 text-right">
-        <p class="font-mono text-[14px] font-extrabold">${formatCurrency(a.totalCost)}</p>
+      <td class="px-3 py-4 w-[100px] font-mono text-[12px] font-bold text-on-surface/80 whitespace-nowrap">${formatDate(a.acquisitionDate)}</td>
+      <td class="px-3 py-4 w-[110px] text-right">
+        <p class="font-mono text-[13px] font-extrabold whitespace-nowrap">${formatCurrency(a.totalCost)}</p>
       </td>
-      <td class="px-4 py-4">
+      <td class="px-3 py-4 w-[120px] max-w-[120px]">
          <div class="flex flex-col gap-0.5">
-            <span class="text-[12px] font-mono font-bold text-on-surface text-ellipsis overflow-hidden max-w-[140px]" title="${a.serialNumber || 'N/A'}">${a.serialNumber || '—'}</span>
+            <span class="text-[11px] font-mono font-bold text-on-surface truncate block" title="${a.serialNumber || ''}">${a.serialNumber || '—'}</span>
             ${a.hsnCode ? `<span class="text-[8px] font-extrabold uppercase tracking-widest text-primary">HSN: ${a.hsnCode}</span>` : ''}
          </div>
       </td>
-      <td class="px-6 py-4 text-right">${statusBadge(a.status)}</td>
+      <td class="px-3 py-4 w-[100px] text-right">${statusBadge(a.status)}</td>
     </tr>`;
   }).join('');
   
@@ -337,14 +337,14 @@ async function renderStats() {
   const assets = Storage.getAssets();
   if (assets.length === 0) return;
   
-  // Real depreciation rate (average across assets)
-  const ratedAssets = assets.filter(a => a.depreciationRate);
-  const avgRate = ratedAssets.length > 0 ? (ratedAssets.reduce((s,a) => s + a.depreciationRate, 0) / ratedAssets.length).toFixed(1) : '—';
-  document.getElementById('depr-rate').textContent = avgRate !== '—' ? avgRate + '%' : '—';
+  // Average asset cost (always has data)
+  const totalCostSum = assets.reduce((s, a) => s + (a.totalCost || 0), 0);
+  const avgCost = assets.length > 0 ? totalCostSum / assets.length : 0;
+  document.getElementById('depr-rate').textContent = avgCost > 0 ? formatCurrency(avgCost) : '—';
 
-  // Real compliance score (% of assets with HSN code)
-  const withHsn = assets.filter(a => a.hsnCode).length;
-  document.getElementById('compliance-score').textContent = assets.length > 0 ? (withHsn / assets.length * 100).toFixed(1) : '—';
+  // Invoice coverage: % of assets that have an invoice reference
+  const withInvoice = assets.filter(a => a.invoiceNumber).length;
+  document.getElementById('compliance-score').textContent = assets.length > 0 ? Math.round(withInvoice / assets.length * 100) : '—';
 
   // Next audit window — based on last physical audit or next quarter end
   try {

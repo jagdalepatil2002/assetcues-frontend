@@ -251,14 +251,11 @@ const Storage = {
   },
 
   async _getNextAssetNumber() {
-    const result = await Supabase.query('assets', { select: 'asset_number', filters: { org_id: ORG_ID }, order: 'created_at.desc', limit: 50 });
+    // Fetch ALL asset numbers to find the true maximum, avoiding duplicates
+    const result = await Supabase.query('assets', { select: 'asset_number', filters: { org_id: ORG_ID }, order: 'asset_number.desc', limit: 1 });
     if (result && result.length > 0) {
-      let maxNum = 1000;
-      for (const r of result) {
-        const m = (r.asset_number || '').match(/^AST-(\d+)$/);
-        if (m) { const num = parseInt(m[1]); if (num > maxNum) maxNum = num; }
-      }
-      return maxNum + 1;
+      const m = (result[0].asset_number || '').match(/^AST-(\d+)$/);
+      if (m) return parseInt(m[1]) + 1;
     }
     return 1001;
   },
@@ -428,6 +425,24 @@ const Storage = {
   },
   saveImage(id, dataUrl) { return this.saveAssetImage(id, dataUrl); },
 
+  async saveInvoiceFile(extractionId, file) {
+    if (!extractionId || !file) return null;
+    try {
+      const ext = file.name ? file.name.split('.').pop().toLowerCase() : 'bin';
+      const path = `${ORG_ID}/${extractionId}.${ext}`;
+      const url = await Supabase.uploadFile('invoice-images', path, file);
+      if (url) {
+        await Supabase.update('extractions', extractionId, { file_url: url });
+        const cached = this.getExtraction(extractionId);
+        if (cached) cached.fileUrl = url;
+      }
+      return url;
+    } catch (e) {
+      console.error('[STORAGE] Invoice file upload failed:', e);
+      return null;
+    }
+  },
+
   getAssetImage(assetId) {
     if (!assetId) return null;
     const asset = this.getAsset(assetId);
@@ -499,7 +514,14 @@ const Storage = {
     if (!match) match = profiles.find(p => { const pn = (p.vendor_name || '').toLowerCase().trim(); return pn && (normalized.includes(pn) || pn.includes(normalized)); });
     return match || null;
   },
-  matchVendorProfileSync(vendorName) { return this.matchVendorProfile(vendorName); },
+  matchVendorProfileSync(vendorName) {
+    if (!vendorName) return null;
+    const normalized = vendorName.toLowerCase().trim();
+    const profiles = this.getVendorProfiles();
+    let match = profiles.find(p => { const pn = (p.vendor_name || '').toLowerCase().trim(); return pn && pn === normalized; });
+    if (!match) match = profiles.find(p => { const pn = (p.vendor_name || '').toLowerCase().trim(); return pn && (normalized.includes(pn) || pn.includes(normalized)); });
+    return match || null;
+  },
 
   // ═══════════════════════════════════════════════════
   // TEMPLATES
@@ -676,6 +698,7 @@ const Storage = {
       invoiceDate: row.invoice_date, grandTotal: parseFloat(row.grand_total) || 0,
       pageCount: 1, timestamp: row.created_at, assetIds: [],
       approvedAt: row.updated_at, duplicateOf: row.duplicate_of,
+      fileUrl: row.file_url || null,
     };
   },
 

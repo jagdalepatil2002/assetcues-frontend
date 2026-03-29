@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 function renderDetail() {
   const ext = currentExt;
   const json = ext.extractionJson || {};
-  const img = Storage.getImage(ext.id);
+  const img = ext.fileUrl || null;
   const vendor = json.vendor_details || {};
   const buyer = json.buyer_details || {};
   const header = json.invoice_header || {};
@@ -129,9 +129,11 @@ function renderDetail() {
     <div class="w-full lg:w-1/2 h-full bg-surface-container-low p-8 overflow-y-auto hidden md:block">
       <div class="max-w-2xl mx-auto">
         <div class="bg-white shadow-lg min-h-[800px] relative p-4 flex items-center justify-center">
-          ${img 
-            ? `<img src="${img}" class="max-w-full max-h-full object-contain" alt="Original Document" />` 
-            : `<div class="text-center text-on-surface-variant opacity-50"><span class="material-symbols-outlined text-border block text-5xl mb-2">image</span><p class="font-bold">No Image Available</p></div>`}
+          ${img
+            ? (img.toLowerCase().includes('.pdf') || (ext.fileName || '').toLowerCase().endsWith('.pdf')
+                ? `<embed src="${img}" type="application/pdf" class="w-full h-full" style="min-height:780px" />`
+                : `<img src="${img}" class="max-w-full max-h-full object-contain" alt="Original Document" />`)
+            : `<div class="text-center text-on-surface-variant opacity-50"><span class="material-symbols-outlined text-border block text-5xl mb-2">image</span><p class="font-bold">No Preview Available</p></div>`}
           ${!valInfo.allPass ? `<div class="absolute top-[50px] right-[20px] flex items-center gap-2">
             <div class="bg-error text-white h-6 w-6 rounded-full flex items-center justify-center animate-pulse"><span class="material-symbols-outlined text-xs">report</span></div>
             <div class="bg-error/90 text-white text-[10px] font-bold px-2 py-1 rounded">MISMATCH DETECTED</div>

@@ -149,7 +149,10 @@ tailwind.config = {
         <div class="bg-primary text-on-primary rounded-xl p-6 shadow-lg" id="quota-card">
           <h3 class="font-headline font-bold text-xs uppercase tracking-widest opacity-80 mb-4">AI Extraction Stats</h3>
           <div class="flex items-end justify-between mb-2">
-            <span class="text-3xl font-extrabold" id="quota-used">0</span>
+            <div class="flex items-end gap-1">
+              <span class="text-3xl font-extrabold" id="quota-used">0</span>
+              <span class="text-base font-bold opacity-60 mb-0.5">/ 100</span>
+            </div>
             <span class="text-sm opacity-80">pages processed</span>
           </div>
           <div class="flex gap-4 mt-3 text-xs opacity-80">
@@ -230,7 +233,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const exts = Storage.getExtractions();
   const assets = Storage.getAssets();
   const totalPages = exts.reduce((s, e) => s + (parseInt(e.pageCount) || 1), 0);
-  document.getElementById('quota-used').textContent = isNaN(totalPages) ? '0' : totalPages.toLocaleString('en-IN');
+  document.getElementById('quota-used').textContent = (isNaN(totalPages) || totalPages == null) ? '0' : String(totalPages);
   document.getElementById('quota-invoices').textContent = exts.length;
   document.getElementById('quota-assets').textContent = assets.length;
   const pct = Math.min(Math.round((totalPages / 100) * 100), 100); // relative to recent usage
@@ -394,11 +397,7 @@ async function startExtraction() {
         savedId = saved.id;
       }
 
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = async () => { await Storage.saveImage(savedId, reader.result); };
-        reader.readAsDataURL(file);
-      }
+      Storage.saveInvoiceFile(savedId, file);
 
       _extracting = false;
       showToast('AI extraction complete \u2014 redirecting to review', 'success');

@@ -241,13 +241,13 @@ function injectTopBar(title) {
       <button class="md:hidden p-2 text-on-surface-variant" onclick="toggleMobileSidebar()">
         <span class="material-symbols-outlined">menu</span>
       </button>
-      <img src="img/logo.png" alt="AssetCues" class="h-9 w-auto" />
+      <img src="img/logo.png" alt="AssetCues" class="h-11 w-auto" />
       <div id="connection-dot" class="w-2.5 h-2.5 rounded-full bg-outline animate-pulse" title="Checking backend..."></div>
     </div>
     <div class="flex items-center gap-3">
-      <div class="hidden md:flex items-center bg-surface-container-highest px-3 py-1.5 rounded-lg w-64">
-        <span class="material-symbols-outlined text-outline text-sm mr-2">search</span>
-        <input id="global-search" class="bg-transparent border-none focus:ring-0 text-sm w-full placeholder-on-surface-variant outline-none" placeholder="Search assets..." type="text" onkeydown="if(event.key==='Enter')globalSearch(this.value)"/>
+      <div class="hidden md:flex items-center relative w-72">
+        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px] pointer-events-none">search</span>
+        <input id="global-search" class="w-full pl-10 pr-4 py-2 rounded-lg bg-surface border border-outline-variant/30 text-[13px] font-medium text-on-surface placeholder-on-surface-variant focus:ring-2 focus:ring-primary focus:border-primary focus:bg-white outline-none transition-all" placeholder="Search asset ID, serial, vendor..." type="text" onkeydown="if(event.key==='Enter')globalSearch(this.value)"/>
       </div>
       <button onclick="toggleNotifications()" class="p-2 text-slate-600 hover:bg-slate-100 transition-colors rounded-full relative" id="notif-btn">
         <span class="material-symbols-outlined">notifications</span>
@@ -370,12 +370,12 @@ function confidenceBadge(c) {
 
 function statusBadge(status) {
   const map = {
-    draft: '<span class="px-2.5 py-1 text-[10px] font-bold rounded bg-secondary-fixed/30 text-on-secondary-container uppercase">Draft</span>',
-    approved: '<span class="px-2.5 py-1 text-[10px] font-bold rounded bg-tertiary-fixed/20 text-on-tertiary-container uppercase">✓ Verified</span>',
-    rejected: '<span class="px-2.5 py-1 text-[10px] font-bold rounded bg-error-container text-error uppercase">Rejected</span>',
-    in_review: '<span class="px-2.5 py-1 text-[10px] font-bold rounded bg-secondary-fixed/30 text-on-secondary-container uppercase">In Review</span>',
-    verified: '<span class="px-2.5 py-1 text-[10px] font-bold rounded bg-tertiary-fixed/20 text-on-tertiary-container uppercase">✓ Verified</span>',
-    retired: '<span class="px-2.5 py-1 text-[10px] font-bold rounded bg-surface-container text-on-surface-variant uppercase">Retired</span>',
+    draft:     '<span class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-amber-100 text-amber-700 border border-amber-200 uppercase tracking-wide">Draft</span>',
+    approved:  '<span class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-green-100 text-green-700 border border-green-200 uppercase tracking-wide">✓ Verified</span>',
+    verified:  '<span class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-green-100 text-green-700 border border-green-200 uppercase tracking-wide">✓ Verified</span>',
+    in_review: '<span class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wide">In Review</span>',
+    rejected:  '<span class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-red-100 text-red-700 border border-red-200 uppercase tracking-wide">Rejected</span>',
+    retired:   '<span class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-gray-100 text-gray-500 border border-gray-200 uppercase tracking-wide">Retired</span>',
   };
   return map[status] || map.draft;
 }
