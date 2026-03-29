@@ -105,6 +105,24 @@ const Supabase = {
     return res.ok;
   },
 
+  // Bulk delete by filter (e.g. deleteWhere('assets', { extraction_id: 'xxx' }))
+  async deleteWhere(table, filters = {}) {
+    let url = `${SUPABASE_URL}/rest/v1/${table}?`;
+    const parts = [];
+    for (const [key, val] of Object.entries(filters)) {
+      parts.push(`${key}=eq.${encodeURIComponent(val)}`);
+    }
+    if (parts.length === 0) {
+      // Delete ALL rows — need a filter that matches everything
+      parts.push('id=not.is.null');
+    }
+    url += parts.join('&');
+    console.log(`%c[SUPABASE] DELETE ${table}`, 'color:#ba1a1a;font-weight:bold', filters);
+    const res = await fetch(url, { method: 'DELETE', headers: this._headers() });
+    if (!res.ok) console.error(`[SUPABASE] deleteWhere ${table} failed:`, await res.text());
+    return res.ok;
+  },
+
   async rpc(fnName, params = {}) {
     const url = `${SUPABASE_URL}/rest/v1/rpc/${fnName}`;
     const res = await fetch(url, {

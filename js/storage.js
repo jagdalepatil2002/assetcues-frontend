@@ -243,49 +243,30 @@ const Storage = {
       created_at: new Date().toISOString(),
     });
 
-    // Query assets directly from DB by extraction_id (don't trust cache)
-    const linkedAssets = await Supabase.query('assets', {
-      select: 'id',
-      filters: { extraction_id: id },
-    }) || [];
-    const assetIds = linkedAssets.map(a => a.id);
+    // Bulk delete all linked data in FK-safe order
+    // 1. Get asset IDs from DB directly
+    const linkedAssets = await Supabase.query('assets', { select: 'id', filters: { extraction_id: id } }) || [];
+    console.log(`[STORAGE]    🗑️  Deleting ${linkedAssets.length} linked asset(s)...`);
 
-    if (assetIds.length > 0) {
-      console.log(`[STORAGE]    🗑️  Deleting ${assetIds.length} linked asset(s) from DB...`);
-      for (const aid of assetIds) {
-        // Delete linked invoices for this asset
-        await Supabase.query('asset_invoices', { filters: { asset_id: aid } }).then(async (rows) => {
-          for (const row of (rows || [])) await Supabase.delete('asset_invoices', row.id);
-        }).catch(() => {});
-        // Delete audit_trail entries for this asset
-        await Supabase.query('audit_trail', { filters: { asset_id: aid } }).then(async (entries) => {
-          for (const entry of (entries || [])) {
-            await Supabase.delete('audit_trail', entry.id);
-          }
-        }).catch(() => {});
-        // Delete the asset itself
-        const deleted = await Supabase.delete('assets', aid);
-        console.log(`[STORAGE]    ${deleted ? '✅' : '⚠️ '} Asset ${aid} ${deleted ? 'deleted' : 'not found/failed'}`);
-      }
+    // 2. Delete child records for each asset (FK safe)
+    for (const row of linkedAssets) {
+      await Supabase.deleteWhere('asset_invoices', { asset_id: row.id });
+      await Supabase.deleteWhere('audit_trail', { asset_id: row.id });
+      await Supabase.deleteWhere('depreciation_entries', { asset_id: row.id });
+      await Supabase.deleteWhere('physical_audits', { asset_id: row.id });
     }
 
-    // Delete audit trail entries for the extraction itself
-    await Supabase.query('audit_trail', { filters: { extraction_id: id } }).then(async (entries) => {
-      for (const entry of (entries || [])) {
-        await Supabase.delete('audit_trail', entry.id);
-      }
-    }).catch(() => {});
+    // 3. Delete all assets for this extraction in one shot
+    await Supabase.deleteWhere('assets', { extraction_id: id });
 
-    // Delete anomaly alerts linked to this extraction
-    await Supabase.query('anomaly_alerts', { filters: { related_extraction_id: id } }).then(async (alerts) => {
-      for (const alert of (alerts || [])) {
-        await Supabase.delete('anomaly_alerts', alert.id);
-      }
-    }).catch(() => {});
+    // 4. Delete extraction-level records
+    await Supabase.deleteWhere('audit_trail', { extraction_id: id });
+    await Supabase.deleteWhere('anomaly_alerts', { related_extraction_id: id });
+    await Supabase.deleteWhere('asset_invoices', { extraction_id: id });
 
-    // Delete the extraction itself from DB
+    // 5. Delete the extraction itself
     const exDeleted = await Supabase.delete('extractions', id);
-    console.log(`[STORAGE]    ${exDeleted ? '✅' : '⚠️ '} Extraction ${id} ${exDeleted ? 'deleted from DB' : 'deletion failed'}`);
+    console.log(`[STORAGE]    ${exDeleted ? '✅' : '⚠️ '} Extraction ${id} ${exDeleted ? 'deleted' : 'failed'}`);
 
     // Remove from local cache
     const list = this.getExtractions();
@@ -1125,22 +1106,16 @@ const Storage = {
 
   // ─── CLEAR ALL ─────────────────────────────────────
   async clearAll() {
-    // Delete from Supabase in FK-safe order
+    // Bulk delete from Supabase in FK-safe order
     try {
-      const tables = ['physical_audits','depreciation_entries','asset_invoices','anomaly_alerts','audit_trail','assets','extractions','vendor_profiles'];
-      for (const table of tables) {
-        const rows = await Supabase.query(table, { select: 'id', filters: { org_id: ORG_ID } }).catch(() => []);
-        for (const row of (rows || [])) {
-          await Supabase.delete(table, row.id);
-        }
-      }
-      // audit_trail and anomaly_alerts may not have org_id, clean those too
-      for (const table of ['audit_trail','anomaly_alerts']) {
-        const rows = await Supabase.query(table, { select: 'id' }).catch(() => []);
-        for (const row of (rows || [])) {
-          await Supabase.delete(table, row.id);
-        }
-      }
+      await Supabase.deleteWhere('physical_audits');
+      await Supabase.deleteWhere('depreciation_entries');
+      await Supabase.deleteWhere('asset_invoices');
+      await Supabase.deleteWhere('anomaly_alerts');
+      await Supabase.deleteWhere('audit_trail');
+      await Supabase.deleteWhere('assets');
+      await Supabase.deleteWhere('extractions');
+      await Supabase.deleteWhere('vendor_profiles');
     } catch(e) { console.warn('[STORAGE] clearAll DB error:', e); }
     // Clear localStorage
     ['ac_extractions','ac_assets','ac_settings','ac_vendor_profiles','ac_templates','ac_locations','ac_departments','ac_asset_imgs'].forEach(k => localStorage.removeItem(k));
