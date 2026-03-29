@@ -245,8 +245,8 @@ function injectTopBar(title) {
       <button class="md:hidden p-2 text-on-surface-variant" onclick="toggleMobileSidebar()">
         <span class="material-symbols-outlined">menu</span>
       </button>
-      <img src="img/logo.png" alt="AssetCues" class="h-7 w-auto md:hidden" />
-      <img src="img/logo.png" alt="AssetCues" class="hidden md:block h-8 w-auto" onerror="this.style.display='none'" />
+      <img src="img/logo.png" alt="AssetCues" class="h-9 w-auto" />
+      <div id="connection-dot" class="w-2.5 h-2.5 rounded-full bg-outline animate-pulse" title="Checking backend..."></div>
     </div>
     <div class="flex items-center gap-3">
       <div class="hidden md:flex items-center bg-surface-container-highest px-3 py-1.5 rounded-lg w-64">
@@ -283,18 +283,16 @@ function injectTopBar(title) {
 }
 
 async function checkConnection() {
-  const badge = document.getElementById('connection-badge');
-  if (!badge) return;
-  badge.innerHTML = '<span class="w-2 h-2 bg-outline rounded-full animate-pulse"></span> Checking...';
-  badge.className = 'flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full bg-surface-container text-on-surface-variant';
+  const dot = document.getElementById('connection-dot');
+  if (!dot) return;
   const health = await Api.checkHealth();
   if (health.ok) {
-    badge.innerHTML = '<span class="w-2 h-2 bg-tertiary-fixed-dim rounded-full"></span> Backend Connected';
-    badge.className = 'flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full bg-tertiary-fixed/20 text-on-tertiary-container';
+    dot.className = 'w-2.5 h-2.5 rounded-full bg-green-500';
+    dot.title = 'Backend connected';
   } else {
-    badge.innerHTML = '<span class="w-2 h-2 bg-error rounded-full"></span> Backend Offline';
-    badge.className = 'flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full bg-error-container text-error cursor-pointer';
-    badge.onclick = openSettings;
+    dot.className = 'w-2.5 h-2.5 rounded-full bg-error animate-pulse cursor-pointer';
+    dot.title = 'Backend offline — click to configure';
+    dot.onclick = openSettings;
   }
 }
 
