@@ -1124,7 +1124,25 @@ const Storage = {
   },
 
   // ─── CLEAR ALL ─────────────────────────────────────
-  clearAll() {
+  async clearAll() {
+    // Delete from Supabase in FK-safe order
+    try {
+      const tables = ['physical_audits','depreciation_entries','asset_invoices','anomaly_alerts','audit_trail','assets','extractions','vendor_profiles'];
+      for (const table of tables) {
+        const rows = await Supabase.query(table, { select: 'id', filters: { org_id: ORG_ID } }).catch(() => []);
+        for (const row of (rows || [])) {
+          await Supabase.delete(table, row.id);
+        }
+      }
+      // audit_trail and anomaly_alerts may not have org_id, clean those too
+      for (const table of ['audit_trail','anomaly_alerts']) {
+        const rows = await Supabase.query(table, { select: 'id' }).catch(() => []);
+        for (const row of (rows || [])) {
+          await Supabase.delete(table, row.id);
+        }
+      }
+    } catch(e) { console.warn('[STORAGE] clearAll DB error:', e); }
+    // Clear localStorage
     ['ac_extractions','ac_assets','ac_settings','ac_vendor_profiles','ac_templates','ac_locations','ac_departments','ac_asset_imgs'].forEach(k => localStorage.removeItem(k));
     this._extractionsCache = null;
     this._assetsCache = null;

@@ -142,7 +142,7 @@ function injectSidebar(activePage) {
         <span class="material-symbols-outlined">settings</span>
         <span>Settings</span>
       </button>
-      <button onclick="if(confirm('Clear all POC data?')){Storage.clearAll();location.reload()}" class="flex items-center gap-3 px-4 py-2 text-slate-400 hover:text-red-400 font-manrope text-sm font-medium w-full text-left transition-colors">
+      <button onclick="if(confirm('Clear all POC data?')){Storage.clearAll().then(()=>location.reload())}" class="flex items-center gap-3 px-4 py-2 text-slate-400 hover:text-red-400 font-manrope text-sm font-medium w-full text-left transition-colors">
         <span class="material-symbols-outlined">delete_sweep</span>
         <span>Clear Data</span>
       </button>
