@@ -110,10 +110,47 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderDetail();
 });
 
+function checkPdfFrame(iframe, url, fileName) {
+  // After iframe loads, check if it actually rendered content
+  // Cross-origin PDFs from Supabase will load fine; blank frames mean 404
+  setTimeout(function() {
+    try {
+      var doc = iframe.contentDocument || iframe.contentWindow.document;
+      var isEmpty = !doc || doc.body.innerHTML === '' || doc.title === '404';
+      if (isEmpty) showPdfFallback(iframe, url, fileName);
+    } catch(e) {
+      // Cross-origin success — can't read contentDocument, that means PDF loaded
+    }
+  }, 2500);
+}
+
+function showPdfFallback(iframe, url, fileName) {
+  iframe.outerHTML = `
+    <div style="text-align:center;padding:48px;color:#717784;">
+      <span class="material-symbols-outlined" style="font-size:56px;display:block;margin-bottom:12px;color:#005da9;opacity:0.8">picture_as_pdf</span>
+      <p style="font-weight:700;font-size:14px;margin-bottom:6px;">${fileName}</p>
+      <p style="font-size:12px;margin-bottom:24px;opacity:0.7;">PDF not found in storage.<br>Upload the invoice file to enable preview.</p>
+      <a href="${url}" target="_blank" style="background:#005da9;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;">
+        <span class="material-symbols-outlined" style="font-size:15px">open_in_new</span> Try Open PDF
+      </a>
+    </div>`;
+}
+
+function _guessInvoiceUrl(ext) {
+  if (ext.fileUrl) return ext.fileUrl;
+  if (!ext.id) return null;
+  // Construct Supabase storage public URL — path: {ORG_ID}/{extractionId}.{ext}
+  const orgId = '00000000-0000-0000-0000-000000000001';
+  const supabaseUrl = 'https://ocgywyoehuurkcojaeqm.supabase.co';
+  const bucket = 'invoice-images';
+  const fileExt = ext.fileName ? ext.fileName.split('.').pop().toLowerCase() : 'pdf';
+  return `${supabaseUrl}/storage/v1/object/public/${bucket}/${orgId}/${ext.id}.${fileExt}`;
+}
+
 function renderDetail() {
   const ext = currentExt;
   const json = ext.extractionJson || {};
-  const img = ext.fileUrl || null;
+  const img = _guessInvoiceUrl(ext);
   const vendor = json.vendor_details || {};
   const buyer = json.buyer_details || {};
   const header = json.invoice_header || {};
@@ -128,12 +165,19 @@ function renderDetail() {
     <!-- Left: Preview -->
     <div class="w-full lg:w-1/2 h-full bg-surface-container-low p-8 overflow-y-auto hidden md:block">
       <div class="max-w-2xl mx-auto">
-        <div class="bg-white shadow-lg min-h-[800px] relative p-4 flex items-center justify-center">
+        <div class="bg-white shadow-lg min-h-[800px] relative flex items-center justify-center" style="padding:0;overflow:hidden;">
           ${img
-            ? (img.toLowerCase().includes('.pdf') || (ext.fileName || '').toLowerCase().endsWith('.pdf')
-                ? `<embed src="${img}" type="application/pdf" class="w-full h-full" style="min-height:780px" />`
-                : `<img src="${img}" class="max-w-full max-h-full object-contain" alt="Original Document" />`)
-            : `<div class="text-center text-on-surface-variant opacity-50"><span class="material-symbols-outlined text-border block text-5xl mb-2">image</span><p class="font-bold">No Preview Available</p></div>`}
+            ? (img.toLowerCase().endsWith('.pdf') || (ext.fileName || '').toLowerCase().endsWith('.pdf') || (!ext.fileUrl && !/(png|jpg|jpeg|webp)$/i.test(ext.fileName || ''))
+                ? `<iframe src="${img}" class="w-full border-none" style="height:800px;display:block;"
+                     onload="checkPdfFrame(this,'${img}','${(ext.fileName||'Invoice').replace(/'/g,'')}')">
+                   </iframe>`
+                : `<img src="${img}" class="max-w-full object-contain" style="display:block;padding:16px;max-height:780px;" alt="Invoice"
+                    onerror="this.outerHTML='<div style=\'text-align:center;padding:40px;color:#717784\'><span class=\'material-symbols-outlined\' style=\'font-size:48px;display:block;margin-bottom:8px;opacity:0.4\'>broken_image</span><p style=\'font-weight:700\'>Could not load image</p></div>'" />`)
+            : `<div class="text-center" style="padding:40px;color:#717784;">
+                <span class="material-symbols-outlined" style="font-size:56px;display:block;margin-bottom:12px;opacity:0.4">upload_file</span>
+                <p style="font-weight:700;font-size:14px;margin-bottom:4px;">No Preview Available</p>
+                <p style="font-size:12px;opacity:0.7;">Invoice file was not uploaded or the link has expired.</p>
+              </div>`}
           ${!valInfo.allPass ? `<div class="absolute top-[50px] right-[20px] flex items-center gap-2">
             <div class="bg-error text-white h-6 w-6 rounded-full flex items-center justify-center animate-pulse"><span class="material-symbols-outlined text-xs">report</span></div>
             <div class="bg-error/90 text-white text-[10px] font-bold px-2 py-1 rounded">MISMATCH DETECTED</div>
