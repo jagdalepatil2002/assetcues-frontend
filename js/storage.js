@@ -105,7 +105,7 @@ const Storage = {
     const grandTotal = parseFloat(_unwrap(extractionJson?.totals?.grand_total)) || 0;
 
     // Check for duplicates
-    const isDuplicate = await this._checkDuplicateInvoice(invoiceNumber, vendorName);
+    const isDuplicate = await this._checkDuplicateInvoice(invoiceNumber, vendorName, grandTotal, invoiceDate);
 
     const extraction = {
       id: crypto.randomUUID(),
@@ -128,12 +128,34 @@ const Storage = {
     const assets = await this._expandAssets(extraction);
     extraction.assetIds = assets.map(a => a.id);
 
-    // Duplicate alert
+    // Check serial number duplicates across extracted assets
+    const lineItems = extractionJson?.line_items || [];
+    for (const item of lineItems) {
+      const serial = _unwrap(item.serial_number);
+      if (serial) {
+        const existingAsset = await this.checkDuplicateSerial(serial);
+        if (existingAsset) {
+          await Supabase.insert('anomaly_alerts', {
+            org_id: ORG_ID, alert_type: 'duplicate_serial', severity: 'high',
+            title: `Duplicate serial number: ${serial}`,
+            description: `Serial ${serial} already registered as asset ${existingAsset.asset_number || existingAsset.id}.`,
+            related_extraction_id: extraction.id,
+          });
+          // Mark extraction as duplicate if not already flagged
+          if (!isDuplicate) {
+            await Supabase.update('extractions', extraction.id, { duplicate_of: 'duplicate_serial' });
+            extraction.duplicateOf = 'duplicate_serial';
+          }
+        }
+      }
+    }
+
+    // Duplicate invoice alert
     if (isDuplicate) {
       await Supabase.insert('anomaly_alerts', {
         org_id: ORG_ID, alert_type: 'duplicate_invoice', severity: 'high',
         title: `Possible duplicate: Invoice #${invoiceNumber}`,
-        description: `Invoice #${invoiceNumber} from ${vendorName} may already exist.`,
+        description: `Invoice #${invoiceNumber} from ${vendorName} (₹${grandTotal}) may already exist.`,
         related_extraction_id: extraction.id,
       });
     }
@@ -630,12 +652,22 @@ const Storage = {
   // ═══════════════════════════════════════════════════
   // DUPLICATE DETECTION
   // ═══════════════════════════════════════════════════
-  async _checkDuplicateInvoice(invoiceNumber, vendorName) {
-    if (!invoiceNumber) return false;
-    const filters = { invoice_number: invoiceNumber, org_id: ORG_ID };
-    if (vendorName) filters.vendor_name = vendorName;
-    const existing = await Supabase.query('extractions', { filters });
-    return existing && existing.length > 0;
+  async _checkDuplicateInvoice(invoiceNumber, vendorName, grandTotal, invoiceDate) {
+    // Match 1: same invoice number + vendor (strongest signal)
+    if (invoiceNumber) {
+      const filters = { invoice_number: invoiceNumber, org_id: ORG_ID };
+      if (vendorName) filters.vendor_name = vendorName;
+      const existing = await Supabase.query('extractions', { filters });
+      if (existing && existing.length > 0) return true;
+    }
+    // Match 2: same vendor + same grand total + same invoice date (re-upload with no inv# change)
+    if (vendorName && grandTotal > 0 && invoiceDate) {
+      const existing2 = await Supabase.query('extractions', {
+        filters: { vendor_name: vendorName, grand_total: grandTotal, invoice_date: invoiceDate, org_id: ORG_ID }
+      });
+      if (existing2 && existing2.length > 0) return true;
+    }
+    return false;
   },
 
   async checkDuplicateSerial(serialNumber) {

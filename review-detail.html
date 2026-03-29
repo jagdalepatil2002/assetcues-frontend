@@ -107,34 +107,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     </div>
   </div>`;
 
-  document.getElementById('content-layout').innerHTML = secondaryHeaderHtml + `<div id="split-view" class="flex flex-1 flex-col lg:flex-row overflow-hidden"></div>`;
+  const dupBanner = ext.duplicateOf
+    ? `<div class="flex items-center gap-3 px-8 py-3 bg-error-container border-b border-error/20 shrink-0">
+        <span class="material-symbols-outlined text-error text-xl">content_copy</span>
+        <div class="flex-1">
+          <p class="text-sm font-bold text-error">Possible Duplicate Invoice Detected</p>
+          <p class="text-xs text-on-error-container">An extraction with the same invoice number, vendor, or amount already exists. Verify before approving.</p>
+        </div>
+        <span class="text-[10px] font-bold uppercase bg-error text-white px-2 py-1 rounded">DUPLICATE RISK</span>
+      </div>` : '';
+
+  document.getElementById('content-layout').innerHTML = secondaryHeaderHtml + dupBanner + `<div id="split-view" class="flex flex-1 flex-col lg:flex-row overflow-hidden"></div>`;
   renderDetail();
 });
 
 async function _resolveInvoiceUrl(ext) {
-  // If we have a stored URL, verify it's reachable
   if (ext.fileUrl) {
-    try {
-      const r = await fetch(ext.fileUrl, { method: 'HEAD' });
-      if (r.ok) return ext.fileUrl;
-    } catch(e) {}
+    return ext.fileUrl;
   }
-  // Try guessing from Supabase storage
   if (!ext.id) return null;
   const orgId = '00000000-0000-0000-0000-000000000001';
   const supabaseUrl = 'https://ocgywyoehuurkcojaeqm.supabase.co';
   const bucket = 'invoice-images';
-  const exts = ext.fileName
-    ? [ext.fileName.split('.').pop().toLowerCase()]
-    : ['pdf', 'png', 'jpg', 'jpeg'];
-  for (const fe of exts) {
-    const url = `${supabaseUrl}/storage/v1/object/public/${bucket}/${orgId}/${ext.id}.${fe}`;
-    try {
-      const r = await fetch(url, { method: 'HEAD' });
-      if (r.ok) return url;
-    } catch(e) {}
-  }
-  return null;
+  const fe = ext.fileName ? ext.fileName.split('.').pop().toLowerCase() : 'pdf';
+  return `${supabaseUrl}/storage/v1/object/public/${bucket}/${orgId}/${ext.id}.${fe}`;
 }
 
 function _renderPreviewPanel(url, ext, valInfo) {
