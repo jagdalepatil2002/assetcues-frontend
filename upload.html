@@ -229,8 +229,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Wire quota with real data
   const exts = Storage.getExtractions();
   const assets = Storage.getAssets();
-  const totalPages = exts.reduce((s, e) => s + (e.pageCount || 1), 0);
-  document.getElementById('quota-used').textContent = totalPages.toLocaleString('en-IN');
+  const totalPages = exts.reduce((s, e) => s + (parseInt(e.pageCount) || 1), 0);
+  document.getElementById('quota-used').textContent = isNaN(totalPages) ? '0' : totalPages.toLocaleString('en-IN');
   document.getElementById('quota-invoices').textContent = exts.length;
   document.getElementById('quota-assets').textContent = assets.length;
   const pct = Math.min(Math.round((totalPages / 100) * 100), 100); // relative to recent usage

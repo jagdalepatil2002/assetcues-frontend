@@ -160,11 +160,7 @@ function injectSidebar(activePage) {
   const stats = Storage.getDashboardStats();
 
   aside.innerHTML = `
-    <div class="px-4 mb-8">
-      <img src="img/logo.png" alt="AssetCues" class="h-10 w-auto" />
-    </div>
-
-    <div class="px-6 mb-6">
+    <div class="px-6 mb-6 mt-4">
       <a href="upload.html" class="w-full signature-gradient text-on-primary py-3 rounded-lg flex items-center justify-center gap-2 shadow-md hover:opacity-90 transition-opacity no-underline">
         <span class="material-symbols-outlined text-sm" data-icon="add">add</span>
         <span class="font-bold text-xs">New Upload</span>
