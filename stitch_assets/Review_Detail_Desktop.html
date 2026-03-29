@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Review Detail - AssetLedger</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#adc8f2",
+                        "on-primary-container": "#fefcff",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb68b",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-container": "#415b7f",
+                        "surface-dim": "#dadada",
+                        "surface-bright": "#f9f9f9",
+                        "surface-container": "#eeeeee",
+                        "on-primary-fixed-variant": "#004884",
+                        "surface-variant": "#e2e2e2",
+                        "on-background": "#1a1c1c",
+                        "primary-fixed": "#d4e3ff",
+                        "primary-container": "#0176d3",
+                        "error": "#ba1a1a",
+                        "tertiary-container": "#bc5800",
+                        "primary-fixed-dim": "#a4c9ff",
+                        "inverse-surface": "#2f3131",
+                        "tertiary": "#964500",
+                        "on-tertiary": "#ffffff",
+                        "inverse-primary": "#a4c9ff",
+                        "on-tertiary-fixed-variant": "#753400",
+                        "on-secondary-fixed": "#001c39",
+                        "on-surface-variant": "#414752",
+                        "on-secondary-fixed-variant": "#2d486b",
+                        "surface-container-high": "#e8e8e8",
+                        "surface-container-highest": "#e2e2e2",
+                        "outline-variant": "#c0c7d4",
+                        "surface-tint": "#005fac",
+                        "primary": "#005da9",
+                        "secondary-container": "#b9d3fe",
+                        "on-tertiary-container": "#fffcff",
+                        "on-primary": "#ffffff",
+                        "outline": "#717784",
+                        "on-surface": "#1a1c1c",
+                        "surface-container-low": "#f3f3f3",
+                        "background": "#f9f9f9",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed": "#321200",
+                        "secondary-fixed": "#d4e3ff",
+                        "secondary": "#466084",
+                        "surface": "#f9f9f9",
+                        "on-primary-fixed": "#001c39",
+                        "inverse-on-surface": "#f1f1f1",
+                        "tertiary-fixed": "#ffdbc8",
+                        "on-secondary": "#ffffff"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .signature-gradient {
+            background: linear-gradient(135deg, #005DA9 0%, #0176D3 100%);
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+        }
+    </style>
+</head>
+<body class="bg-background font-body text-on-surface">
+<!-- TopAppBar -->
+<header class="sticky top-0 z-50 flex items-center justify-between w-full px-6 h-16 bg-white border-b border-slate-200 shadow-sm">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold text-blue-800 font-headline">AssetLedger</span>
+<div class="hidden md:flex items-center bg-surface-container-highest px-4 py-2 rounded-lg min-w-[400px]">
+<span class="material-symbols-outlined text-outline mr-2" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 w-full text-body-sm text-on-surface-variant" placeholder="Search assets, documents, or extraction logs..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-600 hover:bg-slate-100 transition-colors rounded-full">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-slate-600 hover:bg-slate-100 transition-colors rounded-full">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<button class="p-2 text-slate-600 hover:bg-slate-100 transition-colors rounded-full">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-primary overflow-hidden ml-2">
+<img alt="User Profile" data-alt="close-up portrait of a professional man in his 40s with a friendly expression and short dark hair" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZv0dI171HOX5afXZ9uDgjMMGFL5jOZDf7S2hKru6AbSJSISUfXGjORmAVcT0TyMldueOPkKKoLncx4ECY1vLSG67tlskrnaCCke5h2P5zSV1MQKfXgQxP1tgVAt7tNTgu4hQj9AKkh2rhn8d6ApWMQb7_hlaNewHHggMlV-0tboca62vzxxGzLhyCfduq7TokOnbvPGpgPUe5CEF2JQmQ-qhXzgCLLPo5oNitUVCRlSUlK5aX9jHB5bPo8aKlUIIKLbwybwPMNkk"/>
+</div>
+</div>
+</header>
+<div class="flex h-[calc(100vh-64px)] overflow-hidden">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-16 h-[calc(100vh-64px)] w-64 flex flex-col py-6 bg-slate-50 border-r border-slate-200">
+<div class="px-6 mb-8">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 bg-slate-900 rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined" data-icon="corporate_fare">corporate_fare</span>
+</div>
+<div>
+<p class="text-sm font-black text-slate-900 font-headline">Enterprise Assets</p>
+<p class="text-[10px] uppercase tracking-wider text-slate-500 font-label">Global Fleet</p>
+</div>
+</div>
+</div>
+<div class="flex-1 space-y-1">
+<a class="flex items-center gap-3 text-slate-600 px-6 py-3 hover:bg-slate-200/50 hover:text-slate-900 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-medium text-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 bg-blue-50 text-blue-700 border-r-4 border-blue-700 px-6 py-3 font-bold" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-medium text-sm">Inventory</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 px-6 py-3 hover:bg-slate-200/50 hover:text-slate-900 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="build">build</span>
+<span class="font-medium text-sm">Maintenance</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 px-6 py-3 hover:bg-slate-200/50 hover:text-slate-900 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+<span class="font-medium text-sm">Procurement</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 px-6 py-3 hover:bg-slate-200/50 hover:text-slate-900 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="bar_chart">bar_chart</span>
+<span class="font-medium text-sm">Analytics</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 px-6 py-3 hover:bg-slate-200/50 hover:text-slate-900 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="font-medium text-sm">Reporting</span>
+</a>
+</div>
+<div class="px-6 mt-auto pt-6 border-t border-slate-200 space-y-1">
+<a class="flex items-center gap-3 text-slate-600 py-2 hover:text-slate-900 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="contact_support">contact_support</span>
+<span class="text-xs font-label">Support</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 py-2 hover:text-slate-900 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-xs font-label">Settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas (Adjusted for SideNav) -->
+<main class="ml-64 flex-1 flex flex-col h-full bg-surface overflow-hidden">
+<!-- Secondary Header / Breadcrumbs -->
+<div class="flex items-center justify-between px-8 py-4 bg-white border-b border-surface-container">
+<div class="flex items-center gap-4">
+<button class="flex items-center text-primary text-sm font-medium hover:underline">
+<span class="material-symbols-outlined text-sm mr-1" data-icon="arrow_back">arrow_back</span>
+                        Back to Queue
+                    </button>
+<div class="h-4 w-px bg-outline-variant/30"></div>
+<div>
+<h1 class="font-headline text-lg font-bold">Review: Asset Invoice #INV-2024-082</h1>
+<p class="text-xs text-on-surface-variant font-label uppercase tracking-widest">Awaiting Human Verification • Confidence: 82%</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="px-4 py-2 border border-outline-variant/50 text-on-surface-variant font-medium text-sm rounded-lg hover:bg-surface-container-low transition-all">Flag for Review</button>
+<button class="signature-gradient px-6 py-2 text-white font-bold text-sm rounded-lg shadow-sm hover:opacity-90 transition-all flex items-center gap-2">
+                        Approve &amp; Sync
+                        <span class="material-symbols-outlined text-sm" data-icon="done_all">done_all</span>
+</button>
+</div>
+</div>
+<!-- Split View Area -->
+<div class="flex flex-1 overflow-hidden">
+<!-- Left Side: Document Preview -->
+<div class="w-1/2 h-full bg-surface-container-low p-8 overflow-y-auto">
+<div class="max-w-2xl mx-auto">
+<div class="bg-white shadow-lg min-h-[1000px] relative p-12 overflow-hidden">
+<!-- Simulated Invoice Content -->
+<div class="flex justify-between items-start mb-16">
+<div>
+<div class="h-10 w-32 bg-slate-200 rounded mb-4"></div>
+<p class="text-xs text-slate-400">123 Logistics Way, Chicago, IL</p>
+</div>
+<div class="text-right">
+<h2 class="text-2xl font-black text-slate-900 mb-1">INVOICE</h2>
+<p class="text-sm font-bold text-slate-600">#INV-2024-082</p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-12 mb-12">
+<div>
+<p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Billed To</p>
+<p class="text-sm font-bold text-slate-800">Global Fleet Logistics Inc.</p>
+<p class="text-sm text-slate-600">Attn: Fleet Maintenance Dept.</p>
+</div>
+<div>
+<p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Details</p>
+<div class="grid grid-cols-2 gap-y-1">
+<p class="text-[11px] text-slate-500">Date Issued:</p>
+<p class="text-[11px] font-bold text-slate-800 text-right">Oct 14, 2024</p>
+<p class="text-[11px] text-slate-500">PO Number:</p>
+<p class="text-[11px] font-bold text-slate-800 text-right">PO-99211-A</p>
+</div>
+</div>
+</div>
+<!-- Document Discrepancy Overlay (Visual Highlight) -->
+<div class="relative">
+<table class="w-full text-left">
+<thead class="border-b-2 border-slate-900">
+<tr>
+<th class="py-3 text-[11px] font-black uppercase text-slate-900">Description</th>
+<th class="py-3 text-[11px] font-black uppercase text-slate-900 text-right">Quantity</th>
+<th class="py-3 text-[11px] font-black uppercase text-slate-900 text-right">Unit Price</th>
+<th class="py-3 text-[11px] font-black uppercase text-slate-900 text-right">Total</th>
+</tr>
+</thead>
+<tbody class="text-sm text-slate-800">
+<tr class="border-b border-slate-100">
+<td class="py-4">Diesel Engine Replacement - Unit #402</td>
+<td class="py-4 text-right">1.00</td>
+<td class="py-4 text-right">$12,450.00</td>
+<td class="py-4 text-right font-bold">$12,450.00</td>
+</tr>
+<tr class="border-b border-slate-100 relative group">
+<td class="py-4">Labor Hours (Major Repair)</td>
+<td class="py-4 text-right">
+<span class="relative z-10">42.50</span>
+<div class="absolute inset-0 bg-error/10 border-2 border-error/30 rounded -m-1 pointer-events-none"></div>
+</td>
+<td class="py-4 text-right">$150.00</td>
+<td class="py-4 text-right font-bold">$6,375.00</td>
+</tr>
+<tr>
+<td class="py-4">Misc Shop Supplies</td>
+<td class="py-4 text-right">1.00</td>
+<td class="py-4 text-right">$245.00</td>
+<td class="py-4 text-right font-bold">$245.00</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="mt-12 flex justify-end">
+<div class="w-64 space-y-2">
+<div class="flex justify-between text-xs text-slate-500">
+<span>Subtotal</span>
+<span>$19,070.00</span>
+</div>
+<div class="flex justify-between text-xs text-slate-500">
+<span>Tax (8.5%)</span>
+<span>$1,620.95</span>
+</div>
+<div class="flex justify-between pt-4 border-t-2 border-slate-900">
+<span class="font-black text-slate-900 uppercase">Total Amount</span>
+<span class="font-black text-slate-900">$20,690.95</span>
+</div>
+</div>
+</div>
+<!-- Visual Annotation Marker -->
+<div class="absolute top-[480px] right-[40px] flex items-center gap-2">
+<div class="bg-error text-white h-6 w-6 rounded-full flex items-center justify-center animate-pulse">
+<span class="material-symbols-outlined text-xs" data-icon="report">report</span>
+</div>
+<div class="bg-error/90 text-white text-[10px] font-bold px-2 py-1 rounded">MISMATCH DETECTED</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Side: AI Extracted Data -->
+<div class="w-1/2 h-full bg-white flex flex-col border-l border-surface-container overflow-hidden">
+<div class="flex items-center gap-2 px-8 py-4 bg-surface-container-low/50">
+<span class="material-symbols-outlined text-primary" data-icon="auto_awesome">auto_awesome</span>
+<span class="font-headline font-bold text-sm">AI Intelligent Extraction</span>
+<span class="ml-auto text-[10px] font-label text-on-surface-variant">V3.4 ENGINE</span>
+</div>
+<div class="flex-1 overflow-y-auto p-8">
+<div class="space-y-8">
+<!-- Header Info -->
+<section>
+<h3 class="text-[10px] font-label uppercase tracking-widest text-outline mb-4">Core Metadata</h3>
+<div class="grid grid-cols-2 gap-6">
+<div class="space-y-1">
+<label class="text-[11px] font-medium text-on-surface-variant">Document Type</label>
+<div class="relative">
+<input class="w-full bg-surface-container-highest border-none rounded-lg text-sm font-semibold focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all" type="text" value="Maintenance Invoice"/>
+<span class="absolute right-3 top-2.5 material-symbols-outlined text-sm text-primary" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+<div class="space-y-1">
+<label class="text-[11px] font-medium text-on-surface-variant">Vendor Name</label>
+<div class="relative">
+<input class="w-full bg-surface-container-highest border-none rounded-lg text-sm font-semibold focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all" type="text" value="Engine Masters Chicago"/>
+<span class="absolute right-3 top-2.5 material-symbols-outlined text-sm text-primary" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Financial Data with Conflict -->
+<section>
+<h3 class="text-[10px] font-label uppercase tracking-widest text-outline mb-4">Financials &amp; Validation</h3>
+<div class="space-y-6">
+<div class="grid grid-cols-2 gap-6">
+<div class="space-y-1">
+<label class="text-[11px] font-medium text-on-surface-variant">PO Reference</label>
+<div class="relative">
+<input class="w-full bg-surface-container-highest border-none rounded-lg text-sm font-semibold border-b-2 border-primary" type="text" value="PO-99211-A"/>
+</div>
+</div>
+<div class="space-y-1">
+<label class="text-[11px] font-medium text-on-surface-variant">Total Amount</label>
+<div class="relative">
+<input class="w-full bg-surface-container-highest border-none rounded-lg text-sm font-semibold" type="text" value="$20,690.95"/>
+</div>
+</div>
+</div>
+<!-- The High Priority Discrepancy -->
+<div class="p-5 rounded-xl border-2 border-error-container bg-error-container/10">
+<div class="flex items-start gap-4">
+<div class="h-10 w-10 bg-error-container text-error rounded-full flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined" data-icon="warning">warning</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between mb-2">
+<p class="text-sm font-bold text-error">Extraction Discrepancy: Labor Hours</p>
+<span class="text-[10px] bg-error text-white px-2 py-0.5 rounded-full font-bold">CRITICAL</span>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<p class="text-[10px] text-on-surface-variant font-label uppercase">Extracted Value</p>
+<p class="text-lg font-black text-on-surface">42.50 hrs</p>
+</div>
+<div>
+<p class="text-[10px] text-on-surface-variant font-label uppercase">PO Allowed</p>
+<p class="text-lg font-black text-on-surface">32.00 hrs</p>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-error/10">
+<p class="text-xs text-on-surface-variant leading-relaxed">The extracted labor hours (42.50) exceed the pre-approved maximum for this service type (32.00) defined in PO-99211-A. <strong class="text-on-surface">Action required:</strong> Manual override or vendor dispute.</p>
+<div class="flex gap-2 mt-4">
+<button class="px-3 py-1.5 bg-error text-white text-xs font-bold rounded hover:opacity-90 transition-all">Accept Overage</button>
+<button class="px-3 py-1.5 border border-error text-error text-xs font-bold rounded hover:bg-error/5 transition-all">Request Vendor Clarification</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Asset Mapping -->
+<section>
+<h3 class="text-[10px] font-label uppercase tracking-widest text-outline mb-4">Asset Association</h3>
+<div class="p-4 bg-surface-container-low rounded-xl border border-surface-container">
+<div class="flex items-center gap-4">
+<div class="h-12 w-12 rounded bg-white p-1 overflow-hidden">
+<img alt="Asset Thumbnail" class="h-full w-full object-cover rounded-sm" data-alt="professional side profile of a white industrial semi-truck parked in a clean shipping warehouse" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpvTliMfxAOHKe5vWzIk0T2rN6kLgxQhLzbMcmTNqLVgjxgygDqd2t9gj3ID5o9c_P_PWXFfgvyMfnPbjA2f_KPVKI1IH8TLsPhk8Btbm--9g1oOyQeLF-VrVZxUe9TmT6ITZzdHlduL5MvPR_HANOGd3U-dmAwV3N2YfBvCaed1cjnopkXaREo3RGGfsmR_SqJ56tsWqROuFGQlKoccAlZIBbGk_fieoopq8h7ufhkeEfoaLpYsjIePGSTBLoMN0RFZWNxoLX19E"/>
+</div>
+<div class="flex-1">
+<p class="text-sm font-bold text-on-surface">Unit #402: Peterbilt 579</p>
+<p class="text-xs text-on-surface-variant">VIN: 1P6HF49X...0229 • Fleet: Midwest Regional</p>
+</div>
+<button class="text-primary hover:bg-primary/5 p-2 rounded-full">
+<span class="material-symbols-outlined" data-icon="open_in_new">open_in_new</span>
+</button>
+</div>
+</div>
+</section>
+</div>
+</div>
+<!-- Side Rail Action Bar (Contextual) -->
+<div class="h-20 bg-white border-t border-surface-container flex items-center justify-between px-8">
+<div class="flex -space-x-2">
+<div class="h-8 w-8 rounded-full border-2 border-white bg-slate-200 flex items-center justify-center text-[10px] font-bold">JD</div>
+<div class="h-8 w-8 rounded-full border-2 border-white bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold">AI</div>
+<div class="h-8 w-8 rounded-full border-2 border-white bg-slate-800 text-white flex items-center justify-center text-[10px] font-bold">+2</div>
+</div>
+<div class="flex gap-2">
+<button class="p-2 text-outline hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined" data-icon="chat_bubble">chat_bubble</span>
+</button>
+<button class="p-2 text-outline hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Floating Insight Rail (Mobile Suppressed) -->
+<aside class="fixed right-0 top-32 w-12 h-64 bg-surface-container-low border-l border-y border-surface-container rounded-l-xl flex flex-col items-center py-4 gap-6 shadow-sm hidden xl:flex">
+<button class="text-primary" title="Insights">
+<span class="material-symbols-outlined" data-icon="lightbulb" style="font-variation-settings: 'FILL' 1;">lightbulb</span>
+</button>
+<button class="text-outline hover:text-primary transition-colors" title="Audit Log">
+<span class="material-symbols-outlined" data-icon="assignment">assignment</span>
+</button>
+<button class="text-outline hover:text-primary transition-colors" title="Links">
+<span class="material-symbols-outlined" data-icon="link">link</span>
+</button>
+<div class="mt-auto h-8 w-px bg-outline-variant/30"></div>
+<button class="text-outline hover:text-primary transition-colors" title="Expand Details">
+<span class="material-symbols-outlined" data-icon="keyboard_double_arrow_left">keyboard_double_arrow_left</span>
+</button>
+</aside>
+</body></html>

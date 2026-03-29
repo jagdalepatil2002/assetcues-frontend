@@ -1,140 +1,179 @@
 <!DOCTYPE html>
-<html class="light" lang="en"><head>
+<html lang="en" class="light"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Assetcues | AI Invoice Agent Dashboard</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<script>
-tailwind.config = {
-  darkMode: "class",
-  theme: {
-    extend: {
-      colors: {
-        "on-tertiary-container": "#009668", "on-error": "#ffffff",
-        "on-secondary-container": "#57657b", "on-primary-fixed-variant": "#3f465c",
-        "on-tertiary-fixed": "#002113", "on-primary-fixed": "#131b2e",
-        "primary-fixed-dim": "#bec6e0", "on-secondary": "#ffffff",
-        "outline": "#76777d", "inverse-surface": "#2d3133",
-        "surface-container-high": "#e6e8ea", "on-error-container": "#93000a",
-        "background": "#f7f9fb", "surface-container-low": "#f2f4f6",
-        "surface-tint": "#565e74", "secondary": "#515f74",
-        "on-tertiary-fixed-variant": "#005236", "tertiary": "#000000",
-        "surface-container-lowest": "#ffffff", "on-secondary-fixed-variant": "#3a485c",
-        "on-tertiary": "#ffffff", "error-container": "#ffdad6",
-        "on-surface-variant": "#45464d", "on-primary": "#ffffff",
-        "inverse-on-surface": "#eff1f3", "surface-container": "#eceef0",
-        "secondary-fixed": "#d5e3fd", "primary": "#4f46e5",
-        "outline-variant": "#c6c6cd", "primary-fixed": "#dae2fd",
-        "tertiary-fixed-dim": "#4edea3", "on-background": "#191c1e",
-        "on-primary-container": "#7c839b", "surface-variant": "#e0e3e5",
-        "secondary-container": "#d5e3fd", "error": "#ba1a1a",
-        "secondary-fixed-dim": "#b9c7e0", "primary-container": "#131b2e",
-        "surface-dim": "#d8dadc", "surface-bright": "#f7f9fb",
-        "on-surface": "#191c1e", "inverse-primary": "#bec6e0",
-        "surface-container-highest": "#e0e3e5", "on-secondary-fixed": "#0d1c2f",
-        "surface": "#f7f9fb", "tertiary-fixed": "#6ffbbe",
-        "tertiary-container": "#005236",
-      },
-      fontFamily: { "headline": ["Manrope"], "body": ["Inter"], "label": ["Inter"] },
-      borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
-    },
-  },
-}
-</script>
+<script src="js/theme.js"></script>
 <style>
-  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align: middle; }
-  body { background-color: #f7f9fb; }
-  a { text-decoration: none; }
-  /* mobile handled by app.js global CSS */
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; align-items: center; justify-content: center; display: flex; }
+    .signature-gradient { background: linear-gradient(135deg, #005DA9 0%, #0176D3 100%); }
+    .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); }
+    .cloud-shadow { box-shadow: 0 12px 32px -4px rgba(26, 28, 28, 0.08); }
+    
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #F3F3F3; }
+    ::-webkit-scrollbar-thumb { background: #C0C7D4; border-radius: 10px; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "error-container": "#ffdad6", "secondary-fixed-dim": "#adc8f2", "on-primary-container": "#fefcff",
+            "on-error": "#ffffff", "tertiary-fixed-dim": "#ffb68b", "surface-container-lowest": "#ffffff",
+            "on-secondary-container": "#415b7f", "surface-dim": "#dadada", "surface-bright": "#f9f9f9",
+            "surface-container": "#eeeeee", "on-primary-fixed-variant": "#004884", "surface-variant": "#e2e2e2",
+            "on-background": "#1a1c1c", "primary-fixed": "#d4e3ff", "primary-container": "#0176d3",
+            "error": "#ba1a1a", "tertiary-container": "#bc5800", "primary-fixed-dim": "#a4c9ff",
+            "inverse-surface": "#2f3131", "tertiary": "#964500", "on-tertiary": "#ffffff",
+            "inverse-primary": "#a4c9ff", "on-tertiary-fixed-variant": "#753400", "on-secondary-fixed": "#001c39",
+            "on-surface-variant": "#414752", "on-secondary-fixed-variant": "#2d486b", "surface-container-high": "#e8e8e8",
+            "surface-container-highest": "#e2e2e2", "outline-variant": "#c0c7d4", "surface-tint": "#005fac",
+            "primary": "#005da9", "secondary-container": "#b9d3fe", "on-tertiary-container": "#fffcff",
+            "on-primary": "#ffffff", "outline": "#717784", "on-surface": "#1a1c1c",
+            "surface-container-low": "#f3f3f3", "background": "#f9f9f9", "on-error-container": "#93000a",
+            "on-tertiary-fixed": "#321200", "secondary-fixed": "#d4e3ff", "secondary": "#466084",
+            "surface": "#f9f9f9", "on-primary-fixed": "#001c39", "inverse-on-surface": "#f1f1f1",
+            "tertiary-fixed": "#ffdbc8", "on-secondary": "#ffffff"
+          },
+          fontFamily: { "headline": ["Manrope"], "body": ["Inter"], "label": ["Inter"] },
+        },
+      },
+    }
+  </script>
 </head>
-<body class="font-body text-on-surface">
-<aside id="sidebar" class="h-full w-64 fixed left-0 top-0 flex flex-col p-4 gap-2 z-40 transition-transform"></aside>
-<main class="ml-0 md:ml-64 min-h-screen">
-  <header id="topbar" class="flex justify-between items-center w-full px-6 md:px-8 py-6 bg-slate-50 sticky top-0 z-30"></header>
-  <div class="px-6 md:px-8 pb-12">
-    <!-- KPI Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10" id="kpi-cards"></div>
-    <!-- Bento Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <!-- Main Table -->
-      <div class="lg:col-span-8 space-y-6">
-        <div class="flex items-center justify-between">
-          <h4 class="font-headline text-xl font-bold text-on-primary-fixed">Recent Asset Ingestions</h4>
-          <a href="registry.html" class="text-sm font-bold text-primary flex items-center gap-1 hover:underline no-underline">
-            View Full Registry <span class="material-symbols-outlined text-sm">chevron_right</span>
-          </a>
-        </div>
-        <div class="space-y-3" id="recent-ingestions">
-          <div class="text-center py-12 text-on-surface-variant">
-            <span class="material-symbols-outlined text-4xl mb-3 block">upload_file</span>
-            <p class="font-headline font-bold">No invoices yet</p>
-            <p class="text-sm mt-1">Upload your first invoice to get started</p>
-            <a href="upload.html" class="inline-flex items-center gap-2 mt-4 px-6 py-3 bg-primary text-white rounded-lg font-bold text-sm no-underline hover:opacity-90 transition-all">
-              <span class="material-symbols-outlined text-lg">add</span> Upload Invoice
-            </a>
-          </div>
-        </div>
-      </div>
-      <!-- Right Side -->
-      <div class="lg:col-span-4 space-y-6">
-        <!-- AI Agent Status -->
-        <div class="bg-primary-container text-white p-6 rounded-2xl relative overflow-hidden">
-          <div class="relative z-10">
-            <h4 class="font-headline text-lg font-bold mb-4">AI Agent Status</h4>
-            <div class="space-y-4">
-              <div class="flex items-center justify-between">
-                <span class="text-xs text-on-primary-container font-medium">Neural OCR Pipeline</span>
-                <span id="ai-status" class="text-xs font-bold flex items-center gap-1">
-                  <span class="w-2 h-2 bg-outline rounded-full"></span> CHECKING
-                </span>
-              </div>
-              <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                <div id="ai-progress" class="bg-gradient-to-r from-tertiary to-tertiary-fixed h-full w-0 transition-all duration-1000"></div>
-              </div>
-              <p class="text-xs text-on-primary-container" id="ai-detail">Connecting to backend...</p>
-            </div>
-          </div>
-          <div class="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
-        </div>
-        <!-- Processing Queue -->
-        <div class="bg-surface-container-lowest p-6 rounded-2xl shadow-sm">
-          <div class="flex items-center justify-between mb-6">
-            <h4 class="font-headline font-bold text-on-primary-fixed">Processing Queue</h4>
-            <span id="queue-count" class="text-[10px] font-bold text-on-surface-variant bg-surface-container px-2 py-1 rounded">0 TOTAL</span>
-          </div>
-          <div class="space-y-4" id="queue-list">
-            <p class="text-sm text-on-surface-variant text-center py-4">No active processing</p>
-          </div>
-        </div>
-        <!-- Warranty Expiry Alert Widget -->
-        <div class="bg-surface-container-lowest p-6 rounded-2xl shadow-sm">
-          <div class="flex items-center gap-3 mb-4">
-            <span class="material-symbols-outlined text-error text-base" style="font-variation-settings:'FILL' 1">verified_user</span>
-            <h4 class="font-headline font-bold text-on-primary-fixed text-sm flex-1">Warranty Expiring Soon</h4>
-            <a href="registry.html" class="text-[10px] font-bold text-primary hover:underline">View All</a>
-          </div>
-          <div id="warranty-widget" class="space-y-2">
-            <p class="text-xs text-on-surface-variant text-center py-3">No warranty data yet</p>
-          </div>
-        </div>
-        <!-- Anomaly Alerts Widget -->
-        <div class="bg-surface-container-lowest p-6 rounded-2xl shadow-sm">
-          <div class="flex items-center gap-3 mb-4">
-            <span class="material-symbols-outlined text-on-tertiary-container text-base" style="font-variation-settings:'FILL' 1">auto_awesome</span>
-            <h4 class="font-headline font-bold text-on-primary-fixed text-sm flex-1">AI Insights & Alerts</h4>
-          </div>
-          <p class="text-sm text-on-surface-variant leading-relaxed mb-4" id="ai-insights">
-            Upload invoices to get AI-powered insights about your asset spending patterns.
-          </p>
-          <div id="anomaly-alerts" class="space-y-2"></div>
-        </div>
-      </div>
+<body class="bg-surface font-body text-on-surface flex flex-col h-screen overflow-hidden">
+<!-- Topbar -->
+<header id="topbar" class="shrink-0 flex justify-between items-center w-full px-6 md:px-8 py-3 bg-white border-b border-surface-container z-50">
+  <div class="flex items-center gap-8 flex-1">
+    <div class="relative w-full max-w-md hidden md:block">
+      <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-lg">search</span>
+      <input class="w-full bg-surface-container-highest border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary focus:bg-white transition-all" placeholder="Search invoices, assets, or agents..." type="text"/>
     </div>
   </div>
-</main>
+</header>
+
+<div class="flex flex-1 overflow-hidden relative">
+  <!-- Sidebar -->
+  <aside id="sidebar" class="h-[calc(100vh-64px)] w-64 md:flex flex-col py-6 bg-slate-50 border-r border-slate-200 hidden shrink-0 z-40"></aside>
+  
+  <!-- Main Content Area -->
+  <main class="flex-1 overflow-y-auto bg-surface" id="content">
+    <div class="p-8 pb-32 max-w-[1600px] mx-auto w-full space-y-10">
+      
+        <!-- Editorial Header -->
+        <div class="flex flex-col md:flex-row justify-between items-end gap-6 border-b border-surface-container pb-8">
+            <div>
+                <h2 class="font-headline text-4xl md:text-5xl font-extrabold text-on-surface tracking-tight mb-4">Intelligence Hub</h2>
+                <p class="text-on-surface-variant font-medium max-w-2xl leading-relaxed">
+                    Overview of your AI extraction pipeline, recent ingestions, and asset analytics.
+                </p>
+            </div>
+            <div class="flex gap-3">
+                <a href="upload.html" class="px-6 py-2 signature-gradient text-white font-bold rounded-lg shadow-sm hover:opacity-90 transition-all flex items-center gap-2 no-underline">
+                    <span class="material-symbols-outlined text-lg">upload_file</span> New Extraction
+                </a>
+            </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="kpi-cards"></div>
+
+        <!-- Bento Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Main Table / List Column -->
+            <div class="col-span-12 lg:col-span-8 space-y-8">
+                
+                <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/20 cloud-shadow flex flex-col pt-6 pb-2 relative overflow-hidden">
+                   <div class="px-6 flex items-center justify-between mb-6">
+                      <h4 class="font-headline text-xl font-extrabold text-on-surface tracking-tight">Recent Ingestions</h4>
+                      <a href="registry.html" class="text-sm font-bold text-primary flex items-center gap-1 hover:underline no-underline uppercase tracking-widest text-[11px]">
+                          View Registry <span class="material-symbols-outlined text-sm">chevron_right</span>
+                      </a>
+                   </div>
+                   <div class="space-y-1" id="recent-ingestions">
+                      <div class="text-center py-16 text-on-surface-variant px-6">
+                         <span class="material-symbols-outlined text-[48px] mb-4 opacity-50">upload_file</span>
+                         <p class="font-headline font-extrabold text-lg text-on-surface">No invoices yet</p>
+                         <p class="text-sm mt-1 mb-6 opacity-80">Upload your first invoice to get started</p>
+                         <a href="upload.html" class="px-6 py-3 signature-gradient text-white font-bold rounded-lg shadow-sm hover:opacity-90 inline-flex items-center gap-2 no-underline">
+                            <span class="material-symbols-outlined text-lg">add</span> Upload Invoice
+                         </a>
+                      </div>
+                   </div>
+                </div>
+
+                <!-- Open Alerts Section -->
+                <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/20 cloud-shadow p-6 relative overflow-hidden mt-8">
+                   <div class="flex items-center gap-3 mb-6 border-b border-surface-container pb-4">
+                      <span class="material-symbols-outlined text-error text-[24px]" style="font-variation-settings:'FILL' 1">warning</span>
+                      <h4 class="font-headline font-extrabold text-lg text-on-surface flex-1 tracking-tight">AI Exception Alerts</h4>
+                   </div>
+                   <div id="anomaly-alerts" class="space-y-3">
+                      <p class="text-sm text-on-surface-variant font-medium py-2">No active anomalies found.</p>
+                   </div>
+                </div>
+
+            </div>
+
+            <!-- Insight Rail (Right Side) -->
+            <div class="col-span-12 lg:col-span-4 space-y-6">
+                
+                <!-- AI Engine Status -->
+                <div class="bg-on-primary-fixed-variant text-white p-6 rounded-2xl relative overflow-hidden shadow-lg group">
+                   <div class="relative z-10">
+                      <div class="flex justify-between items-start mb-6">
+                         <h4 class="font-headline text-lg font-bold">Copilot Engine</h4>
+                         <span id="ai-status" class="text-[10px] font-extrabold bg-white/20 px-2.5 py-1 rounded uppercase tracking-widest flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 bg-outline rounded-full"></span> BOOTING
+                         </span>
+                      </div>
+                      <div class="space-y-4">
+                         <div class="w-full bg-slate-900/50 h-2 rounded-full overflow-hidden">
+                            <div id="ai-progress" class="bg-primary-fixed h-full w-0 transition-all duration-1000"></div>
+                         </div>
+                         <p class="text-[11px] font-bold text-primary-fixed uppercase tracking-widest leading-relaxed" id="ai-detail">Connecting to backend services...</p>
+                      </div>
+                   </div>
+                   <span class="material-symbols-outlined absolute -bottom-6 -right-6 text-[120px] opacity-10 rotate-12 transition-transform group-hover:rotate-45 duration-1000">memory</span>
+                </div>
+
+                <!-- Processing Queue -->
+                <div class="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/20 cloud-shadow">
+                   <div class="flex items-center justify-between mb-4 border-b border-surface-container pb-4">
+                      <h4 class="font-headline font-bold text-on-surface text-sm">Processing Queue</h4>
+                      <span id="queue-count" class="text-[10px] font-extrabold text-on-surface-variant bg-surface-container px-2 py-1 rounded">0 TOTAL</span>
+                   </div>
+                   <div class="space-y-4" id="queue-list">
+                      <p class="text-sm text-on-surface-variant font-medium py-2 text-center">No active tasks</p>
+                   </div>
+                </div>
+
+                <!-- Warranty Matrix -->
+                <div class="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/20 cloud-shadow">
+                   <div class="flex items-center justify-between mb-4 border-b border-surface-container pb-4">
+                      <div class="flex items-center gap-2 text-primary">
+                         <span class="material-symbols-outlined text-[18px]" style="font-variation-settings:'FILL' 1">verified_user</span>
+                         <h4 class="font-headline font-bold text-on-surface text-sm">Warranty Matrix</h4>
+                      </div>
+                      <a href="registry.html" class="text-[10px] uppercase font-bold text-primary hover:underline tracking-widest">View</a>
+                   </div>
+                   <div id="warranty-widget" class="space-y-3">
+                      <p class="text-sm text-on-surface-variant font-medium py-2 text-center">No expiration data available</p>
+                   </div>
+                </div>
+            </div>
+        </div>
+    </div>
+  </main>
+</div>
 
 <script src="js/supabase.js"></script>
 <script src="js/storage.js"></script>
@@ -144,32 +183,52 @@ tailwind.config = {
 document.addEventListener('DOMContentLoaded', async () => {
   await Storage.init();
   injectSidebar('index.html');
-  injectTopBar('Intelligence Hub');
+
+  // Inject Profile into Topbar
+  const topbar = document.getElementById('topbar');
+  if (topbar) {
+     const profileHTML = `<div class="flex items-center gap-4">
+        <button class="p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors relative"><span class="material-symbols-outlined">notifications</span></button>
+        <button class="p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors"><span class="material-symbols-outlined">settings</span></button>
+        <div class="h-8 w-[1px] bg-slate-200 mx-2"></div>
+        <div class="flex items-center gap-3">
+          <div class="text-right hidden sm:block">
+             <p class="text-xs font-bold text-on-surface leading-none">Admin User</p>
+             <p class="text-[10px] text-on-surface-variant">Fleet Manager</p>
+          </div>
+          <div class="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm">AU</div>
+        </div>
+      </div>`;
+     topbar.insertAdjacentHTML('beforeend', profileHTML);
+  }
 
   const stats = Storage.getDashboardStats();
   // KPIs
   document.getElementById('kpi-cards').innerHTML = `
-    <div class="bg-surface-container-lowest p-8 rounded-xl shadow-sm border-l-4 border-primary card-hover animate-in delay-1">
-      <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-on-surface-variant mb-2">Total Assets Managed</p>
+    <div class="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/20 cloud-shadow relative overflow-hidden group">
+      <div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+      <p class="text-[10px] font-extrabold uppercase tracking-widest text-on-surface-variant mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">account_balance</span> Total Value Managed</p>
       <div class="flex items-end justify-between">
-        <h3 class="font-headline text-4xl font-extrabold text-on-primary-fixed" data-count="${stats.totalValue}" data-format="currency">₹0</h3>
-        <span class="text-sm font-bold bg-surface-container px-2 py-1 rounded text-on-surface-variant">${stats.totalAssets} assets</span>
+        <h3 class="font-headline text-3xl font-extrabold text-on-surface" data-count="${stats.totalValue}" data-format="currency">₹0</h3>
+        <span class="text-[10px] font-extrabold uppercase bg-surface-container px-2 py-1 rounded text-on-surface-variant tracking-wider">${stats.totalAssets} Assets</span>
       </div>
     </div>
-    <div class="bg-surface-container-lowest p-8 rounded-xl shadow-sm border-l-4 border-secondary card-hover animate-in delay-2">
-      <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-on-surface-variant mb-2">Pending Reviews</p>
+    <div class="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/20 cloud-shadow relative overflow-hidden group">
+      <div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary"></div>
+      <p class="text-[10px] font-extrabold uppercase tracking-widest text-on-surface-variant mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">rule_folder</span> Pending Reviews</p>
       <div class="flex items-end justify-between">
-        <h3 class="font-headline text-4xl font-extrabold text-on-primary-fixed" data-count="${stats.pending}">0</h3>
+        <h3 class="font-headline text-3xl font-extrabold text-on-surface" data-count="${stats.pending}">0</h3>
         ${stats.pending > 0
-          ? '<a href="review.html" class="text-sm font-bold bg-secondary-fixed px-2 py-1 rounded text-on-secondary-container no-underline hover:opacity-80">Requires Action</a>'
-          : '<span class="text-sm font-bold bg-tertiary-fixed/20 px-2 py-1 rounded text-on-tertiary-container">All Clear</span>'}
+          ? '<a href="review.html" class="text-[10px] font-extrabold uppercase bg-secondary-fixed text-on-secondary-container px-2 py-1 rounded no-underline hover:opacity-80 tracking-wider">Action Needed</a>'
+          : '<span class="text-[10px] font-extrabold uppercase bg-surface-container px-2 py-1 rounded text-on-surface-variant tracking-wider">All Clear</span>'}
       </div>
     </div>
-    <div class="bg-surface-container-lowest p-8 rounded-xl shadow-sm border-l-4 border-tertiary-fixed-dim card-hover animate-in delay-3">
-      <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-on-surface-variant mb-2">Total Tax Extracted</p>
+    <div class="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/20 cloud-shadow relative overflow-hidden group">
+      <div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary"></div>
+      <p class="text-[10px] font-extrabold uppercase tracking-widest text-on-surface-variant mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">account_balance_wallet</span> Tax Extraction Val.</p>
       <div class="flex items-end justify-between">
-        <h3 class="font-headline text-4xl font-extrabold text-on-primary-fixed" data-count="${stats.totalTax}" data-format="currency">₹0</h3>
-        <span class="text-sm font-bold bg-tertiary-fixed/20 px-2 py-1 rounded text-on-tertiary-container">${stats.approved} Verified</span>
+        <h3 class="font-headline text-3xl font-extrabold text-on-surface" data-count="${stats.totalTax}" data-format="currency">₹0</h3>
+        <span class="text-[10px] font-extrabold uppercase bg-tertiary-fixed text-on-tertiary-container px-2 py-1 rounded tracking-wider">${stats.approved} Verified</span>
       </div>
     </div>
   `;
@@ -192,7 +251,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Recent ingestions
-  const extractions = Storage.getExtractions().slice(0, 6);
+  const extractions = Storage.getExtractions().slice(0, 5);
   if (extractions.length > 0) {
     document.getElementById('recent-ingestions').innerHTML = extractions.map(ext => {
       const json = ext.extractionJson || {};
@@ -200,64 +259,65 @@ document.addEventListener('DOMContentLoaded', async () => {
       const invNo = getVal(json.invoice_header, 'invoice_number') || ext.fileName;
       const total = getVal(json.totals, 'grand_total') || 0;
       return `
-        <a href="review-detail.html?id=${ext.id}" class="group bg-surface-container-lowest p-5 rounded-xl hover:bg-primary-fixed/10 transition-colors flex items-center justify-between no-underline">
+        <a href="review-detail.html?id=${ext.id}" class="group px-6 py-4 hover:bg-surface-container-lowest/50 transition-colors flex items-center justify-between no-underline border-b border-surface-container last:border-0 bg-white">
           <div class="flex items-center gap-4">
-            <div class="w-12 h-12 bg-surface-container flex items-center justify-center rounded-lg">
-              <span class="material-symbols-outlined text-on-surface-variant">${ext.status === 'rejected' ? 'warning' : 'description'}</span>
+            <div class="w-12 h-12 ${ext.status === 'rejected' ? 'bg-error-container text-error' : 'bg-surface-container-low text-on-surface-variant'} flex items-center justify-center rounded-xl font-bold">
+              <span class="material-symbols-outlined text-[20px]">${ext.status === 'rejected' ? 'warning' : 'receipt_long'}</span>
             </div>
             <div>
-              <p class="font-headline font-bold text-on-primary-fixed">${invNo}</p>
+              <p class="font-headline font-bold text-on-surface text-base group-hover:text-primary transition-colors">${invNo}</p>
               <p class="text-xs text-on-surface-variant">${vendor}</p>
             </div>
           </div>
-          <div class="text-right px-4">
-            <p class="text-sm font-bold text-on-primary-fixed">${formatCurrency(total)}</p>
-            <p class="text-[10px] text-on-surface-variant uppercase">${formatDate(ext.timestamp)}</p>
+          <div class="flex items-center gap-6">
+              <div class="text-right hidden sm:block">
+                <p class="text-sm font-bold text-on-surface">${formatCurrency(total)}</p>
+                <p class="text-[10px] text-on-surface-variant font-extrabold uppercase tracking-widest">${timeAgo(ext.timestamp)}</p>
+              </div>
+              <div class="w-24 text-right">${statusBadge(ext.status)}</div>
           </div>
-          <div class="px-2">${confidenceBadge(ext.confidence)}</div>
-          <div class="px-2">${statusBadge(ext.status)}</div>
         </a>`;
     }).join('');
   }
 
-  // AI status
-  const health = await Api.checkHealth();
-  const aiStatus = document.getElementById('ai-status');
-  const aiProgress = document.getElementById('ai-progress');
-  const aiDetail = document.getElementById('ai-detail');
-  if (health.ok) {
-    aiStatus.innerHTML = '<span class="w-2 h-2 bg-tertiary-fixed rounded-full animate-pulse"></span> <span class="text-tertiary-fixed">ACTIVE</span>';
-    aiProgress.style.width = '82%';
-    aiDetail.textContent = 'Pipeline ready. Upload invoices for AI extraction.';
-  } else {
-    aiStatus.innerHTML = '<span class="w-2 h-2 bg-error rounded-full"></span> <span class="text-error-container">OFFLINE</span>';
-    aiProgress.style.width = '0%';
-    aiDetail.innerHTML = 'Backend not reachable. <button onclick="openSettings()" class="underline font-bold">Configure URL</button>';
-  }
-
-  // AI Insights
-  if (stats.totalExtractions > 2) {
-    const assets = Storage.getAssets();
-    const categories = {};
-    assets.forEach(a => { categories[a.category] = (categories[a.category] || 0) + a.totalCost; });
-    const topCat = Object.entries(categories).sort((a,b) => b[1]-a[1])[0];
-    if (topCat) {
-      document.getElementById('ai-insights').innerHTML = `"I've processed <span class="text-on-primary-fixed font-bold">${stats.totalExtractions} invoices</span> creating ${stats.totalAssets} assets. Your highest spend category is <span class="text-on-primary-fixed font-bold">${topCat[0]}</span> at ${formatCurrency(topCat[1])}."`;
-    }
+  // Copilot Engine Status
+  try {
+      const health = await Api.checkHealth();
+      const aiStatus = document.getElementById('ai-status');
+      const aiProgress = document.getElementById('ai-progress');
+      const aiDetail = document.getElementById('ai-detail');
+      if (health.ok) {
+        aiStatus.innerHTML = '<span class="w-1.5 h-1.5 bg-tertiary-fixed rounded-full animate-pulse shadow-[0_0_8px_rgba(255,219,200,0.8)]"></span> <span class="text-tertiary-fixed font-bold">ONLINE</span>';
+        aiProgress.style.width = '100%';
+        aiProgress.classList.add('bg-tertiary-fixed');
+        aiProgress.classList.remove('bg-primary-fixed');
+        aiDetail.textContent = 'Models synchronized. Copilot is standing by.';
+      } else {
+        throw new Error('Offline');
+      }
+  } catch(e) {
+      const aiStatus = document.getElementById('ai-status');
+      const aiProgress = document.getElementById('ai-progress');
+      const aiDetail = document.getElementById('ai-detail');
+      aiStatus.innerHTML = '<span class="w-1.5 h-1.5 bg-error rounded-full"></span> <span class="text-error-container">DISCONNECTED</span>';
+      aiProgress.style.width = '0%';
+      aiDetail.innerHTML = 'Backend unreachable. <button onclick="openSettings()" class="underline font-bold hover:text-white transition-colors">Configure Model URL</button>';
   }
 
   // Queue (draft extractions)
-  const drafts = Storage.getExtractions().filter(e => e.status === 'draft').slice(0, 3);
+  const drafts = Storage.getExtractions().filter(e => e.status === 'draft').slice(0, 4);
   document.getElementById('queue-count').textContent = drafts.length + ' PENDING';
   if (drafts.length > 0) {
     document.getElementById('queue-list').innerHTML = drafts.map(d => `
-      <div class="flex items-start gap-4">
-        <div class="mt-1 h-2 w-2 rounded-full bg-secondary shrink-0"></div>
-        <div class="flex-1">
-          <p class="text-sm font-bold text-on-primary-fixed">${d.fileName}</p>
-          <p class="text-[10px] text-on-surface-variant">${timeAgo(d.timestamp)} — awaiting review</p>
+      <div class="flex items-center justify-between group p-3 rounded-lg hover:bg-surface-container-lowest transition-colors bg-surface-container-low/50 border border-transparent hover:border-outline-variant/20">
+        <div class="flex items-center gap-3">
+          <div class="h-2 w-2 rounded-full bg-secondary shrink-0"></div>
+          <div>
+            <p class="text-xs font-bold text-on-surface">${d.fileName.length > 20 ? d.fileName.slice(0,20)+'...' : d.fileName}</p>
+            <p class="text-[10px] font-extrabold uppercase tracking-widest text-on-surface-variant">${timeAgo(d.timestamp)}</p>
+          </div>
         </div>
-        <a href="review-detail.html?id=${d.id}" class="text-[10px] font-mono text-primary font-bold no-underline hover:underline">REVIEW</a>
+        <a href="review-detail.html?id=${d.id}" class="text-[10px] uppercase font-bold text-on-surface-variant group-hover:text-primary no-underline hidden md:block transition-colors">Review</a>
       </div>
     `).join('');
   }
@@ -270,20 +330,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!a.warrantyExpiry) return false;
     const exp = new Date(a.warrantyExpiry);
     return exp >= now && exp <= in90;
-  }).sort((a,b) => new Date(a.warrantyExpiry) - new Date(b.warrantyExpiry)).slice(0, 5);
+  }).sort((a,b) => new Date(a.warrantyExpiry) - new Date(b.warrantyExpiry)).slice(0, 4);
 
   if (expiring.length > 0) {
     document.getElementById('warranty-widget').innerHTML = expiring.map(a => {
       const exp = new Date(a.warrantyExpiry);
       const days = Math.ceil((exp - now) / (1000*60*60*24));
-      const cls = days <= 30 ? 'bg-error-container text-on-error-container' : 'bg-secondary-fixed text-on-secondary-container';
-      return `<a href="asset-detail.html?id=${a.id}" class="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-surface-container transition-colors no-underline group">
-        <span class="material-symbols-outlined text-sm ${days <= 30 ? 'text-error' : 'text-secondary'}" style="font-variation-settings:'FILL' 1">verified_user</span>
-        <div class="flex-1 min-w-0">
-          <p class="text-xs font-bold text-on-primary-fixed truncate">${a.tempAssetId || a.name || 'Asset'}</p>
-          <p class="text-[10px] text-on-surface-variant">${a.name || ''}</p>
+      const cls = days <= 30 ? 'bg-error-container text-on-error-container border-error/20' : 'bg-secondary-fixed text-on-secondary-container border-secondary/20';
+      return `<a href="asset-detail.html?id=${a.id}" class="flex items-center justify-between p-3 rounded-xl hover:bg-surface-container-lowest transition-colors no-underline group bg-surface-container-low/50 border border-transparent hover:border-outline-variant/20">
+        <div class="flex items-center gap-3 min-w-0 pr-4">
+            <span class="material-symbols-outlined text-[16px] ${days <= 30 ? 'text-error' : 'text-secondary'}" style="font-variation-settings:'FILL' 1">stars</span>
+            <div class="min-w-0">
+                <p class="text-xs font-bold text-on-surface truncate">${a.name || 'Unknown Asset'}</p>
+                <p class="text-[10px] font-extrabold uppercase tracking-widest text-on-surface-variant font-mono truncate">${a.tempAssetId || 'A-TBD'}</p>
+            </div>
         </div>
-        <span class="text-[9px] font-bold px-2 py-1 rounded shrink-0 ${cls}">${days}d</span>
+        <span class="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded shrink-0 border ${cls}">${days} DAYS</span>
       </a>`;
     }).join('');
   }
@@ -291,16 +353,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Anomaly Alerts
   try {
     const alerts = await Storage.fetchAlerts();
-    const open = alerts.filter(al => al.status !== 'resolved').slice(0, 3);
+    const open = alerts.filter(al => al.status !== 'resolved').slice(0, 4);
     if (open.length > 0) {
       document.getElementById('anomaly-alerts').innerHTML = open.map(al => `
-        <div class="flex items-start gap-2 bg-error-container/30 rounded-xl p-3">
-          <span class="material-symbols-outlined text-error text-sm mt-0.5" style="font-variation-settings:'FILL' 1">warning</span>
-          <div class="flex-1 min-w-0">
-            <p class="text-[10px] font-bold text-error uppercase tracking-wide">${(al.alert_type || al.type || 'Alert').replace(/_/g,' ')}</p>
-            <p class="text-xs text-on-surface-variant mt-0.5 leading-snug">${al.description || al.message || 'Review required'}</p>
+        <div class="flex items-start gap-3 bg-error-container/20 border border-error/10 rounded-xl p-4 transition-all hover:bg-error-container/30">
+          <div class="w-8 h-8 rounded-full bg-error-container flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-error text-[16px]" style="font-variation-settings:'FILL' 1">warning</span>
           </div>
-          <button onclick="resolveAlert('${al.id}',this)" class="shrink-0 text-[10px] font-bold text-on-surface-variant hover:text-error transition-colors">✕</button>
+          <div class="flex-1 min-w-0 pr-2">
+             <p class="text-[10px] font-extrabold text-error uppercase tracking-widest flex items-center gap-1.5">${(al.alert_type || al.type || 'Alert').replace(/_/g,' ')}</p>
+             <p class="text-xs font-medium text-on-surface mt-1 leading-snug">${al.description || al.message || 'Review required'}</p>
+          </div>
+          <button onclick="resolveAlert('${al.id}',this)" class="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors">
+            <span class="material-symbols-outlined text-[14px]">close</span>
+          </button>
         </div>`).join('');
     }
   } catch(e) { /* alerts table may not exist yet */ }
@@ -309,7 +375,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function resolveAlert(id, btn) {
   try {
     await Storage.resolveAlert(id);
-    btn.closest('div[class*="flex items-start"]').remove();
+    btn.closest('.flex.items-start').remove();
   } catch(e) { console.warn('Could not resolve alert', e); }
 }
 </script>

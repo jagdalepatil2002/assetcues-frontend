@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AssetLedger - Template Library</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      vertical-align: middle;
+    }
+    .signature-gradient {
+      background: linear-gradient(135deg, #005DA9 0%, #0176D3 100%);
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(20px);
+    }
+    .cloud-shadow {
+      box-shadow: 0 12px 32px -4px rgba(26, 28, 28, 0.08);
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F3F3F3;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #C0C7D4;
+      border-radius: 10px;
+    }
+  </style>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "error-container": "#ffdad6",
+            "secondary-fixed-dim": "#adc8f2",
+            "on-primary-container": "#fefcff",
+            "on-error": "#ffffff",
+            "tertiary-fixed-dim": "#ffb68b",
+            "surface-container-lowest": "#ffffff",
+            "on-secondary-container": "#415b7f",
+            "surface-dim": "#dadada",
+            "surface-bright": "#f9f9f9",
+            "surface-container": "#eeeeee",
+            "on-primary-fixed-variant": "#004884",
+            "surface-variant": "#e2e2e2",
+            "on-background": "#1a1c1c",
+            "primary-fixed": "#d4e3ff",
+            "primary-container": "#0176d3",
+            "error": "#ba1a1a",
+            "tertiary-container": "#bc5800",
+            "primary-fixed-dim": "#a4c9ff",
+            "inverse-surface": "#2f3131",
+            "tertiary": "#964500",
+            "on-tertiary": "#ffffff",
+            "inverse-primary": "#a4c9ff",
+            "on-tertiary-fixed-variant": "#753400",
+            "on-secondary-fixed": "#001c39",
+            "on-surface-variant": "#414752",
+            "on-secondary-fixed-variant": "#2d486b",
+            "surface-container-high": "#e8e8e8",
+            "surface-container-highest": "#e2e2e2",
+            "outline-variant": "#c0c7d4",
+            "surface-tint": "#005fac",
+            "primary": "#005da9",
+            "secondary-container": "#b9d3fe",
+            "on-tertiary-container": "#fffcff",
+            "on-primary": "#ffffff",
+            "outline": "#717784",
+            "on-surface": "#1a1c1c",
+            "surface-container-low": "#f3f3f3",
+            "background": "#f9f9f9",
+            "on-error-container": "#93000a",
+            "on-tertiary-fixed": "#321200",
+            "secondary-fixed": "#d4e3ff",
+            "secondary": "#466084",
+            "surface": "#f9f9f9",
+            "on-primary-fixed": "#001c39",
+            "inverse-on-surface": "#f1f1f1",
+            "tertiary-fixed": "#ffdbc8",
+            "on-secondary": "#ffffff"
+          },
+          fontFamily: {
+            "headline": ["Manrope"],
+            "body": ["Inter"],
+            "label": ["Inter"]
+          },
+          borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+        },
+      },
+    }
+  </script>
+</head>
+<body class="bg-surface font-body text-on-surface">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full flex flex-col py-6 bg-slate-50 dark:bg-slate-950 w-64 border-r border-slate-200 z-50">
+<div class="px-6 mb-8">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-primary-container rounded flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+</div>
+<div>
+<h1 class="text-lg font-black text-slate-900 leading-none">Enterprise Assets</h1>
+<p class="text-[10px] uppercase tracking-wider text-outline mt-1 font-bold">Global Fleet</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-4 space-y-1">
+<div class="text-slate-600 px-4 py-3 hover:bg-slate-200/50 transition-colors flex items-center gap-3 rounded cursor-pointer">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-medium text-sm">Dashboard</span>
+</div>
+<div class="bg-blue-50 text-blue-700 border-r-4 border-blue-700 font-bold px-4 py-3 flex items-center gap-3 rounded-l cursor-pointer translate-x-1 transition-transform">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-medium text-sm">Inventory</span>
+</div>
+<div class="text-slate-600 px-4 py-3 hover:bg-slate-200/50 transition-colors flex items-center gap-3 rounded cursor-pointer">
+<span class="material-symbols-outlined" data-icon="build">build</span>
+<span class="font-medium text-sm">Maintenance</span>
+</div>
+<div class="text-slate-600 px-4 py-3 hover:bg-slate-200/50 transition-colors flex items-center gap-3 rounded cursor-pointer">
+<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+<span class="font-medium text-sm">Procurement</span>
+</div>
+<div class="text-slate-600 px-4 py-3 hover:bg-slate-200/50 transition-colors flex items-center gap-3 rounded cursor-pointer">
+<span class="material-symbols-outlined" data-icon="bar_chart">bar_chart</span>
+<span class="font-medium text-sm">Analytics</span>
+</div>
+<div class="text-slate-600 px-4 py-3 hover:bg-slate-200/50 transition-colors flex items-center gap-3 rounded cursor-pointer">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="font-medium text-sm">Reporting</span>
+</div>
+</nav>
+<div class="mt-auto px-4 space-y-1">
+<button class="w-full signature-gradient text-on-primary py-3 rounded-lg font-bold text-sm mb-4 shadow-sm hover:opacity-90 transition-opacity">
+        Add New Asset
+      </button>
+<div class="text-slate-600 px-4 py-2 hover:bg-slate-200/50 flex items-center gap-3 rounded cursor-pointer">
+<span class="material-symbols-outlined text-xl" data-icon="contact_support">contact_support</span>
+<span class="text-xs uppercase tracking-widest font-bold">Support</span>
+</div>
+<div class="text-slate-600 px-4 py-2 hover:bg-slate-200/50 flex items-center gap-3 rounded cursor-pointer">
+<span class="material-symbols-outlined text-xl" data-icon="settings">settings</span>
+<span class="text-xs uppercase tracking-widest font-bold">Settings</span>
+</div>
+</div>
+</aside>
+<div class="ml-64 min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="sticky top-0 z-40 flex items-center justify-between w-full px-8 h-16 bg-white border-b border-slate-200 shadow-sm">
+<div class="flex items-center gap-8 flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-lg" data-icon="search">search</span>
+<input class="w-full bg-surface-container-highest border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary focus:bg-white transition-all" placeholder="Search templates, industries, or logic..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-white"></span>
+</button>
+<button class="p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<button class="p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<div class="h-8 w-[1px] bg-slate-200 mx-2"></div>
+<div class="flex items-center gap-3">
+<div class="text-right">
+<p class="text-xs font-bold text-on-surface leading-none">Alex Rivera</p>
+<p class="text-[10px] text-on-surface-variant">Fleet Admin</p>
+</div>
+<img alt="User Profile" class="w-9 h-9 rounded-full object-cover border border-slate-200" data-alt="professional headshot of a middle-aged male executive in a blue shirt with clean background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtZ6NVg0wYklVIymMgrY01GriaBVXKoMlQfM8AtFhucaHKyOTjV0NYCJFGV9P0UQupmxpMhFi4Esu6j9YqJ2KahmytimIVUjJCSDRx_w59lXqGykv3sp2w0ECMQZYbOOWsL2Rpbmc5PW6qeiWNlBXK7uoGkVZyp4mLalifKpK1upB0h7E7tkSVZfNpr20AHjTBlkics9YjVS5imr-brGwt88qjyEr18T4HlAVmP363aAxXOoh_OPaEkTXCQudrb7ihEM54F1Jxrr8"/>
+</div>
+</div>
+</header>
+<main class="flex-1 p-8 bg-surface">
+<!-- Editorial Header -->
+<div class="max-w-7xl mx-auto mb-12">
+<div class="flex justify-between items-end">
+<div>
+<h2 class="font-headline text-4xl font-extrabold text-on-surface tracking-tight mb-2">Template Library</h2>
+<p class="text-on-surface-variant font-medium max-w-2xl">Standardize your asset management with pre-configured frameworks including industry-specific depreciation models and lifecycle logic.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-6 py-2 bg-surface-container-lowest border border-outline-variant/20 text-on-surface font-semibold rounded-lg hover:bg-surface-container transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-lg" data-icon="filter_list">filter_list</span>
+              Industries
+            </button>
+<button class="px-6 py-2 signature-gradient text-on-primary font-bold rounded-lg shadow-sm hover:opacity-90 transition-opacity">
+              Custom Template
+            </button>
+</div>
+</div>
+</div>
+<!-- Main Layout: Bento Grid of Templates & Insight Rail -->
+<div class="max-w-7xl mx-auto grid grid-cols-12 gap-8">
+<!-- Template Gallery -->
+<div class="col-span-12 lg:col-span-9 space-y-8">
+<!-- Industry Chips Scroll -->
+<div class="flex gap-3 overflow-x-auto pb-4 no-scrollbar">
+<button class="px-4 py-1.5 bg-primary text-on-primary rounded-full text-sm font-bold whitespace-nowrap">All Industry</button>
+<button class="px-4 py-1.5 bg-surface-container-high text-on-surface-variant rounded-full text-sm font-medium hover:bg-surface-container-highest transition-colors whitespace-nowrap">Logistics &amp; Fleet</button>
+<button class="px-4 py-1.5 bg-surface-container-high text-on-surface-variant rounded-full text-sm font-medium hover:bg-surface-container-highest transition-colors whitespace-nowrap">Renewable Energy</button>
+<button class="px-4 py-1.5 bg-surface-container-high text-on-surface-variant rounded-full text-sm font-medium hover:bg-surface-container-highest transition-colors whitespace-nowrap">Manufacturing</button>
+<button class="px-4 py-1.5 bg-surface-container-high text-on-surface-variant rounded-full text-sm font-medium hover:bg-surface-container-highest transition-colors whitespace-nowrap">Data Centers</button>
+<button class="px-4 py-1.5 bg-surface-container-high text-on-surface-variant rounded-full text-sm font-medium hover:bg-surface-container-highest transition-colors whitespace-nowrap">Heavy Machinery</button>
+</div>
+<!-- Template Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Template Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-6 cloud-shadow border border-outline-variant/10 hover:translate-y-[-4px] transition-transform cursor-pointer group">
+<div class="flex justify-between items-start mb-6">
+<div class="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-3xl" data-icon="local_shipping">local_shipping</span>
+</div>
+<span class="bg-secondary-container text-on-secondary-container text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Logistics</span>
+</div>
+<h3 class="font-headline text-xl font-bold text-on-surface mb-2">Heavy Haulage Fleet</h3>
+<p class="text-sm text-on-surface-variant mb-6 line-clamp-2">Optimized for long-distance transport assets with high-frequency maintenance intervals and usage-based depreciation.</p>
+<div class="space-y-4 pt-4 border-t border-surface-container">
+<div class="flex justify-between items-center">
+<span class="text-xs font-bold text-outline uppercase tracking-tight">Depreciation</span>
+<span class="text-sm font-semibold text-on-surface">Double Declining</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-xs font-bold text-outline uppercase tracking-tight">Useful Life</span>
+<span class="text-sm font-semibold text-on-surface">8 Years / 500k Miles</span>
+</div>
+<div class="flex gap-2 pt-2">
+<div class="px-2 py-1 bg-surface-container text-[10px] font-bold rounded">TELEMETRY-SYNC</div>
+<div class="px-2 py-1 bg-surface-container text-[10px] font-bold rounded">IRS-COMPLIANT</div>
+</div>
+</div>
+<div class="mt-8 flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="flex-1 py-2 text-sm font-bold signature-gradient text-on-primary rounded-lg">Preview Rules</button>
+<button class="p-2 border border-outline-variant/20 rounded-lg hover:bg-surface-container">
+<span class="material-symbols-outlined text-on-surface" data-icon="favorite">favorite</span>
+</button>
+</div>
+</div>
+<!-- Template Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-6 cloud-shadow border border-outline-variant/10 hover:translate-y-[-4px] transition-transform cursor-pointer group">
+<div class="flex justify-between items-start mb-6">
+<div class="w-12 h-12 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+<span class="material-symbols-outlined text-3xl" data-icon="solar_power">solar_power</span>
+</div>
+<span class="bg-tertiary-fixed text-on-tertiary-fixed text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Renewables</span>
+</div>
+<h3 class="font-headline text-xl font-bold text-on-surface mb-2">Utility-Scale Solar</h3>
+<p class="text-sm text-on-surface-variant mb-6 line-clamp-2">Specific to PV infrastructure with degradation-adjusted reporting and MACRS 5-year recovery periods.</p>
+<div class="space-y-4 pt-4 border-t border-surface-container">
+<div class="flex justify-between items-center">
+<span class="text-xs font-bold text-outline uppercase tracking-tight">Depreciation</span>
+<span class="text-sm font-semibold text-on-surface">MACRS (Modified)</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-xs font-bold text-outline uppercase tracking-tight">Useful Life</span>
+<span class="text-sm font-semibold text-on-surface">25 Years</span>
+</div>
+<div class="flex gap-2 pt-2">
+<div class="px-2 py-1 bg-surface-container text-[10px] font-bold rounded">TAX-CREDIT-READY</div>
+<div class="px-2 py-1 bg-surface-container text-[10px] font-bold rounded">ESG-AUDIT</div>
+</div>
+</div>
+<div class="mt-8 flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="flex-1 py-2 text-sm font-bold signature-gradient text-on-primary rounded-lg">Preview Rules</button>
+<button class="p-2 border border-outline-variant/20 rounded-lg hover:bg-surface-container">
+<span class="material-symbols-outlined text-on-surface" data-icon="favorite">favorite</span>
+</button>
+</div>
+</div>
+<!-- Template Card 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-6 cloud-shadow border border-outline-variant/10 hover:translate-y-[-4px] transition-transform cursor-pointer group">
+<div class="flex justify-between items-start mb-6">
+<div class="w-12 h-12 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600">
+<span class="material-symbols-outlined text-3xl" data-icon="dns">dns</span>
+</div>
+<span class="bg-secondary-container text-on-secondary-container text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Infrastructure</span>
+</div>
+<h3 class="font-headline text-xl font-bold text-on-surface mb-2">High-Density Compute</h3>
+<p class="text-sm text-on-surface-variant mb-6 line-clamp-2">Rapid turnover server assets with component-level tracking and dynamic maintenance based on thermal load.</p>
+<div class="space-y-4 pt-4 border-t border-surface-container">
+<div class="flex justify-between items-center">
+<span class="text-xs font-bold text-outline uppercase tracking-tight">Depreciation</span>
+<span class="text-sm font-semibold text-on-surface">Sum of Years Digits</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-xs font-bold text-outline uppercase tracking-tight">Useful Life</span>
+<span class="text-sm font-semibold text-on-surface">3 Years</span>
+</div>
+<div class="flex gap-2 pt-2">
+<div class="px-2 py-1 bg-surface-container text-[10px] font-bold rounded">AUTO-RETIRE</div>
+<div class="px-2 py-1 bg-surface-container text-[10px] font-bold rounded">BOM-ENABLED</div>
+</div>
+</div>
+<div class="mt-8 flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="flex-1 py-2 text-sm font-bold signature-gradient text-on-primary rounded-lg">Preview Rules</button>
+<button class="p-2 border border-outline-variant/20 rounded-lg hover:bg-surface-container">
+<span class="material-symbols-outlined text-on-surface" data-icon="favorite">favorite</span>
+</button>
+</div>
+</div>
+<!-- Template Card 4 -->
+<div class="bg-surface-container-lowest rounded-xl p-6 cloud-shadow border border-outline-variant/10 hover:translate-y-[-4px] transition-transform cursor-pointer group">
+<div class="flex justify-between items-start mb-6">
+<div class="w-12 h-12 rounded-lg bg-orange-50 flex items-center justify-center text-orange-600">
+<span class="material-symbols-outlined text-3xl" data-icon="precision_manufacturing">precision_manufacturing</span>
+</div>
+<span class="bg-tertiary-fixed text-on-tertiary-fixed text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Manufacturing</span>
+</div>
+<h3 class="font-headline text-xl font-bold text-on-surface mb-2">Robotic Assembly Lines</h3>
+<p class="text-sm text-on-surface-variant mb-6 line-clamp-2">Multi-component industrial assets with distinct lifecycle stages for controllers and mechanical arms.</p>
+<div class="space-y-4 pt-4 border-t border-surface-container">
+<div class="flex justify-between items-center">
+<span class="text-xs font-bold text-outline uppercase tracking-tight">Depreciation</span>
+<span class="text-sm font-semibold text-on-surface">Straight Line</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-xs font-bold text-outline uppercase tracking-tight">Useful Life</span>
+<span class="text-sm font-semibold text-on-surface">12 Years</span>
+</div>
+<div class="flex gap-2 pt-2">
+<div class="px-2 py-1 bg-surface-container text-[10px] font-bold rounded">IOT-INTEGRATED</div>
+<div class="px-2 py-1 bg-surface-container text-[10px] font-bold rounded">ISO-55001</div>
+</div>
+</div>
+<div class="mt-8 flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="flex-1 py-2 text-sm font-bold signature-gradient text-on-primary rounded-lg">Preview Rules</button>
+<button class="p-2 border border-outline-variant/20 rounded-lg hover:bg-surface-container">
+<span class="material-symbols-outlined text-on-surface" data-icon="favorite">favorite</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Insight Rail -->
+<div class="col-span-12 lg:col-span-3">
+<div class="sticky top-24 space-y-6">
+<!-- Quick Insights Card -->
+<div class="bg-surface-container-low rounded-xl p-6 border border-outline-variant/20">
+<h4 class="text-xs font-bold text-outline uppercase tracking-widest mb-6">Template Insights</h4>
+<div class="space-y-6">
+<div>
+<p class="text-[10px] font-bold text-on-surface-variant uppercase mb-1">Most Adopted Industry</p>
+<p class="text-xl font-bold text-on-surface">Renewable Energy</p>
+<p class="text-xs text-emerald-600 mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs" data-icon="trending_up">trending_up</span>
+                    +24% this quarter
+                  </p>
+</div>
+<div>
+<p class="text-[10px] font-bold text-on-surface-variant uppercase mb-1">Standard Logic Coverage</p>
+<p class="text-xl font-bold text-on-surface">88.4%</p>
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full mt-2 overflow-hidden">
+<div class="bg-primary h-full w-[88%]"></div>
+</div>
+</div>
+<div>
+<p class="text-[10px] font-bold text-on-surface-variant uppercase mb-2">Popular Rules</p>
+<div class="flex flex-wrap gap-2">
+<span class="px-2 py-1 bg-white text-[10px] font-bold border border-outline-variant/20 rounded">MACRS-5</span>
+<span class="px-2 py-1 bg-white text-[10px] font-bold border border-outline-variant/20 rounded">UNIT-PROD</span>
+<span class="px-2 py-1 bg-white text-[10px] font-bold border border-outline-variant/20 rounded">LIFETIME-CAP</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Help Banner -->
+<div class="bg-on-primary-fixed-variant rounded-xl p-6 text-white relative overflow-hidden group">
+<div class="relative z-10">
+<h4 class="font-headline text-lg font-bold mb-2">Need a custom framework?</h4>
+<p class="text-sm text-primary-fixed mb-4 opacity-90">Our engineers can help map your specific lifecycle requirements to a private template.</p>
+<button class="text-sm font-bold flex items-center gap-2 group-hover:translate-x-1 transition-transform">
+                  Talk to Specialist
+                  <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+<span class="material-symbols-outlined absolute -bottom-6 -right-6 text-9xl opacity-10 rotate-12" data-icon="architecture">architecture</span>
+</div>
+<!-- Recent Activity List -->
+<div class="px-2">
+<h4 class="text-xs font-bold text-outline uppercase tracking-widest mb-4">Recent Updates</h4>
+<div class="space-y-4">
+<div class="flex gap-3">
+<div class="w-1.5 h-1.5 rounded-full bg-primary mt-1.5"></div>
+<div>
+<p class="text-xs font-bold text-on-surface">MACRS Updated</p>
+<p class="text-[10px] text-on-surface-variant">Applied to 12 Solar Templates</p>
+</div>
+</div>
+<div class="flex gap-3">
+<div class="w-1.5 h-1.5 rounded-full bg-outline-variant mt-1.5"></div>
+<div>
+<p class="text-xs font-bold text-on-surface">New Template</p>
+<p class="text-[10px] text-on-surface-variant">Cold Storage Logistics added</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

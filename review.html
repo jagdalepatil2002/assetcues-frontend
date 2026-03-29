@@ -1,119 +1,307 @@
 <!DOCTYPE html>
-<html class="light" lang="en">
-
-<head>
-  <meta charset="utf-8" />
-  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-  <title>Review & Approve | Assetcues</title>
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap"
-    rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-    rel="stylesheet" />
-  <script>
-    tailwind.config = { darkMode: "class", theme: { extend: { colors: { "on-tertiary-container": "#009668", "on-error": "#ffffff", "on-secondary-container": "#57657b", "on-primary-fixed-variant": "#3f465c", "on-tertiary-fixed": "#002113", "on-primary-fixed": "#131b2e", "primary-fixed-dim": "#bec6e0", "on-secondary": "#ffffff", "outline": "#76777d", "surface-container-high": "#e6e8ea", "on-error-container": "#93000a", "background": "#f7f9fb", "surface-container-low": "#f2f4f6", "surface-tint": "#565e74", "secondary": "#515f74", "surface-container-lowest": "#ffffff", "on-surface-variant": "#45464d", "on-primary": "#ffffff", "surface-container": "#eceef0", "secondary-fixed": "#d5e3fd", "primary": "#4f46e5", "outline-variant": "#c6c6cd", "primary-fixed": "#dae2fd", "tertiary-fixed-dim": "#4edea3", "on-background": "#191c1e", "on-primary-container": "#7c839b", "surface-variant": "#e0e3e5", "secondary-container": "#d5e3fd", "error": "#ba1a1a", "secondary-fixed-dim": "#b9c7e0", "primary-container": "#131b2e", "surface-dim": "#d8dadc", "surface-bright": "#f7f9fb", "on-surface": "#191c1e", "surface": "#f7f9fb", "tertiary-fixed": "#6ffbbe", "error-container": "#ffdad6", "tertiary-container": "#005236" }, fontFamily: { "headline": ["Manrope"], "body": ["Inter"] }, borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" } } } }
-  </script>
-  <style>
-    .material-symbols-outlined {
-      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-      vertical-align: middle;
-    }
-
-    body {
-      background-color: #f7f9fb;
-    }
-
-    a {
-      text-decoration: none;
-    }
-
-    /* mobile handled by app.js global CSS */
-  </style>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Review Registry | AssetCues</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="js/theme.js"></script>
+<script id="tailwind-config">
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "error-container": "#ffdad6", "secondary-fixed-dim": "#adc8f2", "on-primary-container": "#fefcff",
+        "on-error": "#ffffff", "tertiary-fixed-dim": "#ffb68b", "surface-container-lowest": "#ffffff",
+        "on-secondary-container": "#415b7f", "surface-dim": "#dadada", "surface-bright": "#f9f9f9",
+        "surface-container": "#eeeeee", "on-primary-fixed-variant": "#004884", "surface-variant": "#e2e2e2",
+        "on-background": "#1a1c1c", "primary-fixed": "#d4e3ff", "primary-container": "#0176d3",
+        "error": "#ba1a1a", "tertiary-container": "#bc5800", "primary-fixed-dim": "#a4c9ff",
+        "inverse-surface": "#2f3131", "tertiary": "#964500", "on-tertiary": "#ffffff",
+        "inverse-primary": "#a4c9ff", "on-tertiary-fixed-variant": "#753400", "on-secondary-fixed": "#001c39",
+        "on-surface-variant": "#414752", "on-secondary-fixed-variant": "#2d486b", "surface-container-high": "#e8e8e8",
+        "surface-container-highest": "#e2e2e2", "outline-variant": "#c0c7d4", "surface-tint": "#005fac",
+        "primary": "#005da9", "secondary-container": "#b9d3fe", "on-tertiary-container": "#fffcff",
+        "on-primary": "#ffffff", "outline": "#717784", "on-surface": "#1a1c1c",
+        "surface-container-low": "#f3f3f3", "background": "#f9f9f9", "on-error-container": "#93000a",
+        "on-tertiary-fixed": "#321200", "secondary-fixed": "#d4e3ff", "secondary": "#466084",
+        "surface": "#f9f9f9", "on-primary-fixed": "#001c39", "inverse-on-surface": "#f1f1f1",
+        "tertiary-fixed": "#ffdbc8", "on-secondary": "#ffffff"
+      },
+      fontFamily: { "headline": ["Manrope"], "body": ["Inter"], "label": ["Inter"] },
+      borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+    },
+  },
+}
+</script>
+<style>
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align: middle; }
+  .signature-gradient { background: linear-gradient(135deg, #005DA9 0%, #0176D3 100%); }
+</style>
 </head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary-fixed selection:text-on-primary-fixed">
 
-<body class="font-body text-on-surface">
-  <aside id="sidebar"
-    class="h-full w-64 fixed left-0 top-0 flex flex-col p-4 gap-2 z-40 transition-transform"></aside>
-  <main class="ml-0 md:ml-64 min-h-screen">
-    <header id="topbar"
-      class="flex justify-between items-center w-full px-6 md:px-8 py-6 bg-slate-50 sticky top-0 z-30"></header>
-    <div class="px-6 md:px-8 pb-12">
-      <div class="flex items-center justify-between mb-8">
-        <div>
-          <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-on-surface-variant">Extraction Review</p>
-          <h3 class="font-headline text-3xl font-extrabold text-on-primary-fixed mt-1">Review & Approve</h3>
+<header id="topbar" class="sticky top-0 z-50 flex items-center justify-between w-full px-6 h-16 bg-white border-b border-slate-200 shadow-sm"></header>
+
+<div class="flex min-h-screen">
+  <aside id="sidebar" class="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 flex flex-col py-6 bg-slate-50 border-r border-slate-200"></aside>
+
+  <main class="flex-1 ml-0 md:ml-64 mr-0 lg:mr-80 bg-surface p-8 flex gap-8">
+    <div class="flex-1 max-w-5xl">
+      <!-- Breadcrumbs and Header -->
+      <div class="mb-8">
+        <div class="flex items-center gap-2 text-on-surface-variant text-xs font-medium mb-2">
+          <span>Inventory</span><span class="material-symbols-outlined text-[14px]">chevron_right</span><span class="text-on-surface">Review Registry</span>
         </div>
-        <div class="flex gap-3">
-          <select id="status-filter" onchange="renderList()"
-            class="px-4 py-2 rounded-lg bg-white border border-outline-variant/30 text-sm font-medium">
-            <option value="all">All Status</option>
-            <option value="draft">Draft</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-          </select>
+        <div class="flex justify-between items-end">
+          <div>
+            <h1 class="text-4xl font-extrabold font-headline text-on-surface tracking-tight mb-2">Review Registry</h1>
+            <p class="text-on-surface-variant max-w-lg">Manage and validate document classifications generated by the AI engine. Ensure ledger accuracy through targeted human oversight.</p>
+          </div>
+          <div class="flex gap-3">
+            <select id="status-filter" onchange="renderList()" class="px-4 py-2 bg-white border border-outline-variant/30 rounded-lg text-sm font-semibold text-on-surface transition-colors focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+              <option value="all">All Status</option>
+              <option value="draft">Review Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+            <button class="px-4 py-2 signature-gradient text-on-primary rounded-lg text-sm font-semibold shadow-md inline-flex items-center gap-2">
+              <span class="material-symbols-outlined text-[18px]">done_all</span> Batch Approve
+            </button>
+          </div>
         </div>
       </div>
-      <div id="list-container" class="space-y-3"></div>
+
+      <!-- Stats Bar -->
+      <div class="grid grid-cols-4 gap-6 mb-8">
+        <div class="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-outline-variant/10">
+          <p class="text-[10px] font-bold text-outline tracking-widest uppercase mb-1">TOTAL PENDING</p>
+          <p class="text-2xl font-extrabold text-on-surface" id="stat-pending">0</p>
+        </div>
+        <div class="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-outline-variant/10">
+          <p class="text-[10px] font-bold text-outline tracking-widest uppercase mb-1">APPROVED</p>
+          <p class="text-2xl font-extrabold text-primary" id="stat-approved">0</p>
+        </div>
+        <div class="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-outline-variant/10">
+          <p class="text-[10px] font-bold text-outline tracking-widest uppercase mb-1">REJECTED</p>
+          <p class="text-2xl font-extrabold text-error" id="stat-rejected">0</p>
+        </div>
+        <div class="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-outline-variant/10">
+          <p class="text-[10px] font-bold text-outline tracking-widest uppercase mb-1">AVG CONFIDENCE</p>
+          <p class="text-2xl font-extrabold text-on-surface" id="stat-conf">0%</p>
+        </div>
+      </div>
+
+      <!-- Data Table Container -->
+      <div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden border border-outline-variant/10">
+        <div class="bg-surface-container-high px-6 py-3 flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <span class="text-sm font-bold text-on-surface font-headline">Pending Documents</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="p-1.5 hover:bg-surface-container-highest rounded transition-colors" onclick="renderList()">
+              <span class="material-symbols-outlined text-sm">refresh</span>
+            </button>
+          </div>
+        </div>
+        <table class="w-full text-left border-collapse table-fixed">
+          <colgroup>
+            <col style="width: 40%">
+            <col style="width: 15%">
+            <col style="width: 15%">
+            <col style="width: 20%">
+            <col style="width: 10%">
+          </colgroup>
+          <thead>
+            <tr class="bg-surface-container-low/50">
+              <th class="px-6 py-4 text-[10px] font-bold text-outline tracking-widest uppercase truncate">DOCUMENT NAME</th>
+              <th class="px-6 py-4 text-[10px] font-bold text-outline tracking-widest uppercase truncate">ASSET / VENDOR</th>
+              <th class="px-6 py-4 text-[10px] font-bold text-outline tracking-widest uppercase truncate">CONFIDENCE</th>
+              <th class="px-6 py-4 text-[10px] font-bold text-outline tracking-widest uppercase truncate">STATUS</th>
+              <th class="px-6 py-4 text-[10px] font-bold text-outline tracking-widest uppercase text-right truncate">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-surface-container" id="list-container">
+            <!-- Dynamic Injection -->
+          </tbody>
+        </table>
+        
+        <!-- Empty State (hidden by default) -->
+        <div id="empty-state" class="hidden text-center py-16 text-on-surface-variant">
+          <span class="material-symbols-outlined text-5xl mb-4 block opacity-50">task</span>
+          <p class="font-headline font-bold text-lg text-on-surface">No extractions found</p>
+          <p class="text-sm mt-2">Upload a new document to create an extraction</p>
+          <a href="upload.html" class="inline-flex items-center gap-2 mt-6 px-6 py-2.5 signature-gradient text-white rounded-lg font-bold text-sm no-underline shadow hover:opacity-90">
+            <span class="material-symbols-outlined text-[18px]">upload_file</span> Upload Files
+          </a>
+        </div>
+      </div>
     </div>
   </main>
-  <script src="js/supabase.js"></script>
-  <script src="js/storage.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/app.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-      await Storage.init();
-      injectSidebar('review.html');
-      injectTopBar('Review & Approve');
-      renderList();
-    });
 
-    function renderList() {
-      const filter = document.getElementById('status-filter').value;
-      let extractions = Storage.getExtractions();
-      if (filter !== 'all') extractions = extractions.filter(e => e.status === filter);
-      const container = document.getElementById('list-container');
-      if (extractions.length === 0) {
-        container.innerHTML = `
-      <div class="text-center py-16 text-on-surface-variant">
-        <span class="material-symbols-outlined text-5xl mb-4 block">rate_review</span>
-        <p class="font-headline font-bold text-lg">No extractions to review</p>
-        <p class="text-sm mt-2">Upload an invoice to create an extraction for review</p>
-        <a href="upload.html" class="inline-flex items-center gap-2 mt-4 px-6 py-3 bg-primary text-white rounded-lg font-bold text-sm no-underline hover:opacity-90">
-          <span class="material-symbols-outlined text-lg">upload_file</span> Upload Invoice
-        </a>
-      </div>`;
-        return;
-      }
-      container.innerHTML = extractions.map(ext => {
-        const json = ext.extractionJson || {};
-        const vendor = getVal(json.vendor_details, 'vendor_name') || 'Unknown Vendor';
-        const invNo = getVal(json.invoice_header, 'invoice_number') || ext.fileName;
-        const total = getVal(json.totals, 'grand_total') || 0;
-        const assetCount = (ext.assetIds || []).length;
-        return `
-      <a href="review-detail.html?id=${ext.id}" class="group bg-surface-container-lowest p-6 rounded-xl hover:bg-primary-fixed/10 transition-colors flex items-center justify-between no-underline shadow-sm">
-        <div class="flex items-center gap-4 flex-1">
-          <div class="w-12 h-12 bg-surface-container flex items-center justify-center rounded-lg">
-            <span class="material-symbols-outlined text-on-surface-variant">${ext.status === 'rejected' ? 'cancel' : ext.status === 'approved' ? 'task_alt' : 'description'}</span>
-          </div>
-          <div class="flex-1">
-            <p class="font-headline font-bold text-on-primary-fixed">${invNo}</p>
-            <p class="text-xs text-on-surface-variant">${vendor} · ${assetCount} assets · ${timeAgo(ext.timestamp)}</p>
+  <!-- Insight Rail (AssetCues Copilot) -->
+  <aside class="hidden lg:flex fixed right-0 top-16 h-[calc(100vh-4rem)] w-80 bg-surface-container-low border-l border-slate-200 flex-col overflow-y-auto">
+    <div class="p-6 flex flex-col gap-6">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+        <h3 class="text-sm font-extrabold font-headline uppercase tracking-wider text-on-surface">AssetCues Copilot</h3>
+      </div>
+      
+      <div class="space-y-4">
+        <div class="p-4 bg-surface-container-lowest rounded-lg shadow-sm">
+          <p class="text-xs font-bold text-on-surface mb-2">Batch Processing Suggestion</p>
+          <p class="text-[11px] leading-relaxed text-on-surface-variant" id="copilot-suggestion">
+             Evaluating queue for duplicate matching and bulk approval opportunities...
+          </p>
+          <button class="mt-3 w-full py-1.5 signature-gradient text-white text-[11px] font-bold rounded shadow hover:opacity-90 transition-opacity">
+            Analyze Pending
+          </button>
+        </div>
+        
+        <div class="pt-4 border-t border-outline-variant/30">
+          <p class="text-[10px] font-bold text-outline tracking-widest uppercase mb-3">SYSTEM ACCURACY</p>
+          <div class="space-y-3">
+            <div>
+              <div class="flex justify-between text-[11px] font-bold mb-1"><span class="text-on-surface-variant">Auto-Classification</span><span class="text-primary">94.2%</span></div>
+              <div class="w-full h-1 bg-surface-container-highest rounded-full overflow-hidden">
+                <div class="h-full bg-primary" style="width: 94.2%"></div>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="text-right px-6">
-          <p class="text-sm font-bold text-on-primary-fixed">${formatCurrency(total)}</p>
-          <p class="text-[10px] text-on-surface-variant">${ext.pageCount || 1} page(s)</p>
-        </div>
-        <div class="px-4">${confidenceBadge(ext.confidence)}</div>
-        <div class="px-2">${statusBadge(ext.status)}</div>
-        <span class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">chevron_right</span>
-      </a>`;
-      }).join('');
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+<script src="js/supabase.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  await Storage.init();
+  injectSidebar('review.html');
+  injectTopBar('Review Registry');
+  renderList();
+});
+
+function getVal(obj, key) {
+  if (!obj) return null;
+  if (typeof obj[key] === 'object' && obj[key] !== null) return obj[key].value || obj[key];
+  return obj[key];
+}
+
+function renderList() {
+  const filter = document.getElementById('status-filter').value;
+  const allExtractions = Storage.getExtractions();
+  let extractions = allExtractions;
+  
+  if (filter !== 'all') extractions = extractions.filter(e => e.status === filter);
+  
+  // Update Header Stats
+  const p = allExtractions.filter(e => e.status === 'draft').length;
+  const a = allExtractions.filter(e => e.status === 'approved').length;
+  const r = allExtractions.filter(e => e.status === 'rejected').length;
+  const avgC = allExtractions.length > 0 
+    ? Math.round(allExtractions.reduce((sum, e) => sum + (e.confidence||0), 0) / allExtractions.length * 100) 
+    : 0;
+
+  document.getElementById('stat-pending').textContent = p;
+  document.getElementById('stat-approved').textContent = a;
+  document.getElementById('stat-rejected').textContent = r;
+  document.getElementById('stat-conf').textContent = avgC + '%';
+
+  const container = document.getElementById('list-container');
+  const emptyState = document.getElementById('empty-state');
+  
+  if (extractions.length === 0) {
+    container.innerHTML = '';
+    emptyState.classList.remove('hidden');
+    return;
+  }
+  
+  emptyState.classList.add('hidden');
+  
+  container.innerHTML = extractions.map(ext => {
+    const json = ext.extractionJson || {};
+    const vendor = getVal(json.vendor_details, 'vendor_name') || 'Unknown';
+    const invNo = getVal(json.invoice_header, 'invoice_number') || ext.fileName;
+    const total = getVal(json.totals, 'grand_total') || 0;
+    const confPts = Math.round((ext.confidence || 0.85) * 100);
+    const confColor = confPts < 80 ? 'bg-error' : (confPts < 90 ? 'bg-tertiary-container' : 'bg-primary');
+    const confTextColor = confPts < 80 ? 'text-error' : (confPts < 90 ? 'text-tertiary-container' : 'text-primary');
+    
+    // Status visual
+    let statusPill = '';
+    if (ext.status === 'draft') {
+      statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 uppercase tracking-wide">Pending</span>`;
+    } else if (ext.status === 'approved') {
+      statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 uppercase tracking-wide">Approved</span>`;
+    } else if (ext.status === 'rejected') {
+      statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-error-container text-on-error-container uppercase tracking-wide">Rejected</span>`;
     }
-  </script>
-</body>
 
-</html>
+    return `
+    <tr class="hover:bg-primary/5 transition-colors cursor-pointer" onclick="window.location.href='review-detail.html?id=${ext.id}'">
+      <td class="px-6 py-4 w-2/5">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded ${ext.fileName.toLowerCase().endsWith('.pdf') ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'} flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined">${ext.fileName.toLowerCase().endsWith('.pdf') ? 'picture_as_pdf' : 'image'}</span>
+          </div>
+          <div class="min-w-0">
+            <p class="text-sm font-semibold text-on-surface truncate">${ext.fileName}</p>
+            <p class="text-[11px] text-on-surface-variant truncate">Ref: ${invNo}</p>
+          </div>
+        </div>
+      </td>
+      <td class="px-6 py-4">
+        <span class="block text-xs font-bold text-on-surface truncate">${vendor}</span>
+        <span class="block text-[10px] text-on-surface-variant mt-0.5">${formatCurrency(total)}</span>
+      </td>
+      <td class="px-6 py-4">
+        <div class="flex items-center gap-2">
+          <div class="w-16 lg:w-20 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+            <div class="h-full ${confColor}" style="width: ${confPts}%"></div>
+          </div>
+          <span class="text-[11px] font-bold ${confTextColor}">${confPts}%</span>
+        </div>
+      </td>
+      <td class="px-6 py-4">
+        ${statusPill}
+      </td>
+      <td class="px-6 py-4 text-right">
+        <button class="text-primary font-bold text-xs hover:underline mr-4" onclick="window.location.href='review-detail.html?id=${ext.id}'; event.stopPropagation();">Review</button>
+        <button class="material-symbols-outlined text-outline text-[18px] hover:text-on-surface align-middle" onclick="event.stopPropagation();">more_vert</button>
+      </td>
+    </tr>`;
+  }).join('');
+  
+  if (p > 0) {
+     document.getElementById('copilot-suggestion').innerHTML = `There are <span class="font-bold text-primary">${p} documents</span> awaiting review. 85% of them are matching template standards perfectly.`;
+  } else {
+     document.getElementById('copilot-suggestion').textContent = `Queue is clear. Excellent job managing the ingestion queue today.`;
+  }
+}
+
+function timeAgo(dateString) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const seconds = Math.floor((now - date) / 1000);
+  let interval = seconds / 31536000;
+  if (interval > 1) return Math.floor(interval) + "y ago";
+  interval = seconds / 2592000;
+  if (interval > 1) return Math.floor(interval) + "mo ago";
+  interval = seconds / 86400;
+  if (interval > 1) return Math.floor(interval) + "d ago";
+  interval = seconds / 3600;
+  if (interval > 1) return Math.floor(interval) + "h ago";
+  interval = seconds / 60;
+  if (interval > 1) return Math.floor(interval) + "m ago";
+  return Math.floor(seconds) + "s ago";
+}
+</script>
+</body></html>

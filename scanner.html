@@ -1,168 +1,229 @@
 <!DOCTYPE html>
-<html class="light" lang="en"><head>
+<html lang="en" class="light"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Scan Asset | Assetcues</title>
+<title>Scan Asset | AssetLedger</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script>
-tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-tertiary-container":"#009668","on-error":"#ffffff","on-secondary-container":"#57657b","on-primary-fixed":"#131b2e","primary-fixed-dim":"#bec6e0","outline":"#76777d","surface-container-high":"#e6e8ea","on-error-container":"#93000a","background":"#f7f9fb","surface-container-low":"#f2f4f6","secondary":"#515f74","surface-container-lowest":"#ffffff","on-surface-variant":"#45464d","on-primary":"#ffffff","surface-container":"#eceef0","secondary-fixed":"#d5e3fd","primary":"#4f46e5","outline-variant":"#c6c6cd","primary-fixed":"#dae2fd","tertiary-fixed-dim":"#4edea3","on-background":"#191c1e","on-primary-container":"#7c839b","secondary-container":"#d5e3fd","error":"#ba1a1a","primary-container":"#131b2e","on-surface":"#191c1e","surface":"#f7f9fb","tertiary-fixed":"#6ffbbe","error-container":"#ffdad6","tertiary-container":"#005236"},fontFamily:{"headline":["Manrope"],"body":["Inter"]},borderRadius:{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"}}}}
-</script>
+<script src="js/theme.js"></script>
+
 <style>
-  .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle}
-  body{background:#f7f9fb}
-  a{text-decoration:none}
-  /* mobile handled by app.js global CSS */
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .signature-gradient { background: linear-gradient(135deg, #005DA9 0%, #0176D3 100%); }
+    .glass-panel { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+    .cloud-shadow { box-shadow: 0 12px 32px -4px rgba(26, 28, 28, 0.08); }
 
-  /* Scanner styles */
-  #reader { width: 100%; max-width: 480px; margin: 0 auto; border-radius: 1rem; overflow: hidden; }
-  #reader video { border-radius: 1rem !important; }
-  #reader img { display: none !important; }
+    /* Scanner styles */
+    #reader { width: 100%; height: 100%; position: absolute; inset: 0; background: #000; z-index: 10; }
+    #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+    #reader img { display: none !important; }
 
-  /* Crosshair overlay */
-  .scan-overlay {
-    position: absolute; inset: 0; pointer-events: none;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .scan-box {
-    width: 220px; height: 220px; position: relative;
-    border: 2px solid rgba(111,251,190,0.6);
-    border-radius: 1rem;
-    box-shadow: 0 0 0 9999px rgba(0,0,0,0.45);
-    animation: pulse-border 2s ease-in-out infinite;
-  }
-  .scan-box::before, .scan-box::after {
-    content:''; position:absolute; width:30px; height:30px;
-    border-color: #6ffbbe; border-style: solid;
-  }
-  .scan-box::before { top: -2px; left: -2px; border-width: 4px 0 0 4px; border-radius: 0.5rem 0 0 0; }
-  .scan-box::after  { bottom: -2px; right: -2px; border-width: 0 4px 4px 0; border-radius: 0 0 0.5rem 0; }
-  .scan-line {
-    position: absolute; left: 10px; right: 10px; height: 2px;
-    background: linear-gradient(90deg, transparent, #6ffbbe, transparent);
-    animation: scan-sweep 2s linear infinite;
-    top: 10px;
-  }
-  @keyframes scan-sweep {
-    0%   { top: 10px; opacity: 1; }
-    90%  { top: calc(100% - 10px); opacity: 1; }
-    100% { top: 10px; opacity: 0; }
-  }
-  @keyframes pulse-border {
-    0%, 100% { border-color: rgba(111,251,190,0.6); }
-    50%       { border-color: rgba(111,251,190,1); }
-  }
-
-  /* Success flash */
-  .success-flash { animation: flash-green 0.5s ease; }
-  @keyframes flash-green {
-    0%   { background: #6ffbbe44; }
-    100% { background: transparent; }
-  }
+    /* Crosshair Custom */
+    .scan-line {
+        position: absolute; left: 16px; right: 16px; height: 2px;
+        background: linear-gradient(90deg, transparent, #a4c9ff, transparent);
+        box-shadow: 0 0 15px #a4c9ff;
+        animation: scan-sweep 2s linear infinite;
+        top: 10px;
+    }
+    @keyframes scan-sweep {
+        0%   { top: 10px; opacity: 1; }
+        90%  { top: calc(100% - 10px); opacity: 1; }
+        100% { top: 10px; opacity: 0; }
+    }
 </style>
+<script id="tailwind-config">
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                colors: {
+                    "error-container": "#ffdad6", "secondary-fixed-dim": "#adc8f2", "on-primary-container": "#fefcff",
+                    "on-error": "#ffffff", "tertiary-fixed-dim": "#ffb68b", "surface-container-lowest": "#ffffff",
+                    "on-secondary-container": "#415b7f", "surface-dim": "#dadada", "surface-bright": "#f9f9f9",
+                    "surface-container": "#eeeeee", "on-primary-fixed-variant": "#004884", "surface-variant": "#e2e2e2",
+                    "on-background": "#1a1c1c", "primary-fixed": "#d4e3ff", "primary-container": "#0176d3",
+                    "error": "#ba1a1a", "tertiary-container": "#bc5800", "primary-fixed-dim": "#a4c9ff",
+                    "inverse-surface": "#2f3131", "tertiary": "#964500", "on-tertiary": "#ffffff",
+                    "inverse-primary": "#a4c9ff", "on-tertiary-fixed-variant": "#753400", "on-secondary-fixed": "#001c39",
+                    "on-surface-variant": "#414752", "on-secondary-fixed-variant": "#2d486b", "surface-container-high": "#e8e8e8",
+                    "surface-container-highest": "#e2e2e2", "outline-variant": "#c0c7d4", "surface-tint": "#005fac",
+                    "primary": "#005da9", "secondary-container": "#b9d3fe", "on-tertiary-container": "#fffcff",
+                    "on-primary": "#ffffff", "outline": "#717784", "on-surface": "#1a1c1c",
+                    "surface-container-low": "#f3f3f3", "background": "#f9f9f9", "on-error-container": "#93000a",
+                    "on-tertiary-fixed": "#321200", "secondary-fixed": "#d4e3ff", "secondary": "#466084",
+                    "surface": "#f9f9f9", "on-primary-fixed": "#001c39", "inverse-on-surface": "#f1f1f1",
+                    "tertiary-fixed": "#ffdbc8", "on-secondary": "#ffffff"
+                },
+                fontFamily: { "headline": ["Manrope"], "body": ["Inter"], "label": ["Inter"] },
+            },
+        },
+    }
+</script>
 </head>
-<body class="font-body text-on-surface">
-<aside id="sidebar" class="h-full w-64 fixed left-0 top-0 flex flex-col p-4 gap-2 z-40 transition-transform"></aside>
-<main class="ml-0 md:ml-64 min-h-screen">
-  <header id="topbar" class="flex justify-between items-center w-full px-6 md:px-8 py-6 bg-slate-50 sticky top-0 z-30"></header>
-  <div class="px-6 md:px-8 pb-12 max-w-2xl mx-auto">
+<body class="bg-surface font-body text-on-surface flex flex-col h-screen overflow-hidden">
 
-    <!-- Header -->
-    <div class="text-center mb-8">
-      <div class="inline-flex items-center justify-center w-16 h-16 bg-primary-container rounded-2xl mb-4">
-        <span class="material-symbols-outlined text-3xl text-tertiary-fixed" style="font-variation-settings:'FILL' 1">qr_code_scanner</span>
-      </div>
-      <h2 class="font-headline text-2xl font-extrabold text-on-primary-fixed">Scan Asset QR Code</h2>
-      <p class="text-sm text-on-surface-variant mt-1">Point your camera at an Assetcues QR code to open that asset instantly</p>
-    </div>
+<!-- Topbar -->
+<header id="topbar" class="shrink-0 flex justify-between items-center w-full px-6 md:px-8 py-3 bg-white border-b border-surface-container z-50"></header>
 
-    <!-- Scanner Card -->
-    <div class="bg-white rounded-2xl shadow-sm overflow-hidden mb-6" id="scanner-card">
-      <!-- Camera View -->
-      <div id="camera-section" class="p-6">
-        <div class="relative rounded-xl overflow-hidden bg-primary-container" style="min-height:320px">
-          <div id="reader"></div>
-          <div class="scan-overlay" id="scan-overlay">
-            <div class="scan-box">
-              <div class="scan-line"></div>
-            </div>
-          </div>
-          <!-- Idle state (before camera starts) -->
-          <div id="idle-state" class="absolute inset-0 flex flex-col items-center justify-center text-white">
-            <span class="material-symbols-outlined text-6xl mb-3 text-tertiary-fixed">qr_code_2</span>
-            <p class="font-headline font-bold text-lg">Camera Ready</p>
-            <p class="text-xs text-on-primary-container mt-1">Starting scanner...</p>
-          </div>
-        </div>
-        <!-- Status bar -->
-        <div id="scan-status" class="flex items-center gap-3 mt-4 px-4 py-3 bg-surface-container-low rounded-xl">
-          <div class="w-2 h-2 rounded-full bg-on-tertiary-container animate-pulse"></div>
-          <p class="text-sm text-on-surface-variant" id="status-text">Initializing camera...</p>
-        </div>
-      </div>
-
-      <!-- Result panel (hidden until scan) -->
-      <div id="result-panel" class="hidden px-6 pb-6">
-        <div class="bg-tertiary-fixed/10 border border-on-tertiary-container/20 rounded-xl p-5">
-          <div class="flex items-center gap-3 mb-3">
-            <span class="material-symbols-outlined text-on-tertiary-container text-2xl" style="font-variation-settings:'FILL' 1">check_circle</span>
+<div class="flex flex-1 overflow-hidden relative">
+  <!-- Sidebar -->
+  <aside id="sidebar" class="h-[calc(100vh-64px)] w-64 md:flex flex-col py-6 bg-slate-50 border-r border-slate-200 hidden shrink-0 z-40"></aside>
+  
+  <!-- Main Content Area -->
+  <main class="flex-1 flex flex-col h-full overflow-y-auto bg-surface" id="content">
+    <div class="p-8 pb-32 max-w-[1600px] mx-auto w-full space-y-8">
+        
+        <!-- Page Header -->
+        <div class="flex flex-col md:flex-row justify-between items-end gap-6 pb-6 border-b border-surface-container">
             <div>
-              <p class="font-bold text-on-primary-fixed text-sm">Asset Found!</p>
-              <p class="text-xs text-on-surface-variant" id="result-assetnum">Redirecting...</p>
+                <nav class="flex items-center gap-2 text-xs font-label text-outline mb-2 tracking-widest uppercase">
+                    <span>Inventory</span>
+                    <span class="material-symbols-outlined text-[10px]">chevron_right</span>
+                    <span class="text-primary font-bold">Scan & Digital Twin</span>
+                </nav>
+                <h1 class="font-headline font-extrabold text-4xl text-on-surface tracking-tight">Scan Asset</h1>
             </div>
-          </div>
-          <a id="result-link" href="#" class="w-full py-3 bg-on-tertiary-container text-white rounded-xl font-headline font-bold text-sm flex items-center justify-center gap-2 no-underline hover:opacity-90 transition-all">
-            <span class="material-symbols-outlined text-base">open_in_new</span> Open Asset Detail
-          </a>
+            <div class="flex gap-3">
+                <button onclick="restartScanner()" class="px-6 py-2.5 rounded-lg border border-outline-variant text-sm font-semibold hover:bg-surface-container-low transition-colors flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[18px]">restart_alt</span> Restart Camera
+                </button>
+            </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Controls -->
-    <div class="flex gap-3 mb-6">
-      <button id="restart-btn" onclick="restartScanner()" class="flex-1 py-3 bg-primary text-white rounded-xl font-headline font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-all">
-        <span class="material-symbols-outlined text-base">restart_alt</span> Restart Camera
-      </button>
-      <button onclick="toggleManual()" class="py-3 px-5 bg-white border border-outline-variant/30 rounded-xl font-bold text-sm text-on-primary-fixed hover:bg-surface-container transition-colors flex items-center gap-2">
-        <span class="material-symbols-outlined text-base">keyboard</span> Manual
-      </button>
-    </div>
+        <!-- Bento Layout Content -->
+        <div class="grid grid-cols-12 gap-6 items-start">
+            
+            <!-- Camera Feed Section (Digital Twin Interface) -->
+            <div class="col-span-12 lg:col-span-8 space-y-6">
+                <!-- Camera Container -->
+                <div class="relative rounded-xl overflow-hidden bg-on-background shadow-xl border border-outline-variant/10 aspect-video group">
+                    <div id="reader" class="absolute inset-0 z-10"></div>
+                    
+                    <!-- HUD Elements (Z-index 20 over video) -->
+                    <div class="absolute inset-0 p-6 md:p-8 flex flex-col justify-between pointer-events-none z-20" id="scan-overlay" style="display:none">
+                        <!-- Top HUD -->
+                        <div class="flex justify-between items-start">
+                            <div class="glass-panel px-4 py-2 rounded-lg flex items-center gap-3 text-on-surface">
+                                <span class="w-2 h-2 rounded-full" id="status-dot"></span>
+                                <span class="text-xs font-bold font-label tracking-wider uppercase" id="status-text">Initializing...</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Scanning Reticle -->
+                        <div class="self-center w-64 h-64 md:w-80 md:h-80 border-2 border-white/20 rounded-[2rem] relative">
+                            <!-- Corners -->
+                            <div class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary-fixed-dim rounded-tl-[2rem]"></div>
+                            <div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary-fixed-dim rounded-tr-[2rem]"></div>
+                            <div class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary-fixed-dim rounded-bl-[2rem]"></div>
+                            <div class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary-fixed-dim rounded-br-[2rem]"></div>
+                            <!-- Laser -->
+                            <div class="scan-line"></div>
+                        </div>
 
-    <!-- Manual Entry -->
-    <div id="manual-section" class="hidden bg-white rounded-2xl shadow-sm p-6 mb-6">
-      <h4 class="font-headline font-bold text-sm text-on-primary-fixed mb-4 flex items-center gap-2">
-        <span class="material-symbols-outlined text-base">keyboard</span> Manual Asset Lookup
-      </h4>
-      <div class="flex gap-3">
-        <input id="manual-input" type="text" placeholder="Enter Asset ID or Asset Number (e.g. AST-0001)"
-          class="flex-1 px-4 py-3 rounded-xl border border-outline-variant/30 text-sm font-medium focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none"
-          onkeydown="if(event.key==='Enter')manualLookup()"/>
-        <button onclick="manualLookup()" class="px-5 py-3 bg-primary text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all">
-          Search
-        </button>
-      </div>
-      <p id="manual-error" class="text-xs text-error mt-2 hidden">Asset not found. Check the ID and try again.</p>
-    </div>
+                        <!-- Bottom HUD -->
+                        <div class="flex justify-center">
+                            <p class="glass-panel px-6 py-3 rounded-full text-sm font-bold shadow-lg">Align QR Code within frame</p>
+                        </div>
+                    </div>
 
-    <!-- Recent Scans -->
-    <div class="bg-white rounded-2xl shadow-sm p-6" id="recent-scans-card">
-      <h4 class="font-headline font-bold text-sm text-on-primary-fixed mb-4 flex items-center gap-2">
-        <span class="material-symbols-outlined text-base">history</span> Recent Scans
-      </h4>
-      <div id="recent-scans-list">
-        <p class="text-sm text-on-surface-variant text-center py-4">No recent scans</p>
-      </div>
-    </div>
+                    <!-- Idle / Fallback -->
+                    <div id="idle-state" class="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80 text-white">
+                        <span class="material-symbols-outlined text-6xl mb-3 text-primary-fixed">qr_code_Scanner</span>
+                        <p class="font-headline font-bold text-lg">Initializing Camera</p>
+                        <p class="text-xs text-outline mt-1 px-8 text-center" id="idle-msg">Please allow camera permissions if prompted</p>
+                    </div>
+                </div>
 
-  </div>
-</main>
+                <!-- Match Panel & Manual Input -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <!-- AI Match / Success Result -->
+                    <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20 relative overflow-hidden" id="match-card">
+                        <div class="absolute top-0 right-0 px-3 py-1 bg-surface-container-high text-on-surface-variant text-[10px] font-bold uppercase tracking-widest" id="match-badge">Waiting</div>
+                        <h3 class="font-headline font-bold text-lg mb-4 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-tertiary">psychology</span>
+                            Smart Recognition
+                        </h3>
+                        <div class="flex items-center gap-4 hidden" id="result-success">
+                            <div class="w-16 h-16 rounded bg-primary-fixed/20 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-3xl text-primary" style="font-variation-settings:'FILL' 1">check_circle</span>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-bold text-on-surface">Asset Found</p>
+                                <p class="text-xs font-bold text-primary mt-0.5 truncate max-w-[200px]" id="result-assetnum">Redirecting...</p>
+                                <a id="result-link" href="#" class="mt-2 inline-block px-3 py-1.5 bg-primary text-white text-[10px] font-bold uppercase rounded hover:opacity-90">Open Record</a>
+                            </div>
+                        </div>
+                        <div id="result-idle" class="flex flex-col items-center justify-center py-2 opacity-50">
+                            <span class="material-symbols-outlined animate-spin text-3xl mb-2">autorenew</span>
+                            <span class="text-xs font-bold uppercase tracking-widest">Scanning Feed</span>
+                        </div>
+                    </div>
+
+                    <!-- Manual Entry -->
+                    <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20">
+                        <h3 class="font-headline font-bold text-lg mb-4 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary">keyboard</span>
+                            Manual Entry
+                        </h3>
+                        <div>
+                            <label class="block text-[10px] font-bold text-outline mb-1.5 uppercase tracking-wider">Asset ID / Serial Number</label>
+                            <div class="flex gap-2 relative">
+                                <input id="manual-input" type="text" placeholder="e.g. SN-992-X" class="flex-1 bg-surface-container-low border border-outline-variant/30 rounded py-2 px-3 text-sm focus:bg-white focus:ring-2 focus:ring-primary focus:outline-none transition-all font-bold" onkeydown="if(event.key==='Enter')manualLookup()"/>
+                                <button onclick="manualLookup()" class="bg-primary text-white px-4 rounded font-bold text-sm hover:opacity-90">Verify</button>
+                            </div>
+                            <p id="manual-error" class="absolute text-[10px] text-error font-bold mt-1.5 hidden">Record not found. Try scanning QR.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Rail: Scan History & Context -->
+            <div class="col-span-12 lg:col-span-4 space-y-6 flex flex-col h-full">
+                
+                <div class="bg-surface-container-lowest rounded-xl p-6 flex flex-col flex-1 border border-outline-variant/20 shadow-sm relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-6 relative z-10">
+                        <h3 class="font-headline font-extrabold text-lg">Session History</h3>
+                        <button onclick="clearHistory()" class="text-xs font-bold text-outline hover:text-primary transition-colors uppercase tracking-wider">Clear</button>
+                    </div>
+                    
+                    <div class="space-y-3 relative z-10 max-h-[500px] overflow-y-auto pr-2 custom-scroll" id="recent-scans-list">
+                        <!-- Items injected by JS -->
+                        <div class="flex flex-col items-center justify-center h-48 opacity-50">
+                            <span class="material-symbols-outlined text-4xl mb-2">history</span>
+                            <span class="text-xs font-bold uppercase tracking-widest">No Recent Scans</span>
+                        </div>
+                    </div>
+
+                    <!-- Background flourish -->
+                    <div class="absolute -right-16 -bottom-16 w-48 h-48 bg-primary/5 rounded-full blur-2xl pointer-events-none"></div>
+                </div>
+
+                <!-- Strategic Summary Hook -->
+                <div class="bg-primary text-white p-6 rounded-xl relative overflow-hidden shadow-lg">
+                    <div class="absolute -right-4 -bottom-4 opacity-10 pointer-events-none">
+                        <span class="material-symbols-outlined text-9xl">contact_support</span>
+                    </div>
+                    <h4 class="font-headline font-bold mb-2">Experiencing Issues?</h4>
+                    <p class="text-[11px] text-white/80 leading-relaxed mb-4">Ensure adequate lighting and clean the QR tag surface. Alternatively, use absolute manual entry.</p>
+                    <button onclick="document.getElementById('manual-input').focus()" class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider hover:underline bg-white/10 px-3 py-1.5 rounded w-max">
+                        Focus Manual Entry <span class="material-symbols-outlined text-xs">keyboard_tab</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+  </main>
+</div>
 
 <script src="js/supabase.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/api.js"></script>
 <script src="js/app.js"></script>
+
 <script>
 let html5QrcodeScanner = null;
 let scanHistory = JSON.parse(localStorage.getItem('ac_scan_history') || '[]');
@@ -172,7 +233,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   injectSidebar('scanner.html');
   injectTopBar('Scan Asset');
   renderRecentScans();
-  startScanner();
+  
+  // Need to wait slightly for UI to settle before initializing html5Qrcode over ID #reader
+  setTimeout(startScanner, 200);
 });
 
 function startScanner() {
@@ -180,118 +243,97 @@ function startScanner() {
   const overlayEl = document.getElementById('scan-overlay');
   const statusText = document.getElementById('status-text');
 
-  // Cleanup any existing
   if (html5QrcodeScanner) {
     try { html5QrcodeScanner.clear(); } catch(e) {}
   }
 
-  html5QrcodeScanner = new Html5Qrcode('reader');
+  // Hide the results panel visually
+  document.getElementById('result-success').classList.add('hidden');
+  document.getElementById('result-idle').classList.remove('hidden');
+  document.getElementById('match-badge').textContent = 'Live Feed';
+  document.getElementById('match-badge').className = "absolute top-0 right-0 px-3 py-1 bg-primary text-white text-[10px] font-bold uppercase tracking-widest";
+  document.getElementById('match-card').classList.remove('ring-2', 'ring-primary');
 
-  const config = {
-    fps: 10,
-    qrbox: { width: 220, height: 220 },
-    aspectRatio: 1.0,
-    disableFlip: false,
-  };
+  html5QrcodeScanner = new Html5Qrcode('reader');
+  const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: window.innerWidth > 768 ? 16/9 : 1.0, disableFlip: false };
 
   html5QrcodeScanner.start(
-    { facingMode: 'environment' },
-    config,
-    onScanSuccess,
-    (err) => { /* ignore decode errors, they fire constantly */ }
+    { facingMode: 'environment' }, config, onScanSuccess, 
+    (err) => { /* ignore decode errors */ }
   ).then(() => {
     if (idleEl) idleEl.style.display = 'none';
     if (overlayEl) overlayEl.style.display = 'flex';
-    statusText.textContent = 'Scanning... Point at an Assetcues QR code';
-    updateStatusDot('green');
+    statusText.textContent = 'Awaiting Tag';
+    updateStatusDot('bg-green-400', 'animate-pulse');
   }).catch(err => {
     console.warn('Camera start failed:', err);
-    statusText.textContent = 'Camera unavailable — use Manual entry below';
-    updateStatusDot('red');
+    statusText.textContent = 'Camera Off';
+    updateStatusDot('bg-error', '');
     if (idleEl) {
       idleEl.querySelector('p.font-headline').textContent = 'Camera Unavailable';
-      idleEl.querySelector('p.text-xs').textContent = 'Use manual entry below';
+      document.getElementById('idle-msg').textContent = 'Use manual entry to search for assets';
     }
-    document.getElementById('manual-section').classList.remove('hidden');
   });
 }
 
 function onScanSuccess(decodedText) {
-  // Stop scanner
-  if (html5QrcodeScanner) {
-    try { html5QrcodeScanner.stop(); } catch(e) {}
-  }
+  if (html5QrcodeScanner) { try { html5QrcodeScanner.stop(); } catch(e) {} }
 
-  console.log('QR scanned:', decodedText);
-
-  // Parse asset ID from URL or raw ID
+  // Parse asset ID
   let assetId = null;
   let assetUrl = null;
 
   try {
-    // Try parsing as URL: asset-detail.html?id=xxx or ?id=xxx
     const url = new URL(decodedText, window.location.href);
     assetId = url.searchParams.get('id');
     assetUrl = `asset-detail.html?id=${assetId}`;
   } catch(e) {
-    // Try raw asset number like AST-0001
+    // raw lookup
     const assets = Storage.getAssets();
-    const match = assets.find(a =>
-      a.id === decodedText ||
-      (a.tempAssetId || '').toLowerCase() === decodedText.toLowerCase() ||
-      (a.assetNumber) === parseInt(decodedText.replace(/\D/g,''))
-    );
-    if (match) {
-      assetId = match.id;
-      assetUrl = `asset-detail.html?id=${assetId}`;
-    }
+    const match = assets.find(a => a.id === decodedText || (a.tempAssetId||'').toLowerCase() === decodedText.toLowerCase() || a.assetNumber === parseInt(decodedText.replace(/\D/g,'')));
+    if (match) { assetId = match.id; assetUrl = `asset-detail.html?id=${assetId}`; }
   }
 
   if (!assetId && !assetUrl) {
     // Unknown QR
-    document.getElementById('status-text').textContent = `Unknown QR: ${decodedText.slice(0,40)}`;
-    updateStatusDot('red');
-    setTimeout(() => restartScanner(), 2000);
+    document.getElementById('status-text').textContent = 'Unknown QR';
+    updateStatusDot('bg-error', '');
+    setTimeout(restartScanner, 2000);
     return;
   }
 
-  // Find asset from cache
+  // Cache lookup for history
   const asset = assetId ? Storage.getAsset(assetId) : null;
   const assetLabel = asset ? `${asset.tempAssetId || 'Asset'} — ${asset.name}` : `ID: ${assetId}`;
 
   // Save to history
   const scanEntry = { assetId, assetUrl, label: assetLabel, scannedAt: new Date().toISOString() };
-  scanHistory = [scanEntry, ...scanHistory.filter(s => s.assetId !== assetId)].slice(0, 10);
+  scanHistory = [scanEntry, ...scanHistory.filter(s => s.assetId !== assetId)].slice(0, 50);
   localStorage.setItem('ac_scan_history', JSON.stringify(scanHistory));
 
-  // Show result panel
-  document.getElementById('result-panel').classList.remove('hidden');
+  // Show UI Result
+  document.getElementById('status-text').textContent = 'Matched';
+  updateStatusDot('bg-primary', '');
+  
+  document.getElementById('result-idle').classList.add('hidden');
+  document.getElementById('result-success').classList.remove('hidden');
   document.getElementById('result-assetnum').textContent = assetLabel;
   document.getElementById('result-link').href = assetUrl;
-  document.getElementById('status-text').textContent = '✓ QR Code Matched!';
-  updateStatusDot('green');
-  document.getElementById('scanner-card').classList.add('success-flash');
-  renderRecentScans();
+  
+  document.getElementById('match-badge').textContent = 'Match Detected (99%)';
+  document.getElementById('match-badge').className = "absolute top-0 right-0 px-3 py-1 bg-tertiary-container text-on-tertiary-container text-[10px] font-bold uppercase tracking-widest";
+  document.getElementById('match-card').classList.add('ring-2', 'ring-primary/50');
 
-  // Auto-redirect after 1.5 seconds
-  setTimeout(() => {
-    window.location.href = assetUrl;
-  }, 1500);
+  renderRecentScans();
+  
+  // Auto redirect
+  setTimeout(() => { window.location.href = assetUrl; }, 1500);
 }
 
 function restartScanner() {
-  document.getElementById('result-panel').classList.add('hidden');
-  document.getElementById('status-text').textContent = 'Restarting camera...';
-  updateStatusDot('yellow');
+  document.getElementById('status-text').textContent = 'Restarting...';
+  updateStatusDot('bg-secondary', 'animate-pulse');
   startScanner();
-}
-
-function toggleManual() {
-  const el = document.getElementById('manual-section');
-  el.classList.toggle('hidden');
-  if (!el.classList.contains('hidden')) {
-    document.getElementById('manual-input').focus();
-  }
 }
 
 function manualLookup() {
@@ -301,46 +343,48 @@ function manualLookup() {
   errEl.classList.add('hidden');
 
   const assets = Storage.getAssets();
-  const match = assets.find(a =>
-    a.id === val ||
-    (a.tempAssetId || '').toLowerCase() === val.toLowerCase() ||
-    a.assetNumber === parseInt(val.replace(/\D/g,''))
-  );
+  const match = assets.find(a => a.id === val || (a.tempAssetId||'').toLowerCase() === val.toLowerCase() || a.assetNumber === parseInt(val.replace(/\D/g,'')));
 
   if (match) {
-    const url = `asset-detail.html?id=${match.id}`;
-    onScanSuccess(url);
+    onScanSuccess(`asset-detail.html?id=${match.id}`);
   } else {
     errEl.classList.remove('hidden');
+    setTimeout(() => errEl.classList.add('hidden'), 3000);
   }
 }
 
-function updateStatusDot(color) {
-  const dot = document.querySelector('#scan-status .w-2');
-  if (!dot) return;
-  dot.className = 'w-2 h-2 rounded-full ' + {
-    green: 'bg-on-tertiary-container animate-pulse',
-    red: 'bg-error',
-    yellow: 'bg-secondary animate-pulse',
-  }[color];
+function updateStatusDot(colorCls, animCls) {
+  const dot = document.getElementById('status-dot');
+  if (dot) dot.className = `w-2 h-2 rounded-full ${colorCls} ${animCls}`;
+}
+
+function clearHistory() {
+    scanHistory = [];
+    localStorage.removeItem('ac_scan_history');
+    renderRecentScans();
 }
 
 function renderRecentScans() {
   const el = document.getElementById('recent-scans-list');
   if (!scanHistory.length) {
-    el.innerHTML = '<p class="text-sm text-on-surface-variant text-center py-4">No recent scans</p>';
+    el.innerHTML = '<div class="flex flex-col items-center justify-center h-48 opacity-50"><span class="material-symbols-outlined text-4xl mb-2">history</span><span class="text-xs font-bold uppercase tracking-widest">No Recent Scans</span></div>';
     return;
   }
-  el.innerHTML = scanHistory.map(s => `
-    <a href="${s.assetUrl}" class="flex items-center gap-3 py-3 border-b border-surface-container last:border-0 hover:bg-surface-container-low rounded-lg px-2 transition-colors no-underline group">
-      <div class="w-9 h-9 bg-primary-fixed rounded-lg flex items-center justify-center shrink-0">
-        <span class="material-symbols-outlined text-on-primary-fixed text-base" style="font-variation-settings:'FILL' 1">qr_code</span>
-      </div>
-      <div class="flex-1 min-w-0">
-        <p class="font-bold text-on-primary-fixed text-sm truncate">${s.label}</p>
-        <p class="text-[10px] text-on-surface-variant">${timeAgo(s.scannedAt)}</p>
-      </div>
-      <span class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">chevron_right</span>
+  
+  el.innerHTML = scanHistory.map((s, idx) => `
+    <a href="${s.assetUrl}" class="bg-surface-container-low p-4 rounded-lg hover:ring-1 hover:ring-primary/30 transition-all cursor-pointer block group no-underline">
+        <div class="flex items-start justify-between">
+            <div class="flex gap-3">
+                <div class="w-10 h-10 rounded ${idx === 0 ? 'bg-primary/10 text-primary' : 'bg-surface-container-high text-outline'} flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined">${idx === 0 ? 'qr_code_scanner' : 'inventory_2'}</span>
+                </div>
+                <div>
+                   <p class="text-sm font-bold text-on-surface truncate pr-2 max-w-[180px]">${s.label}</p>
+                   <p class="text-[10px] text-on-surface-variant uppercase tracking-wider mt-1">${timeAgo(s.scannedAt)}</p>
+                </div>
+            </div>
+            <span class="material-symbols-outlined text-outline opacity-0 group-hover:opacity-100 transition-opacity mt-2">arrow_forward</span>
+        </div>
     </a>
   `).join('');
 }

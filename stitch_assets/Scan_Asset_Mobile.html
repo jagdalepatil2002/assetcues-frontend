@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-tint": "#005fac",
+              "on-primary-fixed": "#001c39",
+              "surface-container": "#eeeeee",
+              "on-secondary-fixed": "#001c39",
+              "surface-container-high": "#e8e8e8",
+              "outline": "#717784",
+              "on-primary-container": "#fefcff",
+              "on-tertiary": "#ffffff",
+              "on-tertiary-fixed-variant": "#753400",
+              "on-background": "#1a1c1c",
+              "surface-bright": "#f9f9f9",
+              "secondary-container": "#b9d3fe",
+              "on-surface": "#1a1c1c",
+              "inverse-surface": "#2f3131",
+              "surface-variant": "#e2e2e2",
+              "on-tertiary-container": "#fffcff",
+              "background": "#f9f9f9",
+              "tertiary-fixed-dim": "#ffb68b",
+              "surface-container-highest": "#e2e2e2",
+              "on-surface-variant": "#414752",
+              "error-container": "#ffdad6",
+              "surface-dim": "#dadada",
+              "primary-fixed": "#d4e3ff",
+              "surface-container-low": "#f3f3f3",
+              "on-secondary": "#ffffff",
+              "primary-fixed-dim": "#a4c9ff",
+              "tertiary": "#964500",
+              "tertiary-container": "#bc5800",
+              "on-error-container": "#93000a",
+              "on-error": "#ffffff",
+              "surface": "#f9f9f9",
+              "outline-variant": "#c0c7d4",
+              "inverse-primary": "#a4c9ff",
+              "surface-container-lowest": "#ffffff",
+              "primary-container": "#0176d3",
+              "inverse-on-surface": "#f1f1f1",
+              "secondary-fixed": "#d4e3ff",
+              "error": "#ba1a1a",
+              "primary": "#005da9",
+              "secondary": "#466084",
+              "on-primary-fixed-variant": "#004884",
+              "on-tertiary-fixed": "#321200",
+              "on-secondary-container": "#415b7f",
+              "tertiary-fixed": "#ffdbc8",
+              "on-primary": "#ffffff",
+              "secondary-fixed-dim": "#adc8f2",
+              "on-secondary-fixed-variant": "#2d486b"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .scanner-frame {
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+        }
+        .scan-line {
+            animation: scan 3s ease-in-out infinite;
+        }
+        @keyframes scan {
+            0%, 100% { top: 0%; }
+            50% { top: 100%; }
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen flex flex-col overflow-x-hidden">
+<!-- Top Navigation Anchor (Shared Component) -->
+<header class="bg-slate-50 dark:bg-slate-900 flex justify-between items-center px-6 h-16 w-full fixed top-0 z-50 transition-all">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary text-xs font-bold" data-alt="User profile avatar circle with blue background">JD</div>
+<span class="text-xl font-bold tracking-tight text-blue-700 dark:text-blue-400">AssetCues</span>
+</div>
+<button class="text-blue-700 dark:text-blue-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 p-2 rounded-full transition-all duration-200 ease-in-out active:scale-95">
+<span class="material-symbols-outlined">smart_toy</span>
+</button>
+</header>
+<main class="flex-grow pt-16 pb-24">
+<!-- Camera Viewport Section -->
+<section class="relative h-[397px] w-full overflow-hidden bg-black">
+<!-- Simulated Camera Feed -->
+<div class="absolute inset-0 w-full h-full" data-alt="First-person view of a smartphone scanning a metallic asset tag with a barcode on industrial machinery in a well-lit warehouse" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC94hnqxy8ckHINqAGZgsTnVu3-NFQMjvHAQnfry1pqc_St4Zbubf35d54X8aWNPoFOfMeJHQT8dkWxe3pyOmHraofeWh_28Zm0rhT5d0QDEbjbg06qFKfvTOOApQml-4ZdqATnqRNnLIv3tqYSebmCl9xq0408YU42P6eSiSy5f9jE1as7A6QI0zXpxDhY70NHoQTQTxr-ZduF7BRcBkiW4bF6Qn_eN4ckH110ncJPm0NGoDxb0VTGysTHbu5yVHx5lDyxbTLOY9g'); background-size: cover; background-position: center;">
+</div>
+<!-- Scanner Overlay -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<div class="w-64 h-64 scanner-frame relative border-2 border-white/30 rounded-xl overflow-hidden">
+<!-- Corner Accents -->
+<div class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary rounded-tl-lg"></div>
+<div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary rounded-tr-lg"></div>
+<div class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary rounded-bl-lg"></div>
+<div class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary rounded-br-lg"></div>
+<!-- Scan Line Animation -->
+<div class="scan-line absolute left-0 right-0 h-0.5 bg-primary/80 shadow-[0_0_15px_rgba(0,93,169,1)]"></div>
+</div>
+</div>
+<div class="absolute bottom-6 left-0 right-0 flex justify-center gap-6 pointer-events-auto">
+<button class="w-12 h-12 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-md text-white border border-white/20 hover:bg-black/60 active:scale-90 transition-all">
+<span class="material-symbols-outlined">flashlight_on</span>
+</button>
+<button class="w-12 h-12 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-md text-white border border-white/20 hover:bg-black/60 active:scale-90 transition-all">
+<span class="material-symbols-outlined">image</span>
+</button>
+</div>
+<div class="absolute top-4 left-0 right-0 text-center">
+<span class="bg-black/40 backdrop-blur-md text-white px-4 py-1 rounded-full text-xs font-medium tracking-wide uppercase">Align Code in Frame</span>
+</div>
+</section>
+<!-- Control Panel Section -->
+<section class="bg-surface px-6 py-8 -mt-4 relative z-10 rounded-t-3xl">
+<!-- Identification Mode -->
+<div class="mb-8">
+<span class="block text-[0.75rem] font-semibold text-on-surface-variant uppercase tracking-wider mb-4">Identification Mode</span>
+<div class="grid grid-cols-2 gap-3">
+<button class="flex flex-col items-center justify-center p-4 bg-primary-container text-on-primary rounded-xl transition-all border border-primary/20 shadow-sm active:scale-[0.98]">
+<span class="material-symbols-outlined mb-2">qr_code_2</span>
+<span class="font-semibold text-sm">Quick Scan</span>
+</button>
+<button class="flex flex-col items-center justify-center p-4 bg-surface-container-low text-on-surface-variant rounded-xl transition-all border border-outline-variant/20 active:scale-[0.98]">
+<span class="material-symbols-outlined mb-2" data-weight="fill" style="font-variation-settings: 'FILL' 1;">inventory</span>
+<span class="font-semibold text-sm">Audit Batch</span>
+</button>
+</div>
+</div>
+<!-- Manual Entry -->
+<div class="mb-8">
+<label class="block text-[0.75rem] font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Manual Identifier</label>
+<div class="relative">
+<input class="w-full h-14 bg-surface-container-highest rounded-xl px-4 border-none focus:ring-0 focus:bg-surface-container-lowest transition-all placeholder:text-outline border-b-2 border-transparent focus:border-primary" placeholder="Enter Serial or Asset Tag ID" type="text"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 h-10 px-4 bg-primary text-on-primary rounded-lg font-bold text-xs uppercase tracking-tight">Submit</button>
+</div>
+</div>
+<!-- Recent Scans - Bento Style Cards -->
+<div class="mb-4">
+<div class="flex justify-between items-center mb-4">
+<span class="text-[0.75rem] font-semibold text-on-surface-variant uppercase tracking-wider">Recent Scans</span>
+<button class="text-primary text-xs font-bold uppercase tracking-tight">Clear All</button>
+</div>
+<div class="space-y-3">
+<!-- Scan Card 1 -->
+<div class="bg-surface-container-lowest p-4 rounded-xl flex items-center justify-between shadow-sm border border-outline-variant/10">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">laptop_mac</span>
+</div>
+<div>
+<h4 class="font-bold text-sm text-on-surface">MBP-2024-081</h4>
+<div class="flex items-center gap-2">
+<span class="text-[0.7rem] text-on-surface-variant">2 mins ago</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="text-[0.7rem] font-bold text-green-600 uppercase">Verified</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</div>
+<!-- Scan Card 2 -->
+<div class="bg-surface-container-lowest p-4 rounded-xl flex items-center justify-between shadow-sm border border-outline-variant/10">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">print</span>
+</div>
+<div>
+<h4 class="font-bold text-sm text-on-surface">PRNT-LX-400</h4>
+<div class="flex items-center gap-2">
+<span class="text-[0.7rem] text-on-surface-variant">14 mins ago</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="text-[0.7rem] font-bold text-amber-600 uppercase">Pending Audit</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</div>
+<!-- Scan Card 3 -->
+<div class="bg-surface-container-lowest p-4 rounded-xl flex items-center justify-between shadow-sm border border-outline-variant/10">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center text-error">
+<span class="material-symbols-outlined">router</span>
+</div>
+<div>
+<h4 class="font-bold text-sm text-on-surface">RT-CIS-992</h4>
+<div class="flex items-center gap-2">
+<span class="text-[0.7rem] text-on-surface-variant">1 hour ago</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="text-[0.7rem] font-bold text-error uppercase">Unknown Tag</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline">chevron_right</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar (Shared Component) -->
+<nav class="fixed bottom-0 left-0 w-full h-20 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl flex justify-around items-center px-4 pb-safe z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] border-t border-slate-200/20">
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-blue-500" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[0.75rem] font-medium tracking-[0.05em] uppercase mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-blue-500" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="text-[0.75rem] font-medium tracking-[0.05em] uppercase mt-1">Assets</span>
+</a>
+<!-- Active Tab: Scanner -->
+<a class="flex flex-col items-center justify-center text-blue-700 dark:text-blue-400 font-semibold transition-colors scale-110 -translate-y-1" href="#">
+<div class="bg-blue-600 text-white p-3 rounded-full shadow-lg shadow-blue-600/30">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">qr_code_scanner</span>
+</div>
+<span class="text-[0.75rem] font-semibold tracking-[0.05em] uppercase mt-1">Scanner</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-blue-500" href="#">
+<span class="material-symbols-outlined">assignment_turned_in</span>
+<span class="text-[0.75rem] font-medium tracking-[0.05em] uppercase mt-1">Audits</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-blue-500" href="#">
+<span class="material-symbols-outlined">menu</span>
+<span class="text-[0.75rem] font-medium tracking-[0.05em] uppercase mt-1">More</span>
+</a>
+</nav>
+</body></html>

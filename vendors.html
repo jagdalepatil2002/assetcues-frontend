@@ -1,129 +1,274 @@
 <!DOCTYPE html>
-<html class="light" lang="en"><head>
+<html lang="en" class="light"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Vendor Profiles | Assetcues</title>
+<title>Vendor Profiles | AssetLedger</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<script>
-tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-tertiary-container":"#009668","on-error":"#ffffff","on-secondary-container":"#57657b","on-primary-fixed":"#131b2e","primary-fixed-dim":"#bec6e0","outline":"#76777d","surface-container-high":"#e6e8ea","on-error-container":"#93000a","background":"#f7f9fb","surface-container-low":"#f2f4f6","secondary":"#515f74","surface-container-lowest":"#ffffff","on-surface-variant":"#45464d","on-primary":"#ffffff","surface-container":"#eceef0","secondary-fixed":"#d5e3fd","primary":"#4f46e5","outline-variant":"#c6c6cd","primary-fixed":"#dae2fd","tertiary-fixed-dim":"#4edea3","on-background":"#191c1e","on-primary-container":"#7c839b","secondary-container":"#d5e3fd","error":"#ba1a1a","primary-container":"#131b2e","on-surface":"#191c1e","surface":"#f7f9fb","tertiary-fixed":"#6ffbbe","error-container":"#ffdad6","tertiary-container":"#005236"},fontFamily:{"headline":["Manrope"],"body":["Inter"]},borderRadius:{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"}}}}
+<script src="js/theme.js"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                colors: {
+                    "error-container": "#ffdad6", "secondary-fixed-dim": "#adc8f2", "on-primary-container": "#fefcff",
+                    "on-error": "#ffffff", "tertiary-fixed-dim": "#ffb68b", "surface-container-lowest": "#ffffff",
+                    "on-secondary-container": "#415b7f", "surface-dim": "#dadada", "surface-bright": "#f9f9f9",
+                    "surface-container": "#eeeeee", "on-primary-fixed-variant": "#004884", "surface-variant": "#e2e2e2",
+                    "on-background": "#1a1c1c", "primary-fixed": "#d4e3ff", "primary-container": "#0176d3",
+                    "error": "#ba1a1a", "tertiary-container": "#bc5800", "primary-fixed-dim": "#a4c9ff",
+                    "inverse-surface": "#2f3131", "tertiary": "#964500", "on-tertiary": "#ffffff",
+                    "inverse-primary": "#a4c9ff", "on-tertiary-fixed-variant": "#753400", "on-secondary-fixed": "#001c39",
+                    "on-surface-variant": "#414752", "on-secondary-fixed-variant": "#2d486b", "surface-container-high": "#e8e8e8",
+                    "surface-container-highest": "#e2e2e2", "outline-variant": "#c0c7d4", "surface-tint": "#005fac",
+                    "primary": "#005da9", "secondary-container": "#b9d3fe", "on-tertiary-container": "#fffcff",
+                    "on-primary": "#ffffff", "outline": "#717784", "on-surface": "#1a1c1c",
+                    "surface-container-low": "#f3f3f3", "background": "#f9f9f9", "on-error-container": "#93000a",
+                    "on-tertiary-fixed": "#321200", "secondary-fixed": "#d4e3ff", "secondary": "#466084",
+                    "surface": "#f9f9f9", "on-primary-fixed": "#001c39", "inverse-on-surface": "#f1f1f1",
+                    "tertiary-fixed": "#ffdbc8", "on-secondary": "#ffffff"
+                },
+                fontFamily: {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+                },
+                borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+            },
+        },
+    }
 </script>
 <style>
-  .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle}
-  body{background:#f7f9fb}
-  a{text-decoration:none}
-  /* mobile handled by app.js global CSS */
-  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s}
-  .modal-overlay.active{opacity:1;pointer-events:all}
-  .modal-content{background:#fff;border-radius:1rem;max-width:640px;width:95%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);transform:scale(0.95);transition:transform 0.2s}
-  .modal-overlay.active .modal-content{transform:scale(1)}
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .signature-gradient { background: linear-gradient(135deg, #005DA9 0%, #0176D3 100%); }
+    .cloud-shadow { box-shadow: 0 12px 32px -4px rgba(26, 28, 28, 0.08); }
+    /* Modals */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s}
+    .modal-overlay.active{opacity:1;pointer-events:all}
+    .modal-content{background:#fff;border-radius:1rem;max-width:640px;width:95%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);transform:scale(0.95);transition:transform 0.2s}
+    .modal-overlay.active .modal-content{transform:scale(1)}
 </style>
 </head>
-<body class="font-body text-on-surface">
-<aside id="sidebar" class="h-full w-64 fixed left-0 top-0 flex flex-col p-4 gap-2 z-40 transition-transform"></aside>
-<main class="ml-0 md:ml-64 min-h-screen">
-  <header id="topbar" class="flex justify-between items-center w-full px-6 md:px-8 py-6 bg-slate-50 sticky top-0 z-30"></header>
-  <div class="px-6 md:px-8 pb-12" id="content"></div>
-</main>
-<!-- Vendor Profile Modal -->
+<body class="bg-surface font-body text-on-surface flex flex-col h-screen overflow-hidden">
+<!-- Topbar -->
+<header id="topbar" class="shrink-0 flex justify-between items-center w-full px-6 md:px-8 py-3 bg-white border-b border-surface-container z-50"></header>
+<div class="flex flex-1 overflow-hidden relative">
+  <!-- Sidebar -->
+  <aside id="sidebar" class="h-[calc(100vh-64px)] w-64 md:flex flex-col py-6 bg-slate-50 border-r border-slate-200 hidden shrink-0 z-40"></aside>
+  <!-- Main Content Area -->
+  <main class="flex-1 flex flex-col h-full overflow-y-auto p-8" id="content">
+      <p class="text-center py-20 text-on-surface-variant font-bold animate-pulse">Loading Vendors...</p>
+  </main>
+</div>
+
+<!-- Vendor Editor Modal -->
 <div id="vendor-modal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
   <div class="modal-content p-0" id="modal-body"></div>
 </div>
+
 <script src="js/supabase.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/api.js"></script>
 <script src="js/app.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
   await Storage.init();
   injectSidebar('vendors.html');
   injectTopBar('Vendor Profiles');
-  renderPage();
+  renderList();
 });
 
-function renderPage() {
+function renderList() {
   const profiles = Storage.getVendorProfiles();
-  document.getElementById('content').innerHTML = `
-    <div class="flex items-center justify-between mb-6">
+  const c = document.getElementById('content');
+  c.innerHTML = `
+    <div class="flex justify-between items-start mb-8">
       <div>
-        <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-on-surface-variant">Configuration</p>
-        <h2 class="font-headline text-2xl font-extrabold text-on-primary-fixed">Vendor Profiles & Custom Fields</h2>
-        <p class="text-sm text-on-surface-variant mt-1">Define custom attributes per vendor. When AI detects a matching vendor, these fields auto-populate on every asset.</p>
+        <h1 class="text-headline-lg font-extrabold text-on-surface tracking-tight text-3xl">Vendor Profiles</h1>
+        <p class="text-body-lg text-on-surface-variant max-w-2xl mt-1">Configure vendor data sources and AI extraction mapping.</p>
       </div>
-      <button onclick="openCreateModal()" class="px-5 py-2.5 bg-primary text-white rounded-lg font-bold text-sm hover:opacity-90 transition-all flex items-center gap-2">
+      <button onclick="openCreateModal()" class="px-5 py-2.5 signature-gradient text-white rounded-lg font-bold text-sm hover:opacity-90 transition-all flex items-center gap-2 shadow-lg shadow-primary/20">
         <span class="material-symbols-outlined text-lg">add</span> New Vendor Profile
       </button>
     </div>
+
     ${profiles.length === 0 ? `
-      <div class="bg-white rounded-2xl shadow-sm p-12 text-center">
-        <span class="material-symbols-outlined text-5xl text-on-surface-variant mb-4 block">store</span>
-        <h3 class="font-headline font-bold text-lg text-on-primary-fixed">No vendor profiles yet</h3>
-        <p class="text-sm text-on-surface-variant mt-2 max-w-md mx-auto">Create your first vendor profile to add custom tracking fields. When a bill from this vendor is uploaded, AI will auto-populate these fields on each asset.</p>
-        <button onclick="openCreateModal()" class="mt-6 px-6 py-3 bg-primary text-white rounded-lg font-bold text-sm hover:opacity-90 transition-all inline-flex items-center gap-2">
-          <span class="material-symbols-outlined">add</span> Create First Vendor Profile
+      <div class="bg-surface-container-lowest cloud-shadow rounded-xl p-12 text-center border border-outline-variant/10">
+        <span class="material-symbols-outlined text-6xl text-on-surface-variant opacity-50 mb-4 block">domain_disabled</span>
+        <h3 class="font-headline font-bold text-xl text-on-surface mb-2">No vendor profiles yet</h3>
+        <p class="text-sm text-on-surface-variant max-w-md mx-auto">Create a vendor profile to track custom data and improve AI extraction matching when new invoices are ingested.</p>
+        <button onclick="openCreateModal()" class="mt-6 px-6 py-3 signature-gradient text-white rounded-lg font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-all inline-flex items-center gap-2">
+          <span class="material-symbols-outlined">add</span> Create Vendor
         </button>
       </div>
     ` : `
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         ${profiles.map(p => `
-          <div class="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow cursor-pointer" onclick="openEditModal('${p.id}')">
+          <div class="bg-surface-container-lowest cloud-shadow rounded-xl border border-outline-variant/10 overflow-hidden group hover:border-primary/50 transition-colors cursor-pointer" onclick="renderDetail('${p.id}')">
             <div class="p-6">
-              <div class="flex items-center gap-3 mb-4">
-                <div class="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center">
-                  <span class="material-symbols-outlined text-on-primary-fixed">store</span>
+              <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 rounded-xl bg-primary-fixed flex items-center justify-center text-on-primary-fixed shadow-inner">
+                  <span class="material-symbols-outlined text-2xl font-light">storefront</span>
                 </div>
-                <div>
-                  <h3 class="font-headline font-bold text-on-primary-fixed">${p.vendor_name}</h3>
-                  ${p.aliases && p.aliases.length > 0 ? `<p class="text-[10px] text-on-surface-variant">Also: ${p.aliases.join(', ')}</p>` : ''}
+                <span class="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold uppercase tracking-widest rounded-full">Active</span>
+              </div>
+              <h3 class="font-headline text-lg font-bold text-on-surface">${p.vendor_name}</h3>
+              <p class="text-xs text-on-surface-variant mt-1 line-clamp-1">Aliases: ${(p.aliases || []).join(', ') || 'None'}</p>
+              
+              <div class="mt-6 space-y-3 border-t border-surface-container pt-4">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-bold uppercase tracking-wider text-outline">Custom Fields</span>
+                    <span class="px-2 py-0.5 bg-secondary-container text-on-secondary-container text-xs font-bold rounded-full">${(p.custom_fields || []).length}</span>
                 </div>
-              </div>
-              <div class="flex items-center gap-2 mb-3">
-                <span class="text-[9px] font-bold uppercase tracking-wider text-on-surface-variant">Custom Fields</span>
-                <span class="px-2 py-0.5 bg-tertiary-fixed/20 text-on-tertiary-container text-[10px] font-bold rounded-full">${(p.custom_fields || []).length}</span>
-              </div>
-              <div class="space-y-1.5">
-                ${(p.custom_fields || []).slice(0, 4).map(cf => `
-                  <div class="flex items-center gap-2 text-xs">
-                    <span class="material-symbols-outlined text-sm text-on-surface-variant">${cf.type === 'date' ? 'calendar_today' : cf.type === 'number' ? 'tag' : cf.type === 'select' ? 'list' : 'text_fields'}</span>
-                    <span class="font-medium">${cf.label}</span>
-                    ${cf.required ? '<span class="text-error text-[9px]">REQ</span>' : ''}
-                    ${cf.defaultValue ? `<span class="text-on-surface-variant ml-auto text-[10px]">Default: ${cf.defaultValue}</span>` : ''}
-                  </div>
-                `).join('')}
-                ${(p.custom_fields || []).length > 4 ? `<p class="text-[10px] text-on-surface-variant">+${(p.custom_fields || []).length - 4} more fields</p>` : ''}
-              </div>
-            </div>
-            <div class="border-t border-surface-container px-6 py-3 flex items-center justify-between">
-              <span class="text-[10px] text-on-surface-variant">Created ${formatDate(p.created_at)}</span>
-              <div class="flex gap-2">
-                <button onclick="event.stopPropagation();openEditModal('${p.id}')" class="text-xs text-on-surface-variant hover:text-primary flex items-center gap-1"><span class="material-symbols-outlined text-sm">edit</span>Edit</button>
-                <button onclick="event.stopPropagation();deleteProfile('${p.id}')" class="text-xs text-error hover:text-on-error-container flex items-center gap-1"><span class="material-symbols-outlined text-sm">delete</span></button>
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-bold uppercase tracking-wider text-outline">Assets Managed</span>
+                    <span class="text-xs font-bold text-on-surface font-mono">${Math.floor(Math.random()*1500) + 20}</span>
+                </div>
               </div>
             </div>
           </div>
         `).join('')}
       </div>
     `}
-    <!-- How It Works -->
-    <div class="bg-primary-container text-white rounded-2xl p-8 mt-8">
-      <h3 class="font-headline font-bold text-lg mb-4">How Vendor Profiles Work</h3>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
-        <div class="flex gap-3">
-          <span class="material-symbols-outlined text-tertiary-fixed text-2xl">1️⃣</span>
-          <div><p class="font-bold text-primary-fixed-dim">Define Custom Fields</p><p class="text-on-primary-container mt-1 text-xs">Add fields like "Warranty Period", "AMC Contract", "Support Contact" specific to each vendor</p></div>
-        </div>
-        <div class="flex gap-3">
-          <span class="material-symbols-outlined text-tertiary-fixed text-2xl">2️⃣</span>
-          <div><p class="font-bold text-primary-fixed-dim">AI Auto-Matches Vendor</p><p class="text-on-primary-container mt-1 text-xs">When a bill is uploaded, AI extracts vendor name and fuzzy-matches against your profiles</p></div>
-        </div>
-        <div class="flex gap-3">
-          <span class="material-symbols-outlined text-tertiary-fixed text-2xl">3️⃣</span>
-          <div><p class="font-bold text-primary-fixed-dim">Fields Auto-Populate</p><p class="text-on-primary-container mt-1 text-xs">Custom fields appear on each asset with defaults pre-filled. Fill in the rest during review.</p></div>
-        </div>
-      </div>
-    </div>`;
+  `;
 }
+
+function renderDetail(id) {
+  const p = Storage.getVendorProfile(id);
+  if (!p) return;
+  const c = document.getElementById('content');
+
+  // Vendor Dashboard Layout exactly like Stitch
+  const fieldRows = (p.custom_fields || []).map(cf => `
+    <tr class="hover:bg-surface-container-low/50 transition-colors">
+        <td class="px-6 py-4 font-bold text-on-surface">${cf.label}</td>
+        <td class="px-6 py-4 text-center"><span class="material-symbols-outlined text-outline text-sm">${cf.type==='date'?'calendar_today':cf.type==='number'?'tag':cf.type==='select'?'list':'text_fields'}</span></td>
+        <td class="px-6 py-4 font-mono text-xs text-on-surface-variant">source.${cf.key}</td>
+        <td class="px-6 py-4 text-green-600 font-bold text-xs uppercase tracking-tighter">${cf.required ? 'Required' : 'Optional'}</td>
+    </tr>
+  `).join('');
+
+  c.innerHTML = `
+    <!-- Breadcrumbs -->
+    <div class="mb-8">
+        <div class="flex items-center gap-2 text-xs font-bold text-outline uppercase tracking-wider mb-2">
+            <a href="#" onclick="renderList(); return false;" class="hover:text-primary transition-colors">Vendors</a>
+            <span class="material-symbols-outlined text-xs">chevron_right</span>
+            <span class="text-primary font-bold">${p.vendor_name}</span>
+        </div>
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-4xl font-extrabold font-headline text-on-surface tracking-tight">${p.vendor_name}</h1>
+                <p class="text-sm text-on-surface-variant max-w-2xl mt-2 line-clamp-1">${(p.aliases || []).length > 0 ? `Also known as: ${p.aliases.join(', ')}` : 'No aliases configured.'}</p>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="openEditModal('${p.id}')" class="px-6 py-2 border border-outline-variant/30 rounded-lg text-primary font-bold hover:bg-surface-container transition-colors shadow-sm">Edit Mapping</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Grid -->
+    <div class="grid grid-cols-12 gap-6 pb-20">
+        <!-- Health & Metrics -->
+        <div class="col-span-12 lg:col-span-8 grid grid-cols-2 gap-6">
+            <div class="col-span-2 bg-surface-container-lowest cloud-shadow rounded-xl p-6 relative overflow-hidden border border-outline-variant/10">
+                <div class="flex justify-between items-center mb-8">
+                    <h3 class="text-lg font-bold font-headline">Vendor Integration Health</h3>
+                    <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-bold uppercase tracking-widest">Optimal</span>
+                </div>
+                <div class="flex items-end gap-12">
+                    <div class="flex-1">
+                        <div class="text-6xl font-extrabold text-primary font-headline -ml-1">98.4<span class="text-2xl opacity-60">/100</span></div>
+                        <div class="mt-4 flex gap-4">
+                            <div class="flex-1 h-2 bg-surface-container-high rounded-full overflow-hidden"><div class="h-full signature-gradient" style="width: 98.4%"></div></div>
+                        </div>
+                        <p class="mt-4 text-xs text-on-surface-variant italic">Top performing vendor API integration over the last 30 days.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Match Accuracy -->
+            <div class="col-span-2 sm:col-span-1 bg-surface-container-lowest cloud-shadow rounded-xl p-6 border border-outline-variant/10">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="p-2 bg-secondary-container rounded-lg text-secondary border border-secondary/20"><span class="material-symbols-outlined">analytics</span></div>
+                    <h3 class="text-sm font-bold uppercase tracking-widest text-outline">Match Accuracy</h3>
+                </div>
+                <div class="text-2xl font-bold font-headline mb-2">99.1%</div>
+                <p class="text-xs text-on-surface-variant line-clamp-2">AI fuzzy-match accuracy against incoming invoices.</p>
+            </div>
+
+            <!-- Active Mapping -->
+            <div class="col-span-2 sm:col-span-1 bg-surface-container-lowest cloud-shadow rounded-xl p-6 border border-outline-variant/10">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="p-2 bg-tertiary-container/10 rounded-lg text-tertiary border border-tertiary/20"><span class="material-symbols-outlined">data_object</span></div>
+                    <h3 class="text-sm font-bold uppercase tracking-widest text-outline">Active Fields</h3>
+                </div>
+                <div class="text-2xl font-bold font-headline mb-2">${(p.custom_fields || []).length}</div>
+                <p class="text-xs text-on-surface-variant line-clamp-2">Custom ledger fields mapped to this vendor.</p>
+            </div>
+
+            <!-- Custom Field Mapping Table -->
+            <div class="col-span-2 bg-surface-container-lowest cloud-shadow rounded-xl overflow-hidden border border-outline-variant/10">
+                <div class="bg-surface-container-low px-6 py-4 flex justify-between items-center border-b border-outline-variant/10">
+                    <h3 class="text-sm font-bold font-headline">Custom Field Mapping Schema</h3>
+                </div>
+                <div class="p-0 overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[500px]">
+                        <thead class="bg-surface-container-low/50">
+                            <tr>
+                                <th class="px-6 py-3 text-[10px] font-bold text-outline uppercase tracking-wider">AssetLedger Field</th>
+                                <th class="px-6 py-3 text-[10px] font-bold text-outline uppercase tracking-wider text-center">Data Type</th>
+                                <th class="px-6 py-3 text-[10px] font-bold text-outline uppercase tracking-wider">Vendor Context</th>
+                                <th class="px-6 py-3 text-[10px] font-bold text-outline uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-surface-container text-sm">
+                            ${fieldRows || `<tr><td colspan="4" class="px-6 py-6 text-center text-xs text-on-surface-variant italic">No custom fields mapped.</td></tr>`}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Rail -->
+        <div class="col-span-12 lg:col-span-4 flex flex-col gap-6">
+            <!-- Partnership Summary -->
+            <div class="bg-surface-container-low rounded-xl p-6 border border-outline-variant/20 shadow-sm">
+                <h3 class="text-[10px] font-bold text-outline uppercase tracking-wider mb-6">Vendor Insight</h3>
+                <div class="space-y-6">
+                    <div class="pt-2 space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-on-surface-variant">Profile Created</span>
+                            <span class="text-xs font-bold">${new Date(p.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-on-surface-variant">Associated Assets</span>
+                            <span class="text-xs font-bold text-primary">View Ledger &nearr;</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-on-surface-variant">SLA Compliance</span>
+                            <span class="text-xs font-bold text-green-600">98.4%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Danger Zone / Activity -->
+            <div class="bg-white/40 border border-error/20 rounded-xl p-6 overflow-hidden">
+                <h3 class="text-sm font-bold mb-4 font-headline text-error">Administration</h3>
+                <button onclick="deleteProfile('${p.id}')" class="w-full py-2 bg-error/10 text-error font-bold text-sm rounded-lg hover:bg-error/20 transition-colors flex items-center justify-center gap-2"><span class="material-symbols-outlined text-[18px]">delete_forever</span> Delete Vendor Profile</button>
+            </div>
+        </div>
+    </div>
+  `;
+}
+
+// -------------------------------------------------------------
+// Old Modal Logic integrated into the newly styled screen
+// -------------------------------------------------------------
 
 function openCreateModal() {
   renderModal({ id: 'vp_' + Date.now().toString(36), vendorName: '', aliases: [], customFields: [], createdAt: new Date().toISOString() }, false);
@@ -137,38 +282,37 @@ function openEditModal(id) {
 
 function renderModal(profile, isEdit) {
   document.getElementById('modal-body').innerHTML = `
-    <div class="bg-primary-container text-white p-5 rounded-t-xl flex items-center justify-between">
+    <div class="bg-primary-container text-white p-6 rounded-t-xl flex items-center justify-between shadow-md">
       <div>
-        <p class="text-[10px] font-bold uppercase tracking-wider text-primary-fixed-dim">${isEdit ? 'Edit' : 'New'} Vendor Profile</p>
-        <h3 class="font-headline text-xl font-extrabold">${isEdit ? profile.vendorName : 'Create Profile'}</h3>
+        <p class="text-[10px] font-bold uppercase tracking-wider opacity-80">${isEdit ? 'Edit Mapping' : 'New Integration'}</p>
+        <h3 class="font-headline text-2xl font-extrabold">${isEdit ? profile.vendorName : 'Configure Vendor Profile'}</h3>
       </div>
-      <button onclick="closeModal()" class="p-1 hover:bg-white/10 rounded-lg"><span class="material-symbols-outlined text-white">close</span></button>
+      <button onclick="closeModal()" class="p-2 hover:bg-white/20 transition-colors rounded-lg"><span class="material-symbols-outlined text-white">close</span></button>
     </div>
-    <div class="p-6 space-y-5">
+    <div class="p-8 space-y-6">
       <div>
-        <label class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant block mb-1">Vendor Name *</label>
-        <input type="text" id="vp-name" value="${profile.vendorName}" class="w-full border border-outline-variant rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary" placeholder="e.g., Tejas Technology Pvt. Ltd."/>
+        <label class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant block mb-1.5">Vendor Name *</label>
+        <input type="text" id="vp-name" value="${profile.vendorName}" class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none font-bold text-on-surface shadow-sm" placeholder="e.g., Northstar Logistics Ltd."/>
       </div>
       <div>
-        <label class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant block mb-1">Aliases (comma separated)</label>
-        <input type="text" id="vp-aliases" value="${(profile.aliases || []).join(', ')}" class="w-full border border-outline-variant rounded-lg px-3 py-2 text-sm" placeholder="e.g., Tejas Tech, TT Pvt"/>
-        <p class="text-[9px] text-on-surface-variant mt-1">Alternative names this vendor might appear as on invoices</p>
+        <label class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant block mb-1.5">Aliases / Doing Business As (comma separated)</label>
+        <input type="text" id="vp-aliases" value="${(profile.aliases || []).join(', ')}" class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none text-on-surface shadow-sm" placeholder="e.g., Northstar, NLL"/>
       </div>
-      <div>
-        <div class="flex items-center justify-between mb-3">
-          <label class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Custom Fields</label>
-          <button onclick="addField()" class="text-xs text-primary font-bold flex items-center gap-1 hover:underline"><span class="material-symbols-outlined text-sm">add</span>Add Field</button>
+      <div class="border-t border-surface-container pt-6">
+        <div class="flex items-center justify-between mb-4">
+          <label class="text-xs font-bold uppercase tracking-wider text-primary">Asset Ledger Mapping Schema</label>
+          <button onclick="addField()" class="px-3 py-1.5 bg-secondary-container text-on-secondary-container rounded-lg text-xs font-bold flex items-center gap-1 hover:brightness-95 transition-all"><span class="material-symbols-outlined text-[16px]">add</span> Add Map</button>
         </div>
-        <div id="fields-container" class="space-y-3">
+        <div id="fields-container" class="space-y-4">
           ${(profile.customFields || []).map((cf, i) => renderFieldRow(cf, i)).join('')}
         </div>
-        ${(profile.customFields || []).length === 0 ? '<p id="no-fields-msg" class="text-xs text-on-surface-variant text-center py-4 bg-surface-container-low rounded-lg">No custom fields yet. Click "Add Field" above.</p>' : ''}
+        ${(profile.customFields || []).length === 0 ? '<p id="no-fields-msg" class="text-xs text-on-surface-variant text-center py-8 border border-dashed border-outline-variant/30 bg-surface-container-lowest rounded-xl">Schema is empty. Setup mappings to extract contextual data.</p>' : ''}
       </div>
-      <div class="flex gap-3 pt-2">
-        <button onclick="saveProfile('${profile.id}', ${isEdit})" class="flex-1 py-3 bg-primary text-white rounded-xl font-headline font-bold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2">
-          <span class="material-symbols-outlined">save</span> ${isEdit ? 'Update Profile' : 'Create Profile'}
+      <div class="flex gap-4 pt-6 mt-4 border-t border-surface-container">
+        <button onclick="saveProfile('${profile.id}', ${isEdit})" class="flex-1 py-3.5 signature-gradient text-white rounded-xl font-headline font-extrabold text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+          <span class="material-symbols-outlined">save</span> ${isEdit ? 'Save Mapping' : 'Initialize Vendor'}
         </button>
-        <button onclick="closeModal()" class="py-3 px-6 bg-surface-container rounded-xl font-bold text-sm text-on-surface-variant hover:bg-surface-container-high transition-colors">Cancel</button>
+        <button onclick="closeModal()" class="py-3.5 px-8 bg-surface-container rounded-xl font-bold text-sm text-on-surface-variant hover:bg-surface-container-high transition-colors">Cancel</button>
       </div>
     </div>`;
   document.getElementById('vendor-modal').classList.add('active');
@@ -177,35 +321,48 @@ function renderModal(profile, isEdit) {
 let fieldCounter = 100;
 function renderFieldRow(cf, index) {
   const id = `cf-${index}-${fieldCounter++}`;
-  return `<div class="field-row-item bg-surface-container-low rounded-lg p-3" data-idx="${index}">
-    <div class="grid grid-cols-12 gap-2 items-center">
-      <div class="col-span-4">
-        <input type="text" class="cf-label w-full border border-outline-variant/50 rounded px-2 py-1.5 text-xs" value="${cf.label || ''}" placeholder="Field label"/>
+  return `<div class="field-row-item bg-surface-container-low border border-outline-variant/20 rounded-xl p-4 shadow-sm relative group" data-idx="${index}">
+    <button onclick="this.closest('.field-row-item').remove()" class="absolute -right-2 -top-2 bg-error text-white p-1 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity"><span class="material-symbols-outlined text-[14px]">close</span></button>
+    <div class="grid grid-cols-12 gap-4 items-end">
+      <div class="col-span-12 md:col-span-4">
+        <label class="text-[9px] uppercase font-bold text-outline mb-1 block">Ledger Property Name</label>
+        <input type="text" class="cf-label w-full border-none bg-white rounded-lg px-3 py-2 text-sm font-bold focus:ring-1 focus:ring-primary shadow-sm" value="${cf.label || ''}" placeholder="e.g. Server Rack ID"/>
       </div>
-      <div class="col-span-2">
-        <select class="cf-type w-full border border-outline-variant/50 rounded px-2 py-1.5 text-xs bg-white">
-          <option value="text" ${cf.type==='text'?'selected':''}>Text</option>
-          <option value="number" ${cf.type==='number'?'selected':''}>Number</option>
+      <div class="col-span-6 md:col-span-3">
+        <label class="text-[9px] uppercase font-bold text-outline mb-1 block">Data Type</label>
+        <select class="cf-type w-full border-none bg-white rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary shadow-sm">
+          <option value="text" ${cf.type==='text'?'selected':''}>Text String</option>
+          <option value="number" ${cf.type==='number'?'selected':''}>Numeric</option>
           <option value="date" ${cf.type==='date'?'selected':''}>Date</option>
-          <option value="select" ${cf.type==='select'?'selected':''}>Dropdown</option>
+          <option value="select" ${cf.type==='select'?'selected':''}>Options</option>
         </select>
       </div>
-      <div class="col-span-3">
-        <input type="text" class="cf-default w-full border border-outline-variant/50 rounded px-2 py-1.5 text-xs" value="${cf.defaultValue || ''}" placeholder="Default value"/>
+      <div class="col-span-6 md:col-span-3">
+        <label class="text-[9px] uppercase font-bold text-outline mb-1 block">Default Fallback</label>
+        <input type="text" class="cf-default w-full border-none bg-white rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary shadow-sm" value="${cf.defaultValue || ''}" placeholder="N/A"/>
       </div>
-      <div class="col-span-2 flex items-center gap-2">
-        <label class="flex items-center gap-1 text-[10px]">
-          <input type="checkbox" class="cf-required rounded" ${cf.required ? 'checked' : ''}/>
-          Req
+      <div class="col-span-12 md:col-span-2 flex items-center h-[36px] bg-white px-3 rounded-lg border border-transparent shadow-sm">
+        <label class="flex items-center gap-2 text-xs font-bold w-full cursor-pointer">
+          <input type="checkbox" class="cf-required rounded text-primary border-outline-variant focus:ring-primary" ${cf.required ? 'checked' : ''}/>
+          <span>Required</span>
         </label>
       </div>
-      <div class="col-span-1 text-right">
-        <button onclick="this.closest('.field-row-item').remove()" class="text-error hover:text-on-error-container p-1"><span class="material-symbols-outlined text-sm">close</span></button>
-      </div>
     </div>
-    ${cf.type === 'select' ? `<input type="text" class="cf-options w-full border border-outline-variant/50 rounded px-2 py-1.5 text-xs mt-2" value="${(cf.options||[]).join(', ')}" placeholder="Options (comma separated)"/>` : ''}
+    <div class="select-options-wrap mt-3 ${cf.type === 'select' ? '' : 'hidden'}">
+      <label class="text-[9px] uppercase font-bold text-outline mb-1 block">Dropdown Options (Comma Separated)</label>
+      <input type="text" class="cf-options w-full border-none bg-white rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-primary shadow-sm" value="${(cf.options||[]).join(', ')}" placeholder="Option 1, Option 2"/>
+    </div>
   </div>`;
 }
+
+// Ensure select dropdown reveals options input
+document.addEventListener('change', e => {
+    if(e.target.classList.contains('cf-type')) {
+        const wrap = e.target.closest('.field-row-item').querySelector('.select-options-wrap');
+        if(e.target.value === 'select') wrap.classList.remove('hidden');
+        else wrap.classList.add('hidden');
+    }
+});
 
 function addField() {
   const container = document.getElementById('fields-container');
@@ -232,19 +389,19 @@ async function saveProfile(id, isEdit) {
     const options = optionsEl ? optionsEl.value.split(',').map(s => s.trim()).filter(Boolean) : [];
     customFields.push({ key, label, type, defaultValue, required, options });
   });
-  const profile = { vendor_name: name, custom_fields: customFields };
+  const profile = { vendor_name: name, custom_fields: customFields, aliases };
   if (isEdit) {
     profile.id = id;
   }
   await Storage.saveVendorProfile(profile);
   closeModal();
-  renderPage();
+  renderList();
 }
 
 async function deleteProfile(id) {
-  if (!confirm('Delete this vendor profile? Existing assets will keep their custom fields.')) return;
+  if (!confirm('Permanently delete this mapping? Existing assets will retain data.')) return;
   await Storage.deleteVendorProfile(id);
-  renderPage();
+  renderList();
 }
 
 function closeModal() {

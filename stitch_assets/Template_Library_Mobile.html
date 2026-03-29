@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Template Library - AssetCues</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-tint": "#005fac",
+              "on-primary-fixed": "#001c39",
+              "surface-container": "#eeeeee",
+              "on-secondary-fixed": "#001c39",
+              "surface-container-high": "#e8e8e8",
+              "outline": "#717784",
+              "on-primary-container": "#fefcff",
+              "on-tertiary": "#ffffff",
+              "on-tertiary-fixed-variant": "#753400",
+              "on-background": "#1a1c1c",
+              "surface-bright": "#f9f9f9",
+              "secondary-container": "#b9d3fe",
+              "on-surface": "#1a1c1c",
+              "inverse-surface": "#2f3131",
+              "surface-variant": "#e2e2e2",
+              "on-tertiary-container": "#fffcff",
+              "background": "#f9f9f9",
+              "tertiary-fixed-dim": "#ffb68b",
+              "surface-container-highest": "#e2e2e2",
+              "on-surface-variant": "#414752",
+              "error-container": "#ffdad6",
+              "surface-dim": "#dadada",
+              "primary-fixed": "#d4e3ff",
+              "surface-container-low": "#f3f3f3",
+              "on-secondary": "#ffffff",
+              "primary-fixed-dim": "#a4c9ff",
+              "tertiary": "#964500",
+              "tertiary-container": "#bc5800",
+              "on-error-container": "#93000a",
+              "on-error": "#ffffff",
+              "surface": "#f9f9f9",
+              "outline-variant": "#c0c7d4",
+              "inverse-primary": "#a4c9ff",
+              "surface-container-lowest": "#ffffff",
+              "primary-container": "#0176d3",
+              "inverse-on-surface": "#f1f1f1",
+              "secondary-fixed": "#d4e3ff",
+              "error": "#ba1a1a",
+              "primary": "#005da9",
+              "secondary": "#466084",
+              "on-primary-fixed-variant": "#004884",
+              "on-tertiary-fixed": "#321200",
+              "on-secondary-container": "#415b7f",
+              "tertiary-fixed": "#ffdbc8",
+              "on-primary": "#ffffff",
+              "secondary-fixed-dim": "#adc8f2",
+              "on-secondary-fixed-variant": "#2d486b"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .signature-gradient {
+            background: linear-gradient(135deg, #005DA9 0%, #0176D3 100%);
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- Top App Bar (Shared Component) -->
+<header class="flex justify-between items-center px-6 h-16 w-full bg-slate-50 dark:bg-slate-900 docked full-width top-0 z-40 fixed">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="close-up portrait of a professional executive with a clean modern corporate background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDO66a6-rd7fjh-LBfVyQ8pjXnwe_Qs2tUerw1E0OfDDyOdkPBNo7X9lCqPjB810sxY-YlUnsv-Wh7z54aDrg8RldgGHBuCzRrJj4u9e5fxNhIZCszfebIn2JMeimnMbKuwkmlh6YW8gjGRJrpKqaC8NFCAu8v6rrGpnvWNqw06-Satc_c-R40RPk9a9VIl26pdU9rNvjVvzpDgkBfI08VF0QEC4JamoSlGET3iTm9ma7UEJ1ROJlM-Bn8pAj7AIQwwPmkzHHtJ-Dg"/>
+</div>
+<span class="text-xl font-bold tracking-tight text-blue-700 dark:text-blue-400 font-headline">AssetCues</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-blue-700 dark:text-blue-400 hover:bg-slate-200/50 p-2 rounded-lg transition-all duration-200 ease-in-out active:scale-95">smart_toy</button>
+</div>
+</header>
+<main class="pt-20 pb-24 px-4 max-w-md mx-auto">
+<!-- Editorial Header -->
+<section class="mb-8">
+<h1 class="font-headline text-3xl font-extrabold tracking-tight text-on-surface mb-1">Templates</h1>
+<p class="text-on-surface-variant text-sm">Deploy pre-configured asset frameworks.</p>
+</section>
+<!-- Copilot Recommendation (Featured Card) -->
+<section class="mb-8">
+<div class="relative group">
+<div class="absolute inset-0 signature-gradient opacity-10 blur-2xl -z-10 rounded-3xl"></div>
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_12px_32px_-4px_rgba(26,28,28,0.08)]">
+<div class="relative h-48 overflow-hidden">
+<img alt="High-Precision CNC Machinery" class="w-full h-full object-cover" data-alt="Modern high-precision CNC milling machine in a clean industrial facility with cool blue artificial lighting and metallic surfaces" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyAcxK3yNv0VJ-IWLBO0o2e2zu_qeX3HNd8SaAFW5jxxaZXQ4wY609p44khhLFgNPVUPglp95ix2DYFzkvjLHVGZPFq29TGcPGA99S1URZ0EGtRdy2kHPNyfHiso8lJBk-vg-On0yYl_wX7c5gts1CtHUCKmV4Vq1AKVm7XD8zlZf-wbsU3NQvELCN2YHJcul-0PbSRJFvMPjRxA9K6A4wWtdxzK84Vp1_l0FOBv-mcg348M62Dtf6NNp4mKHcXhTievro1YXfFjE"/>
+<div class="absolute top-4 left-4 glass-panel px-3 py-1 rounded-full flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+<span class="text-[10px] font-bold tracking-wider text-primary font-label uppercase">Copilot Recommendation</span>
+</div>
+</div>
+<div class="p-5">
+<h2 class="font-headline text-xl font-bold text-on-surface mb-2">High-Precision CNC Machinery</h2>
+<div class="grid grid-cols-2 gap-4 mb-4">
+<div>
+<p class="text-[10px] font-bold tracking-widest text-outline uppercase font-label">Depreciation</p>
+<p class="text-sm font-semibold text-on-surface">12.5% / yr</p>
+</div>
+<div>
+<p class="text-[10px] font-bold tracking-widest text-outline uppercase font-label">Lifecycle</p>
+<p class="text-sm font-semibold text-on-surface">15 Years</p>
+</div>
+</div>
+<div class="flex items-center justify-between pt-4 border-t border-outline-variant/20">
+<span class="text-xs font-medium text-on-surface-variant">Method: Straight Line</span>
+<button class="signature-gradient text-on-primary px-4 py-2 rounded-lg font-bold text-sm shadow-sm active:scale-95 transition-transform">Use Template</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Quick Actions -->
+<section class="mb-8">
+<button class="w-full bg-surface-container-low border-2 border-dashed border-outline-variant/40 rounded-xl py-6 flex flex-col items-center justify-center gap-2 group hover:bg-surface-container hover:border-primary/40 transition-all duration-200">
+<span class="material-symbols-outlined text-primary text-3xl group-hover:scale-110 transition-transform">add_circle</span>
+<span class="font-headline font-bold text-on-surface">Create Custom Template</span>
+<span class="text-xs text-on-surface-variant px-8 text-center">Define specific lifecycle and audit rules from scratch.</span>
+</button>
+</section>
+<!-- Template List -->
+<section class="space-y-4">
+<div class="flex items-center justify-between mb-2">
+<h3 class="font-headline text-lg font-bold text-on-surface">Standard Catalog</h3>
+<span class="text-xs font-bold text-primary font-label uppercase tracking-widest">View All</span>
+</div>
+<!-- Card: Enterprise Workstations -->
+<div class="bg-surface-container-lowest p-4 rounded-xl flex items-center gap-4 group active:scale-[0.98] transition-all">
+<div class="w-16 h-16 rounded-lg bg-surface-container flex-shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-outline" data-icon="desktop_windows">desktop_windows</span>
+</div>
+<div class="flex-grow">
+<h4 class="font-bold text-on-surface">Enterprise Workstations</h4>
+<div class="flex gap-3 mt-1">
+<span class="text-[10px] font-bold text-on-surface-variant font-label">33% RATE</span>
+<span class="text-[10px] font-bold text-on-surface-variant font-label">3YR CYCLE</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">chevron_right</span>
+</div>
+<!-- Card: Electric Transit Vans -->
+<div class="bg-surface-container-lowest p-4 rounded-xl flex items-center gap-4 group active:scale-[0.98] transition-all">
+<div class="w-16 h-16 rounded-lg bg-surface-container flex-shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-outline" data-icon="electric_car">electric_car</span>
+</div>
+<div class="flex-grow">
+<h4 class="font-bold text-on-surface">Electric Transit Vans</h4>
+<div class="flex gap-3 mt-1">
+<span class="text-[10px] font-bold text-on-surface-variant font-label">20% RATE</span>
+<span class="text-[10px] font-bold text-on-surface-variant font-label">8YR CYCLE</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">chevron_right</span>
+</div>
+<!-- Card: Mobile Logistics Kits -->
+<div class="bg-surface-container-lowest p-4 rounded-xl flex items-center gap-4 group active:scale-[0.98] transition-all">
+<div class="w-16 h-16 rounded-lg bg-surface-container flex-shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-outline" data-icon="inventory_2">inventory_2</span>
+</div>
+<div class="flex-grow">
+<h4 class="font-bold text-on-surface">Mobile Logistics Kits</h4>
+<div class="flex gap-3 mt-1">
+<span class="text-[10px] font-bold text-on-surface-variant font-label">15% RATE</span>
+<span class="text-[10px] font-bold text-on-surface-variant font-label">5YR CYCLE</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">chevron_right</span>
+</div>
+</section>
+</main>
+<!-- Bottom Nav Bar (Shared Component) -->
+<nav class="fixed bottom-0 left-0 w-full h-20 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl flex justify-around items-center px-4 pb-safe z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] border-t border-slate-200/20">
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-blue-500" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-[0.75rem] font-medium font-label uppercase tracking-[0.05em] mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-blue-500" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="text-[0.75rem] font-medium font-label uppercase tracking-[0.05em] mt-1">Assets</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-blue-500" href="#">
+<div class="signature-gradient w-12 h-12 rounded-full flex items-center justify-center -mt-8 shadow-lg active:scale-90 duration-150">
+<span class="material-symbols-outlined text-white" data-icon="qr_code_scanner">qr_code_scanner</span>
+</div>
+<span class="text-[0.75rem] font-medium font-label uppercase tracking-[0.05em] mt-1">Scanner</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-blue-500" href="#">
+<span class="material-symbols-outlined" data-icon="assignment_turned_in">assignment_turned_in</span>
+<span class="text-[0.75rem] font-medium font-label uppercase tracking-[0.05em] mt-1">Audits</span>
+</a>
+<a class="flex flex-col items-center justify-center text-blue-700 dark:text-blue-400 font-semibold transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+<span class="text-[0.75rem] font-medium font-label uppercase tracking-[0.05em] mt-1">More</span>
+</a>
+</nav>
+</body></html>

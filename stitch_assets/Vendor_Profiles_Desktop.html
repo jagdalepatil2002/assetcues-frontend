@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Vendor Profile - AssetLedger</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#adc8f2",
+                        "on-primary-container": "#fefcff",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb68b",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-container": "#415b7f",
+                        "surface-dim": "#dadada",
+                        "surface-bright": "#f9f9f9",
+                        "surface-container": "#eeeeee",
+                        "on-primary-fixed-variant": "#004884",
+                        "surface-variant": "#e2e2e2",
+                        "on-background": "#1a1c1c",
+                        "primary-fixed": "#d4e3ff",
+                        "primary-container": "#0176d3",
+                        "error": "#ba1a1a",
+                        "tertiary-container": "#bc5800",
+                        "primary-fixed-dim": "#a4c9ff",
+                        "inverse-surface": "#2f3131",
+                        "tertiary": "#964500",
+                        "on-tertiary": "#ffffff",
+                        "inverse-primary": "#a4c9ff",
+                        "on-tertiary-fixed-variant": "#753400",
+                        "on-secondary-fixed": "#001c39",
+                        "on-surface-variant": "#414752",
+                        "on-secondary-fixed-variant": "#2d486b",
+                        "surface-container-high": "#e8e8e8",
+                        "surface-container-highest": "#e2e2e2",
+                        "outline-variant": "#c0c7d4",
+                        "surface-tint": "#005fac",
+                        "primary": "#005da9",
+                        "secondary-container": "#b9d3fe",
+                        "on-tertiary-container": "#fffcff",
+                        "on-primary": "#ffffff",
+                        "outline": "#717784",
+                        "on-surface": "#1a1c1c",
+                        "surface-container-low": "#f3f3f3",
+                        "background": "#f9f9f9",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed": "#321200",
+                        "secondary-fixed": "#d4e3ff",
+                        "secondary": "#466084",
+                        "surface": "#f9f9f9",
+                        "on-primary-fixed": "#001c39",
+                        "inverse-on-surface": "#f1f1f1",
+                        "tertiary-fixed": "#ffdbc8",
+                        "on-secondary": "#ffffff"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .signature-gradient {
+            background: linear-gradient(135deg, #005DA9 0%, #0176D3 100%);
+        }
+        .cloud-shadow {
+            box-shadow: 0 12px 32px -4px rgba(26, 28, 28, 0.08);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9f9f9;
+            color: #1a1c1c;
+        }
+        h1, h2, h3 {
+            font-family: 'Manrope', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen">
+<!-- TopAppBar -->
+<header class="sticky top-0 z-50 flex items-center justify-between w-full px-6 h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold text-blue-800 dark:text-blue-300">AssetLedger</span>
+<div class="relative hidden md:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="pl-10 pr-4 py-2 w-80 bg-surface-container-highest border-none rounded-lg focus:ring-2 focus:ring-primary transition-all text-body-sm" placeholder="Search vendors, assets, or mappings..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors rounded-full">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors rounded-full">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<button class="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors rounded-full">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden ml-2 ring-2 ring-surface-container">
+<img alt="User Profile" data-alt="professional corporate headshot of a middle-aged male executive in a blue suit with warm lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDP5qvY4dwNfiS-IGQe1w7_gs-2mXST0QddSyxqgXDPhKgaSJRB5RjdxvRqpGcm7B8-s6uHAt_yhnmui0oe7Oe5o2L1kqNfLOWmSvMnPnFUZFi23jufADlOHayemrIIb_w4XrsuuaGWwTHMe2T04cHoA1na5gmTppTbAd4xSr5VsBSTnk71g9lP6ewttKyfQLogigKwygYxmT4Vvno6TKdeXx4KjpuQqXMwEP2TYUw9anw1tfokYCibNuajfIQ7zGuhUuRzdUXGz90"/>
+</div>
+</div>
+</header>
+<div class="flex">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-slate-50 dark:bg-slate-950 flex flex-col py-6 tonal-shift bg-slate-100 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 hidden md:flex">
+<div class="px-6 mb-8">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 signature-gradient rounded flex items-center justify-center text-white">
+<span class="material-symbols-outlined">corporate_fare</span>
+</div>
+<div>
+<div class="text-lg font-black text-slate-900 dark:text-slate-50 leading-tight">Enterprise Assets</div>
+<div class="text-[10px] uppercase tracking-wider text-outline font-bold">Global Fleet</div>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-2 space-y-1">
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 px-4 py-3 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-r-4 border-blue-700 dark:border-blue-400 font-bold px-4 py-3 translate-x-1 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="text-sm">Inventory</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 px-4 py-3 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="build">build</span>
+<span class="text-sm font-medium">Maintenance</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 px-4 py-3 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+<span class="text-sm font-medium">Procurement</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 px-4 py-3 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="bar_chart">bar_chart</span>
+<span class="text-sm font-medium">Analytics</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 px-4 py-3 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="text-sm font-medium">Reporting</span>
+</a>
+</nav>
+<div class="mt-auto px-4 py-6 border-t border-slate-200 dark:border-slate-800 space-y-1">
+<button class="w-full flex items-center justify-center gap-2 py-3 px-4 signature-gradient text-white rounded font-bold text-sm mb-4">
+<span class="material-symbols-outlined">add</span>
+                    Add New Asset
+                </button>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 px-4 py-3 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="contact_support">contact_support</span>
+<span class="text-sm font-medium">Support</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 dark:text-slate-400 px-4 py-3 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-64 p-8">
+<!-- Page Header / Breadcrumbs -->
+<div class="mb-8">
+<div class="flex items-center gap-2 text-label-md text-outline uppercase tracking-wider mb-2">
+<span>Vendors</span>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span class="text-primary font-bold">Northstar Logistics Ltd.</span>
+</div>
+<div class="flex justify-between items-start">
+<div>
+<h1 class="text-headline-lg font-extrabold text-on-surface tracking-tight">Northstar Logistics Ltd.</h1>
+<p class="text-body-lg text-on-surface-variant max-w-2xl mt-1">Primary tier-1 shipping and multimodal transportation partner for North American operations.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-6 py-2 border border-outline-variant/20 rounded-lg text-primary font-bold hover:bg-surface-container transition-colors">Edit Profile</button>
+<button class="px-6 py-2 signature-gradient text-white rounded-lg font-bold shadow-lg shadow-primary/20">Analyze Relationship</button>
+</div>
+</div>
+</div>
+<!-- Dashboard Grid -->
+<div class="grid grid-cols-12 gap-6">
+<!-- Health & Metrics (Bento Style) -->
+<div class="col-span-12 lg:col-span-8 grid grid-cols-2 gap-6">
+<!-- Vendor Health Card -->
+<div class="col-span-2 bg-surface-container-lowest cloud-shadow rounded-xl p-6 relative overflow-hidden">
+<div class="flex justify-between items-center mb-8">
+<h3 class="text-title-lg font-bold">Vendor Health Score</h3>
+<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold uppercase tracking-widest">Optimal</span>
+</div>
+<div class="flex items-end gap-12">
+<div class="flex-1">
+<div class="text-display-lg font-extrabold text-primary -ml-1">94.8<span class="text-headline-sm">/100</span></div>
+<div class="mt-4 flex gap-4">
+<div class="flex-1 h-2 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full signature-gradient" style="width: 94%"></div>
+</div>
+</div>
+<p class="mt-4 text-body-sm text-on-surface-variant italic">Top 2% of performing vendors in Logistics category over the last 12 months.</p>
+</div>
+<div class="hidden sm:block w-48 h-24 bg-surface-container-low rounded-lg p-3 flex flex-col justify-between">
+<div class="text-label-md text-outline uppercase font-bold">YoY Growth</div>
+<div class="flex items-center justify-between">
+<span class="text-title-lg font-bold">+12.4%</span>
+<span class="material-symbols-outlined text-green-600">trending_up</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Asset Match Accuracy -->
+<div class="col-span-2 sm:col-span-1 bg-surface-container-lowest cloud-shadow rounded-xl p-6">
+<div class="flex items-center gap-3 mb-6">
+<div class="p-2 bg-secondary-container rounded-lg">
+<span class="material-symbols-outlined text-primary">analytics</span>
+</div>
+<h3 class="text-title-sm font-bold">Match Accuracy</h3>
+</div>
+<div class="text-headline-sm font-bold mb-2">99.1%</div>
+<p class="text-body-sm text-on-surface-variant">Asset ID reconciliation against internal ledger for 4,200 unique records.</p>
+</div>
+<!-- Active Contracts -->
+<div class="col-span-2 sm:col-span-1 bg-surface-container-lowest cloud-shadow rounded-xl p-6">
+<div class="flex items-center gap-3 mb-6">
+<div class="p-2 bg-tertiary-container/10 rounded-lg">
+<span class="material-symbols-outlined text-tertiary">description</span>
+</div>
+<h3 class="text-title-sm font-bold">Active Assets</h3>
+</div>
+<div class="text-headline-sm font-bold mb-2">1,248</div>
+<p class="text-body-sm text-on-surface-variant">Vehicles and storage units currently managed under active Master Service Agreement.</p>
+</div>
+<!-- Custom Data Field Mapping (Editorial Table) -->
+<div class="col-span-2 bg-white cloud-shadow rounded-xl overflow-hidden">
+<div class="bg-surface-container-high px-6 py-4 flex justify-between items-center">
+<h3 class="text-title-sm font-bold">Custom Field Mapping</h3>
+<button class="text-primary font-bold text-label-md uppercase tracking-wider hover:underline">Edit Map</button>
+</div>
+<div class="p-0">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-low">
+<tr>
+<th class="px-6 py-3 text-label-md font-bold text-outline uppercase tracking-wider">AssetLedger Field</th>
+<th class="px-6 py-3 text-label-md font-bold text-outline uppercase tracking-wider text-center">Logic</th>
+<th class="px-6 py-3 text-label-md font-bold text-outline uppercase tracking-wider">Vendor Source (JSON)</th>
+<th class="px-6 py-3 text-label-md font-bold text-outline uppercase tracking-wider">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container-high">
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="px-6 py-4 font-bold text-on-surface">Asset_Serial_UID</td>
+<td class="px-6 py-4 text-center"><span class="material-symbols-outlined text-outline">swap_horiz</span></td>
+<td class="px-6 py-4 font-mono text-body-sm text-on-surface-variant">source.hardware_id</td>
+<td class="px-6 py-4 text-green-600 font-bold text-xs uppercase tracking-tighter">Synced</td>
+</tr>
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="px-6 py-4 font-bold text-on-surface">Maintenance_Cycle</td>
+<td class="px-6 py-4 text-center"><span class="material-symbols-outlined text-outline">calculate</span></td>
+<td class="px-6 py-4 font-mono text-body-sm text-on-surface-variant">vendor_cycle_days * 24</td>
+<td class="px-6 py-4 text-green-600 font-bold text-xs uppercase tracking-tighter">Synced</td>
+</tr>
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="px-6 py-4 font-bold text-on-surface">Location_Lat_Long</td>
+<td class="px-6 py-4 text-center"><span class="material-symbols-outlined text-outline">join_full</span></td>
+<td class="px-6 py-4 font-mono text-body-sm text-on-surface-variant">concat(gps.x, ',', gps.y)</td>
+<td class="px-6 py-4 text-tertiary font-bold text-xs uppercase tracking-tighter">Partial</td>
+</tr>
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="px-6 py-4 font-bold text-on-surface">Compliance_Status</td>
+<td class="px-6 py-4 text-center"><span class="material-symbols-outlined text-outline">rule</span></td>
+<td class="px-6 py-4 font-mono text-body-sm text-on-surface-variant">meta.regulatory_flag</td>
+<td class="px-6 py-4 text-green-600 font-bold text-xs uppercase tracking-tighter">Synced</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Right Insight Rail -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-6">
+<!-- Partnership Summary Card -->
+<div class="bg-surface-container-low rounded-xl p-6 border border-outline-variant/20">
+<h3 class="text-label-md font-bold text-outline uppercase tracking-wider mb-6">Partnership Insight</h3>
+<div class="space-y-6">
+<div class="flex gap-4">
+<img alt="Vendor Facility" class="w-16 h-16 rounded-lg object-cover" data-alt="modern industrial logistics warehouse with rows of loading docks and heavy trucks under a bright blue sky" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAU5eAaRVJJ34LRPtxbJo3dQUp3bF4LXcWkja_XhSVeqTxswPs2VX0chEa1FmMHZgXKsVSHtVxhS-T7cr7uJCQlysrA6JjwQPPZlVwrzOa2i6ZaiNBCEAvUDB4h2lYZBfv2F_cfk3QhLmyICvPs8zW2-x3BfWdZrwhzAEegwHQAzuumAmsr7jxnuBSqVSMwvquGJmHUh-w7PAdf3WTXvnSbHfytjBteXYRHlCr6s9MUpVKz2EWECQPYi4_mEUY4zlLExYFU15_wAzI"/>
+<div>
+<div class="text-title-sm font-bold">Regional HQ</div>
+<div class="text-body-sm text-on-surface-variant">Chicago Hub, IL</div>
+</div>
+</div>
+<div class="pt-6 border-t border-outline-variant/30 space-y-4">
+<div class="flex justify-between items-center">
+<span class="text-label-md text-on-surface-variant">Contact Person</span>
+<span class="text-body-sm font-bold">Sarah Jenkins</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-label-md text-on-surface-variant">Agreement Ends</span>
+<span class="text-body-sm font-bold">Oct 2026</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-label-md text-on-surface-variant">SLA Compliance</span>
+<span class="text-body-sm font-bold text-green-600">98.4%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Risk Analysis Glassmorphism Card -->
+<div class="bg-white/40 backdrop-blur-xl border border-white/20 cloud-shadow rounded-xl p-6 overflow-hidden relative">
+<!-- Decorative element -->
+<div class="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-2xl"></div>
+<h3 class="text-title-sm font-bold mb-4 relative z-10">Risk Evaluation</h3>
+<div class="space-y-4 relative z-10">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-green-500" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div class="text-body-sm">Financial Stability: <span class="font-bold">Excellent</span></div>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-green-500" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div class="text-body-sm">Operational Uptime: <span class="font-bold">99.9%</span></div>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-yellow-500" style="font-variation-settings: 'FILL' 1;">warning</span>
+<div class="text-body-sm">Geopolitical Exposure: <span class="font-bold">Moderate</span></div>
+</div>
+</div>
+<button class="mt-6 w-full py-2 bg-surface-container-highest font-bold text-sm rounded hover:bg-surface-container-high transition-colors">Download Risk Report</button>
+</div>
+<!-- Recent Asset Activity -->
+<div class="bg-surface-container-low rounded-xl p-6">
+<h3 class="text-label-md font-bold text-outline uppercase tracking-wider mb-4">Recent Asset Updates</h3>
+<div class="space-y-4">
+<div class="flex items-start gap-3">
+<div class="w-2 h-2 mt-1.5 rounded-full bg-primary"></div>
+<div>
+<div class="text-body-sm font-bold">TRK-9842 Status Changed</div>
+<div class="text-[10px] text-outline uppercase">2 hours ago</div>
+</div>
+</div>
+<div class="flex items-start gap-3">
+<div class="w-2 h-2 mt-1.5 rounded-full bg-primary"></div>
+<div>
+<div class="text-body-sm font-bold">New Batch: 24 Refrigerated Units</div>
+<div class="text-[10px] text-outline uppercase">Yesterday</div>
+</div>
+</div>
+<div class="flex items-start gap-3">
+<div class="w-2 h-2 mt-1.5 rounded-full bg-outline"></div>
+<div>
+<div class="text-body-sm font-bold font-medium text-on-surface-variant">Maintenance Data Re-sync</div>
+<div class="text-[10px] text-outline uppercase">3 days ago</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

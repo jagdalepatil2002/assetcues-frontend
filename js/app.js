@@ -15,29 +15,31 @@
     .delay-3 { animation-delay:0.12s; } .delay-4 { animation-delay:0.16s; }
     .delay-5 { animation-delay:0.20s; } .delay-6 { animation-delay:0.24s; }
 
-    /* Button micro-interactions */
-    .btn-glow { background: linear-gradient(135deg, #4f46e5, #7c3aed); color:#fff; border:none;
-      transition: all 0.22s ease; box-shadow: 0 2px 10px rgba(79,70,229,0.25); }
-    .btn-glow:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(79,70,229,0.35); }
-    .btn-glow:active { transform: translateY(0); box-shadow: 0 2px 6px rgba(79,70,229,0.2); }
+    /* Button micro-interactions — signature gradient */
+    .btn-glow { background: linear-gradient(135deg, #005DA9, #0176D3); color:#fff; border:none;
+      transition: all 0.22s ease; box-shadow: 0 2px 10px rgba(0,93,169,0.25); }
+    .btn-glow:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,93,169,0.35); }
+    .btn-glow:active { transform: translateY(0); box-shadow: 0 2px 6px rgba(0,93,169,0.2); }
+    .signature-gradient { background: linear-gradient(135deg, #005DA9 0%, #0176D3 100%); }
+    .glass-effect { backdrop-filter: blur(20px); background: rgba(255,255,255,0.85); }
 
     /* Toast notification */
     @keyframes toastIn { from { opacity:0; transform:translateX(40px); } to { opacity:1; transform:translateX(0); } }
     @keyframes toastOut { from { opacity:1; } to { opacity:0; transform:translateY(-8px); } }
-    .ac-toast { position:fixed; bottom:24px; right:24px; padding:14px 22px; border-radius:14px;
+    .ac-toast { position:fixed; bottom:90px; right:24px; padding:14px 22px; border-radius:14px;
       font-size:13px; font-weight:600; font-family:Inter,sans-serif; z-index:9999;
       display:flex; align-items:center; gap:10px; max-width:420px;
       animation: toastIn 0.35s ease-out, toastOut 0.35s ease 2.8s forwards;
       box-shadow: 0 8px 30px rgba(0,0,0,0.15); }
     .ac-toast.success { background:#065f46; color:#6ffbbe; }
     .ac-toast.error { background:#7f1d1d; color:#fca5a5; }
-    .ac-toast.info { background:#1e1b4b; color:#c7d2fe; }
+    .ac-toast.info { background:#003366; color:#a4c9ff; }
 
     /* Confidence ring */
     .confidence-ring { position:relative; width:52px; height:52px; border-radius:50%;
       display:flex; align-items:center; justify-content:center; }
     .confidence-ring::before { content:''; position:absolute; inset:0; border-radius:50%;
-      background: conic-gradient(var(--ring-color,#4f46e5) var(--ring-pct,0%), #e5e7eb var(--ring-pct,0%)); }
+      background: conic-gradient(var(--ring-color,#005da9) var(--ring-pct,0%), #e5e7eb var(--ring-pct,0%)); }
     .confidence-ring::after { content:''; position:absolute; inset:4px; border-radius:50%; background:#fff; }
     .confidence-ring span { position:relative; z-index:1; font-size:11px; font-weight:800; }
 
@@ -55,7 +57,7 @@
       #sidebar.open { transform: translateX(0); }
       .sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:998; }
       .sidebar-overlay.active { display:block; }
-      main { margin-left: 0 !important; }
+      main { margin-left: 0 !important; padding-bottom: 88px !important; }
       .px-6, .px-8 { padding-left: 16px !important; padding-right: 16px !important; }
       .grid-cols-12 { grid-template-columns: 1fr !important; }
       .lg\\:col-span-8, .lg\\:col-span-7, .lg\\:col-span-4, .lg\\:col-span-5 { grid-column: span 1 !important; }
@@ -132,40 +134,87 @@ function injectSidebar(activePage) {
   const nav = getNavItems();
   const stats = Storage.getDashboardStats();
 
-  aside.style.background = 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)';
-
   aside.innerHTML = `
-    <div class="flex items-center gap-3 px-2 mb-8 mt-2">
-      <img src="img/logo.png" alt="Assetcues" class="h-16 w-auto brightness-0 invert" />
+    <div class="px-6 mb-8 flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-md">
+        <span class="material-symbols-outlined text-white text-sm" data-icon="apartment">apartment</span>
+      </div>
+      <div>
+        <h2 class="text-slate-900 font-black font-headline leading-tight">AssetCues</h2>
+        <p class="text-[10px] text-on-surface-variant font-label tracking-wider uppercase">Enterprise</p>
+      </div>
     </div>
-    <a href="upload.html" class="w-full py-2.5 mb-5 btn-glow rounded-lg font-headline font-bold text-xs flex items-center justify-center gap-1.5 no-underline">
-      <span class="material-symbols-outlined text-lg">add</span>
-      New Upload
-    </a>
+
+    <div class="px-6 mb-6">
+      <a href="upload.html" class="w-full signature-gradient text-on-primary py-3 rounded-lg flex items-center justify-center gap-2 shadow-md hover:opacity-90 transition-opacity no-underline">
+        <span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+        <span class="font-bold text-xs">New Upload</span>
+      </a>
+    </div>
+
     <nav class="flex-1 space-y-1">
       ${nav.map(item => {
         const isActive = item.href === activePage;
-        return `<a class="flex items-center gap-3 px-4 py-2.5 ${isActive
-          ? 'bg-white/10 text-white shadow-sm backdrop-blur-sm'
-          : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
-        } rounded-lg font-manrope text-sm font-medium transition-all no-underline" href="${item.href}">
-          <span class="material-symbols-outlined" ${isActive ? 'style="font-variation-settings: \'FILL\' 1;"' : ''}>${item.icon}</span>
-          <span>${item.label}</span>
-          ${item.label === 'Review' && stats.pending > 0 ? `<span class="ml-auto text-[10px] font-bold bg-indigo-500 text-white px-1.5 py-0.5 rounded">${stats.pending}</span>` : ''}
-        </a>`;
+        if (isActive) {
+          return `
+            <a class="bg-blue-50 text-blue-700 border-r-4 border-blue-700 font-bold px-6 py-3 flex items-center gap-3 translate-x-1 transition-transform duration-200 no-underline" href="${item.href}">
+              <span class="material-symbols-outlined text-blue-700" style="font-variation-settings: 'FILL' 1">${item.icon}</span>
+              <span class="font-medium text-sm">${item.label}</span>
+              ${item.label === 'Review' && stats.pending > 0 ? `<span class="ml-auto text-[10px] font-bold bg-blue-600 text-white px-1.5 py-0.5 rounded">${stats.pending}</span>` : ''}
+            </a>
+          `;
+        } else {
+          return `
+            <a class="text-slate-600 px-6 py-3 flex items-center gap-3 hover:bg-slate-200/50 transition-colors no-underline" href="${item.href}">
+              <span class="material-symbols-outlined">${item.icon}</span>
+              <span class="font-medium text-sm">${item.label}</span>
+              ${item.label === 'Review' && stats.pending > 0 ? `<span class="ml-auto text-[10px] font-bold bg-error text-white px-1.5 py-0.5 rounded">${stats.pending}</span>` : ''}
+            </a>
+          `;
+        }
       }).join('')}
     </nav>
-    <div class="mt-auto pt-4 space-y-1 border-t border-white/10">
-      <button onclick="openSettings()" class="flex items-center gap-3 px-4 py-2 text-slate-400 hover:text-slate-200 font-manrope text-sm font-medium w-full text-left transition-colors">
+    <div class="border-t border-slate-200 pt-4 pb-6">
+      <button onclick="openSettings()" class="w-full text-slate-600 px-6 py-2 flex items-center gap-3 hover:bg-slate-200/50 transition-colors text-left">
         <span class="material-symbols-outlined">settings</span>
-        <span>Settings</span>
+        <span class="font-medium text-sm">Settings</span>
       </button>
-      <button onclick="if(confirm('Clear all POC data?')){Storage.clearAll().then(()=>location.reload())}" class="flex items-center gap-3 px-4 py-2 text-slate-400 hover:text-red-400 font-manrope text-sm font-medium w-full text-left transition-colors">
+      <button onclick="if(confirm('Clear all POC data?')){Storage.clearAll().then(()=>location.reload())}" class="w-full mt-1 text-slate-600 hover:text-red-600 px-6 py-2 flex items-center gap-3 hover:bg-red-50 transition-colors text-left">
         <span class="material-symbols-outlined">delete_sweep</span>
-        <span>Clear Data</span>
+        <span class="font-medium text-sm">Clear Data</span>
       </button>
     </div>
   `;
+
+  // Inject mobile bottom nav
+  if (!document.getElementById('ac-bottom-nav')) {
+    const bottomNav = document.createElement('nav');
+    bottomNav.id = 'ac-bottom-nav';
+    bottomNav.className = 'md:hidden fixed bottom-0 left-0 w-full h-20 flex justify-around items-center px-4 pb-safe bg-white/80 backdrop-blur-xl z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] border-t border-slate-200/20';
+    const mobileItems = [
+      { icon: 'dashboard', label: 'Home', href: 'index.html' },
+      { icon: 'inventory_2', label: 'Assets', href: 'registry.html' },
+      { icon: 'qr_code_scanner', label: 'Scanner', href: 'scanner.html', fab: true },
+      { icon: 'assignment_turned_in', label: 'Audits', href: 'audit-report.html' },
+      { icon: 'menu', label: 'More', href: '#', onclick: 'toggleMobileSidebar()' },
+    ];
+    bottomNav.innerHTML = mobileItems.map(item => {
+      const isActive = item.href === activePage;
+      if (item.fab) {
+        return `<a href="${item.href}" class="flex flex-col items-center justify-center -mt-8 no-underline">
+          <div class="w-14 h-14 signature-gradient rounded-full flex items-center justify-center shadow-lg shadow-primary/30 active:scale-90 transition-transform">
+            <span class="material-symbols-outlined text-white text-2xl">${item.icon}</span>
+          </div>
+          <span class="text-[0.65rem] font-bold uppercase tracking-widest mt-1 text-slate-500">${item.label}</span>
+        </a>`;
+      }
+      return `<${item.onclick ? 'button onclick="'+item.onclick+'"' : 'a href="'+item.href+'"'} class="flex flex-col items-center justify-center no-underline ${isActive ? 'text-blue-700 font-semibold' : 'text-slate-400'}">
+        <span class="material-symbols-outlined mb-0.5" ${isActive ? 'style="font-variation-settings:\'FILL\' 1"' : ''}>${item.icon}</span>
+        <span class="text-[0.65rem] font-bold uppercase tracking-widest">${item.label}</span>
+      </${item.onclick ? 'button' : 'a'}>`;
+    }).join('');
+    document.body.appendChild(bottomNav);
+  }
 }
 
 /* ── Top Bar ── */
@@ -173,17 +222,28 @@ function injectTopBar(title) {
   const header = document.getElementById('topbar');
   if (!header) return;
   header.innerHTML = `
+    <div class="flex items-center gap-8">
+      <span class="text-xl font-bold text-primary font-headline tracking-tight md:hidden">AssetCues</span>
+      <div class="hidden md:flex items-center bg-surface-container-highest px-3 py-1.5 rounded-lg w-96 ml-64">
+        <span class="material-symbols-outlined text-outline mr-2">search</span>
+        <input class="bg-transparent border-none focus:ring-0 text-sm w-full placeholder-on-surface-variant outline-none" placeholder="Search assets, documents, or insights..." type="text"/>
+      </div>
+    </div>
     <div class="flex items-center gap-4">
       <button class="md:hidden p-2 text-on-surface-variant" onclick="toggleMobileSidebar()">
         <span class="material-symbols-outlined">menu</span>
       </button>
-      <h2 class="font-headline font-bold text-2xl tracking-tight text-on-primary-fixed">${title}</h2>
-    </div>
-    <div class="flex items-center gap-4">
-      <div id="connection-badge" class="flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full"></div>
-      <button onclick="openSettings()" class="p-2 text-on-surface-variant hover:bg-slate-200/50 rounded-full transition-colors">
+      <div id="connection-badge" class="hidden md:flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full"></div>
+      <button class="p-2 text-slate-600 hover:bg-slate-100 transition-colors rounded-full relative">
+        <span class="material-symbols-outlined">notifications</span>
+        <span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full animate-pulse"></span>
+      </button>
+      <button onclick="openSettings()" class="hidden md:block p-2 text-slate-600 hover:bg-slate-100 transition-colors rounded-full">
         <span class="material-symbols-outlined">settings</span>
       </button>
+      <div class="h-8 w-8 rounded-full overflow-hidden ml-2 border border-outline-variant bg-primary-container text-white flex items-center justify-center text-xs font-bold">
+        AC
+      </div>
     </div>
   `;
   // Check connection
