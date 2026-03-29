@@ -253,7 +253,6 @@ function injectTopBar(title) {
         <span class="material-symbols-outlined text-outline text-sm mr-2">search</span>
         <input id="global-search" class="bg-transparent border-none focus:ring-0 text-sm w-full placeholder-on-surface-variant outline-none" placeholder="Search assets..." type="text" onkeydown="if(event.key==='Enter')globalSearch(this.value)"/>
       </div>
-      <div id="connection-badge" class="hidden md:flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full"></div>
       <button onclick="toggleNotifications()" class="p-2 text-slate-600 hover:bg-slate-100 transition-colors rounded-full relative" id="notif-btn">
         <span class="material-symbols-outlined">notifications</span>
         <span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full animate-pulse hidden" id="notif-dot"></span>
@@ -270,9 +269,6 @@ function injectTopBar(title) {
       <button onclick="openSettings()" class="hidden md:block p-2 text-slate-600 hover:bg-slate-100 transition-colors rounded-full">
         <span class="material-symbols-outlined">settings</span>
       </button>
-      <div class="h-8 w-8 rounded-full overflow-hidden border border-outline-variant bg-primary-container text-white flex items-center justify-center text-xs font-bold">
-        AC
-      </div>
     </div>
   `;
   // Check connection
