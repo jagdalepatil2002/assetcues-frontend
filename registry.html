@@ -348,19 +348,35 @@ function renderTable() {
   document.getElementById('showing-count').textContent = `Showing ${assets.length} items`;
 }
 
-function renderStats() {
+async function renderStats() {
   const assets = Storage.getAssets();
   if (assets.length === 0) return;
   
-  const itAssets = assets.filter(a => (a.category||'').toLowerCase().includes('it'));
-  document.getElementById('depr-rate').textContent = itAssets.length > 0 ? '14.2%' : (assets.length > 0 ? '10.0%' : '—');
-  
+  // Real depreciation rate (average across assets)
+  const ratedAssets = assets.filter(a => a.depreciationRate);
+  const avgRate = ratedAssets.length > 0 ? (ratedAssets.reduce((s,a) => s + a.depreciationRate, 0) / ratedAssets.length).toFixed(1) : '—';
+  document.getElementById('depr-rate').textContent = avgRate !== '—' ? avgRate + '%' : '—';
+
+  // Real compliance score (% of assets with HSN code)
   const withHsn = assets.filter(a => a.hsnCode).length;
   document.getElementById('compliance-score').textContent = assets.length > 0 ? (withHsn / assets.length * 100).toFixed(1) : '—';
-  
-  const next = new Date();
-  next.setMonth(next.getMonth() + 3);
-  document.getElementById('next-audit').textContent = next.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  // Next audit window — based on last physical audit or next quarter end
+  try {
+    const audits = await Supabase.query('physical_audits', { order: 'scanned_at.desc', limit: 1 });
+    let nextAuditDate;
+    if (audits && audits.length > 0) {
+      const lastScan = new Date(audits[0].scanned_at);
+      nextAuditDate = new Date(lastScan);
+      nextAuditDate.setMonth(nextAuditDate.getMonth() + 3); // Next audit 3 months after last
+    } else {
+      // No audits yet — show next quarter end
+      const now = new Date();
+      const qMonth = Math.ceil((now.getMonth() + 1) / 3) * 3;
+      nextAuditDate = new Date(now.getFullYear(), qMonth, 0); // Last day of quarter
+    }
+    document.getElementById('next-audit').textContent = nextAuditDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch { document.getElementById('next-audit').textContent = '—'; }
 }
 
 function exportCSV() {

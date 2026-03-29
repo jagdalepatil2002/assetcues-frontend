@@ -146,16 +146,20 @@ tailwind.config = {
       <!-- Right Column: Usage / Tips -->
       <div class="col-span-12 xl:col-span-4 space-y-6">
         <!-- Usage Stats -->
-        <div class="bg-primary text-on-primary rounded-xl p-6 shadow-lg">
-          <h3 class="font-headline font-bold text-xs uppercase tracking-widest opacity-80 mb-4">AI Extraction Quota</h3>
+        <div class="bg-primary text-on-primary rounded-xl p-6 shadow-lg" id="quota-card">
+          <h3 class="font-headline font-bold text-xs uppercase tracking-widest opacity-80 mb-4">AI Extraction Stats</h3>
           <div class="flex items-end justify-between mb-2">
-            <span class="text-3xl font-extrabold" id="quota-used">1,248</span>
-            <span class="text-sm opacity-80">/ 5,000 pages</span>
+            <span class="text-3xl font-extrabold" id="quota-used">0</span>
+            <span class="text-sm opacity-80">pages processed</span>
           </div>
-          <div class="w-full bg-white/20 h-2 rounded-full overflow-hidden">
-            <div class="bg-white h-full" style="width: 25%"></div>
+          <div class="flex gap-4 mt-3 text-xs opacity-80">
+            <div><span class="font-bold text-white" id="quota-invoices">0</span> invoices</div>
+            <div><span class="font-bold text-white" id="quota-assets">0</span> assets</div>
           </div>
-          <p class="text-xs mt-4 opacity-80 leading-relaxed">Your organization has used 25% of its monthly high-priority processing power.</p>
+          <div class="w-full bg-white/20 h-2 rounded-full overflow-hidden mt-3">
+            <div class="bg-white h-full transition-all" id="quota-bar" style="width: 0%"></div>
+          </div>
+          <p class="text-xs mt-3 opacity-80 leading-relaxed" id="quota-detail">Loading usage data...</p>
         </div>
 
         <!-- Guidelines Card -->
@@ -183,25 +187,24 @@ tailwind.config = {
     </div>
   </main>
 
-  <!-- Copilot Sidebar Right -->
+  <!-- AI Agent Sidebar Right -->
   <aside class="hidden lg:flex fixed right-0 top-16 h-[calc(100vh-4rem)] w-80 bg-surface-container-low border-l border-slate-200 flex-col">
     <div class="p-6 border-b border-surface-container">
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-2">
-          <div class="w-6 h-6 rounded-full signature-gradient flex items-center justify-center">
-            <span class="material-symbols-outlined text-[14px] text-white">smart_toy</span>
-          </div>
-          <span class="font-headline font-extrabold text-sm">AssetCues Copilot</span>
+      <div class="flex items-center gap-2 mb-3">
+        <div class="w-7 h-7 rounded-lg signature-gradient flex items-center justify-center">
+          <span class="material-symbols-outlined text-[16px] text-white" style="font-variation-settings:'FILL' 1">smart_toy</span>
         </div>
+        <span class="font-headline font-bold text-sm">AssetCues AI Agent</span>
       </div>
-      <p class="text-xs text-on-surface-variant">AI Copilot monitors your uploads to verify metadata matches with SAP & existing fleet registry.</p>
+      <p class="text-xs text-on-surface-variant">AI-powered assistant for invoice processing and asset management.</p>
     </div>
-    
-    <div class="flex-1 p-4 flex items-center justify-center text-center opacity-50">
-      <div>
-        <span class="material-symbols-outlined text-4xl mb-2">forum</span>
-        <p class="text-sm font-medium">Waiting for extraction...</p>
-      </div>
+    <div class="p-4 space-y-3 flex-1 overflow-y-auto" id="copilot-recent">
+      <p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-2">Recent Activity</p>
+    </div>
+    <div class="p-4 border-t border-surface-container">
+      <button onclick="document.getElementById('ac-agent-panel').classList.add('open')" class="w-full py-2.5 signature-gradient text-white rounded-lg text-sm font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform">
+        <span class="material-symbols-outlined text-sm">chat</span> Open AI Agent Chat
+      </button>
     </div>
   </aside>
 </div>
@@ -222,6 +225,33 @@ document.addEventListener('DOMContentLoaded', async () => {
   await Storage.init();
   injectSidebar('upload.html');
   injectTopBar('Smart Upload');
+
+  // Wire quota with real data
+  const exts = Storage.getExtractions();
+  const assets = Storage.getAssets();
+  const totalPages = exts.reduce((s, e) => s + (e.pageCount || 1), 0);
+  document.getElementById('quota-used').textContent = totalPages.toLocaleString('en-IN');
+  document.getElementById('quota-invoices').textContent = exts.length;
+  document.getElementById('quota-assets').textContent = assets.length;
+  const pct = Math.min(Math.round((totalPages / 100) * 100), 100); // relative to recent usage
+  document.getElementById('quota-bar').style.width = pct + '%';
+  document.getElementById('quota-detail').textContent = `${exts.length} invoice${exts.length !== 1 ? 's' : ''} processed. ${assets.length} assets created.`;
+
+  // Populate copilot recent activity
+  const recentEl = document.getElementById('copilot-recent');
+  if (recentEl && exts.length > 0) {
+    recentEl.innerHTML = '<p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-2">Recent Activity</p>' +
+      exts.slice(0, 5).map(e => `
+        <a href="review-detail.html?id=${e.id}" class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-white transition-colors no-underline">
+          <span class="material-symbols-outlined text-primary text-sm">description</span>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-bold text-on-surface truncate">${e.invoiceNumber || e.fileName || 'Invoice'}</p>
+            <p class="text-[10px] text-on-surface-variant">${e.vendorName || 'Unknown'} · ${timeAgo(e.timestamp)}</p>
+          </div>
+          <span class="text-[9px] font-bold uppercase ${e.status==='approved'?'text-green-600':'text-amber-600'}">${e.status}</span>
+        </a>
+      `).join('');
+  }
 
   const dropZone = document.getElementById('drop-zone');
   const fileInput = document.getElementById('file-input');

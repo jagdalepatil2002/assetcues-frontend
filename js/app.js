@@ -254,10 +254,19 @@ function injectTopBar(title) {
         <input id="global-search" class="bg-transparent border-none focus:ring-0 text-sm w-full placeholder-on-surface-variant outline-none" placeholder="Search assets..." type="text" onkeydown="if(event.key==='Enter')globalSearch(this.value)"/>
       </div>
       <div id="connection-badge" class="hidden md:flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full"></div>
-      <button class="p-2 text-slate-600 hover:bg-slate-100 transition-colors rounded-full relative">
+      <button onclick="toggleNotifications()" class="p-2 text-slate-600 hover:bg-slate-100 transition-colors rounded-full relative" id="notif-btn">
         <span class="material-symbols-outlined">notifications</span>
-        <span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full animate-pulse"></span>
+        <span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full animate-pulse hidden" id="notif-dot"></span>
       </button>
+      <div id="notif-panel" class="hidden absolute top-14 right-16 w-80 max-h-96 bg-white rounded-xl shadow-2xl border border-outline-variant/20 overflow-hidden z-[100]">
+        <div class="px-4 py-3 border-b border-surface-container flex justify-between items-center">
+          <h4 class="text-sm font-bold">Notifications</h4>
+          <span class="text-[10px] font-bold text-primary" id="notif-count">0</span>
+        </div>
+        <div id="notif-list" class="overflow-y-auto max-h-72 divide-y divide-surface-container">
+          <p class="text-xs text-on-surface-variant text-center py-8">No notifications</p>
+        </div>
+      </div>
       <button onclick="openSettings()" class="hidden md:block p-2 text-slate-600 hover:bg-slate-100 transition-colors rounded-full">
         <span class="material-symbols-outlined">settings</span>
       </button>
@@ -473,6 +482,85 @@ function globalSearch(query) {
   }
 }
 window.globalSearch = globalSearch;
+
+/* ── Notification System ── */
+function toggleNotifications() {
+  const panel = document.getElementById('notif-panel');
+  if (panel) panel.classList.toggle('hidden');
+}
+window.toggleNotifications = toggleNotifications;
+
+// Close notifications when clicking outside
+document.addEventListener('click', (e) => {
+  const panel = document.getElementById('notif-panel');
+  const btn = document.getElementById('notif-btn');
+  if (panel && !panel.classList.contains('hidden') && !panel.contains(e.target) && !btn.contains(e.target)) {
+    panel.classList.add('hidden');
+  }
+});
+
+async function loadNotifications() {
+  const items = [];
+  const assets = Storage.getAssets();
+  const now = new Date();
+
+  // Warranty expiring within 30 days
+  assets.forEach(a => {
+    if (!a.warrantyEndDate) return;
+    const exp = new Date(a.warrantyEndDate);
+    const days = Math.ceil((exp - now) / (1000*60*60*24));
+    if (days > 0 && days <= 30) {
+      items.push({ icon: 'shield', color: 'text-amber-600 bg-amber-50', title: `Warranty expiring: ${a.shortName || a.name}`, detail: `${days} day${days>1?'s':''} remaining`, href: `asset-detail.html?id=${a.id}` });
+    } else if (days <= 0 && days > -30) {
+      items.push({ icon: 'warning', color: 'text-error bg-error-container', title: `Warranty EXPIRED: ${a.shortName || a.name}`, detail: `Expired ${Math.abs(days)} day${Math.abs(days)>1?'s':''} ago`, href: `asset-detail.html?id=${a.id}` });
+    }
+  });
+
+  // Pending reviews
+  const pending = Storage.getExtractions().filter(e => e.status === 'draft');
+  pending.forEach(e => {
+    items.push({ icon: 'rate_review', color: 'text-primary bg-primary-fixed', title: `Pending review: ${e.invoiceNumber || e.fileName}`, detail: `From ${e.vendorName || 'Unknown'}`, href: `review-detail.html?id=${e.id}` });
+  });
+
+  // Anomaly alerts
+  try {
+    const alerts = await Storage.fetchAlerts();
+    (alerts || []).forEach(al => {
+      items.push({ icon: 'error', color: 'text-error bg-error-container', title: al.title, detail: al.description || '', href: '#' });
+    });
+  } catch {}
+
+  // Update UI
+  const dot = document.getElementById('notif-dot');
+  const count = document.getElementById('notif-count');
+  const list = document.getElementById('notif-list');
+  if (dot) dot.classList.toggle('hidden', items.length === 0);
+  if (count) count.textContent = items.length > 0 ? `${items.length} new` : '0';
+  if (list) {
+    if (items.length === 0) {
+      list.innerHTML = '<p class="text-xs text-on-surface-variant text-center py-8">All clear — no notifications</p>';
+    } else {
+      list.innerHTML = items.map(n => `
+        <a href="${n.href}" class="flex items-start gap-3 px-4 py-3 hover:bg-surface-container-low transition-colors no-underline">
+          <div class="w-8 h-8 rounded-lg ${n.color} flex items-center justify-center shrink-0 mt-0.5">
+            <span class="material-symbols-outlined text-sm">${n.icon}</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-bold text-on-surface truncate">${n.title}</p>
+            <p class="text-[10px] text-on-surface-variant truncate">${n.detail}</p>
+          </div>
+        </a>
+      `).join('');
+    }
+  }
+}
+// Auto-load notifications after Storage.init
+const _origInit = Storage.init.bind(Storage);
+Storage.init = async function() {
+  await _origInit();
+  setTimeout(loadNotifications, 500);
+};
+window.loadNotifications = loadNotifications;
 
 /* ── Mobile Sidebar Toggle ── */
 function toggleMobileSidebar() {
