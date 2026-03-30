@@ -551,6 +551,14 @@ function _getStoredNotifs() {
 function _saveStoredNotifs(arr) {
   localStorage.setItem('ac_notifications', JSON.stringify(arr.slice(0, 30)));
 }
+function _getDismissed() {
+  try { return JSON.parse(localStorage.getItem('ac_notif_dismissed') || '[]'); } catch { return []; }
+}
+function _addDismissed(id) {
+  const arr = _getDismissed().filter(x => x !== id);
+  arr.push(id);
+  localStorage.setItem('ac_notif_dismissed', JSON.stringify(arr.slice(-100)));
+}
 function pushNotification(item) {
   item.id = item.id || `n_${Date.now()}`;
   item.ts = item.ts || new Date().toISOString();
@@ -561,9 +569,15 @@ function pushNotification(item) {
 }
 function dismissNotification(id) {
   _saveStoredNotifs(_getStoredNotifs().filter(n => n.id !== id));
+  _addDismissed(id);
   loadNotifications();
 }
 function clearAllNotifications() {
+  // Dismiss all current dynamic notifications by ID so they don't regenerate
+  const list = document.getElementById('notif-list');
+  if (list) {
+    list.querySelectorAll('[data-notif-id]').forEach(el => _addDismissed(el.dataset.notifId));
+  }
   _saveStoredNotifs([]);
   loadNotifications();
 }
@@ -587,8 +601,9 @@ document.addEventListener('click', (e) => {
 });
 
 async function loadNotifications() {
-  const stored = _getStoredNotifs(); // persistent (extraction complete etc.)
-  const dynamic = [];
+  const stored = _getStoredNotifs();
+  const dismissed = _getDismissed();
+  const allDynamic = [];
   const assets = Storage.getAssets();
   const now = new Date();
 
@@ -598,18 +613,21 @@ async function loadNotifications() {
     const exp = new Date(a.warrantyEndDate);
     const days = Math.ceil((exp - now) / (1000*60*60*24));
     if (days > 0 && days <= 30)
-      dynamic.push({ icon: 'shield', color: 'text-amber-600 bg-amber-50', title: `Warranty expiring: ${a.shortName || a.name}`, detail: `${days} day${days>1?'s':''} remaining`, href: `asset-detail.html?id=${a.id}` });
+      allDynamic.push({ id: `warranty_${a.id}`, icon: 'shield', color: 'text-amber-600 bg-amber-50', title: `Warranty expiring: ${a.shortName || a.name}`, detail: `${days} day${days>1?'s':''} remaining`, href: `asset-detail.html?id=${a.id}` });
     else if (days <= 0 && days > -30)
-      dynamic.push({ icon: 'warning', color: 'text-error bg-error-container', title: `Warranty EXPIRED: ${a.shortName || a.name}`, detail: `Expired ${Math.abs(days)} day${Math.abs(days)>1?'s':''} ago`, href: `asset-detail.html?id=${a.id}` });
+      allDynamic.push({ id: `warranty_exp_${a.id}`, icon: 'warning', color: 'text-error bg-error-container', title: `Warranty EXPIRED: ${a.shortName || a.name}`, detail: `Expired ${Math.abs(days)} day${Math.abs(days)>1?'s':''} ago`, href: `asset-detail.html?id=${a.id}` });
   });
 
   // Pending reviews
   Storage.getExtractions().filter(e => e.status === 'draft').forEach(e => {
-    dynamic.push({ icon: 'rate_review', color: 'text-primary bg-primary/10', title: `Pending review: ${e.invoiceNumber || e.fileName}`, detail: `From ${e.vendorName || 'Unknown'}`, href: `review-detail.html?id=${e.id}` });
+    allDynamic.push({ id: `review_${e.id}`, icon: 'rate_review', color: 'text-primary bg-primary/10', title: `Pending review: ${e.invoiceNumber || e.fileName}`, detail: `From ${e.vendorName || 'Unknown'}`, href: `review-detail.html?id=${e.id}` });
   });
 
   // Anomaly alerts
-  try { (await Storage.fetchAlerts() || []).forEach(al => dynamic.push({ icon: 'error', color: 'text-error bg-error-container', title: al.title, detail: al.description || '', href: '#' })); } catch {}
+  try { (await Storage.fetchAlerts() || []).forEach(al => allDynamic.push({ id: `alert_${al.id||al.title}`, icon: 'error', color: 'text-error bg-error-container', title: al.title, detail: al.description || '', href: '#' })); } catch {}
+
+  // Filter out dismissed dynamic notifications
+  const dynamic = allDynamic.filter(n => !dismissed.includes(n.id));
 
   const total = stored.length + dynamic.length;
   const dot = document.getElementById('notif-dot');
@@ -628,7 +646,7 @@ async function loadNotifications() {
   }
 
   const renderStored = stored.map(n => `
-    <div class="flex items-start gap-3 px-4 py-3 hover:bg-surface-container-low transition-colors group">
+    <div class="flex items-start gap-3 px-4 py-3 hover:bg-surface-container-low transition-colors group" data-notif-id="${n.id}">
       <a href="${n.href}" onclick="dismissNotification('${n.id}')" class="flex items-start gap-3 flex-1 no-underline min-w-0">
         <div class="w-8 h-8 rounded-lg ${n.color} flex items-center justify-center shrink-0 mt-0.5">
           <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1">${n.icon}</span>
@@ -644,15 +662,20 @@ async function loadNotifications() {
     </div>`).join('');
 
   const renderDynamic = dynamic.map(n => `
-    <a href="${n.href}" class="flex items-start gap-3 px-4 py-3 hover:bg-surface-container-low transition-colors no-underline">
-      <div class="w-8 h-8 rounded-lg ${n.color} flex items-center justify-center shrink-0 mt-0.5">
-        <span class="material-symbols-outlined text-sm">${n.icon}</span>
-      </div>
-      <div class="flex-1 min-w-0">
-        <p class="text-xs font-bold text-on-surface truncate">${n.title}</p>
-        <p class="text-[10px] text-on-surface-variant truncate">${n.detail}</p>
-      </div>
-    </a>`).join('');
+    <div class="flex items-start gap-3 px-4 py-3 hover:bg-surface-container-low transition-colors group" data-notif-id="${n.id}">
+      <a href="${n.href}" onclick="dismissNotification('${n.id}')" class="flex items-start gap-3 flex-1 no-underline min-w-0">
+        <div class="w-8 h-8 rounded-lg ${n.color} flex items-center justify-center shrink-0 mt-0.5">
+          <span class="material-symbols-outlined text-sm">${n.icon}</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-bold text-on-surface truncate">${n.title}</p>
+          <p class="text-[10px] text-on-surface-variant truncate">${n.detail}</p>
+        </div>
+      </a>
+      <button onclick="dismissNotification('${n.id}')" class="shrink-0 p-0.5 text-on-surface-variant opacity-0 group-hover:opacity-100 hover:text-error transition-all mt-0.5" title="Dismiss">
+        <span class="material-symbols-outlined text-[16px]">close</span>
+      </button>
+    </div>`).join('');
 
   list.innerHTML = renderStored + (dynamic.length && stored.length ? `<div class="px-4 py-1.5 bg-surface-container-low"><p class="text-[9px] font-bold uppercase tracking-widest text-on-surface-variant">System Alerts</p></div>` : '') + renderDynamic;
 }
