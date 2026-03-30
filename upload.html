@@ -164,22 +164,29 @@ tailwind.config = {
       <div class="col-span-12 xl:col-span-4 space-y-6">
         <!-- Usage Stats -->
         <div class="bg-primary text-on-primary rounded-xl p-6 shadow-lg" id="quota-card">
-          <h3 class="font-headline font-bold text-xs uppercase tracking-widest opacity-80 mb-4">AI Extraction Stats</h3>
-          <div class="flex items-end justify-between mb-2">
-            <div class="flex items-end gap-1">
-              <span class="text-3xl font-extrabold" id="quota-used">0</span>
-              <span class="text-base font-bold opacity-60 mb-0.5">/ 100</span>
+          <h3 class="font-headline font-bold text-xs uppercase tracking-widest opacity-70 mb-5">AI Extraction Stats</h3>
+          <!-- Big number -->
+          <div class="flex items-baseline gap-2 mb-1">
+            <span class="text-5xl font-black font-headline tracking-tight" id="quota-used">0</span>
+            <span class="text-lg font-bold opacity-50">/ 100</span>
+          </div>
+          <p class="text-xs opacity-70 mb-4">invoices processed</p>
+          <!-- Progress bar -->
+          <div class="w-full bg-white/20 h-1.5 rounded-full overflow-hidden mb-4">
+            <div class="bg-white h-full rounded-full transition-all" id="quota-bar" style="width: 0%"></div>
+          </div>
+          <!-- Stats row -->
+          <div class="flex gap-6 text-sm">
+            <div class="flex flex-col">
+              <span class="font-black text-xl font-headline" id="quota-invoices">0</span>
+              <span class="text-[10px] uppercase tracking-widest opacity-70">Invoices</span>
             </div>
-            <span class="text-sm opacity-80">invoices processed</span>
+            <div class="w-px bg-white/20"></div>
+            <div class="flex flex-col">
+              <span class="font-black text-xl font-headline" id="quota-assets">0</span>
+              <span class="text-[10px] uppercase tracking-widest opacity-70">Assets</span>
+            </div>
           </div>
-          <div class="flex gap-4 mt-3 text-xs opacity-80">
-            <div><span class="font-bold text-white" id="quota-invoices">0</span> invoices</div>
-            <div><span class="font-bold text-white" id="quota-assets">0</span> assets</div>
-          </div>
-          <div class="w-full bg-white/20 h-2 rounded-full overflow-hidden mt-3">
-            <div class="bg-white h-full transition-all" id="quota-bar" style="width: 0%"></div>
-          </div>
-          <p class="text-xs mt-3 opacity-80 leading-relaxed" id="quota-detail">Loading usage data...</p>
         </div>
 
         <!-- Guidelines Card -->
@@ -255,7 +262,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('quota-assets').textContent = assets.length;
   const pct = Math.min(Math.round((totalPages / 100) * 100), 100);
   document.getElementById('quota-bar').style.width = pct + '%';
-  document.getElementById('quota-detail').textContent = `${exts.length} invoice${exts.length !== 1 ? 's' : ''} processed. ${assets.length} assets created.`;
 
   // Populate copilot recent activity
   const recentEl = document.getElementById('copilot-recent');
