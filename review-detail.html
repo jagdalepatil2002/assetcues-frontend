@@ -149,13 +149,7 @@ function _renderPreviewPanel(url, ext, valInfo) {
     previewHtml = `<iframe src="${url}" class="w-full border-none" style="height:820px;display:block;"></iframe>`;
   }
 
-  const mismatch = !valInfo.allPass ? `
-    <div class="absolute top-[50px] right-[20px] flex items-center gap-2">
-      <div class="bg-error text-white h-6 w-6 rounded-full flex items-center justify-center animate-pulse"><span class="material-symbols-outlined text-xs">report</span></div>
-      <div class="bg-error/90 text-white text-[10px] font-bold px-2 py-1 rounded">MISMATCH DETECTED</div>
-    </div>` : '';
-
-  document.getElementById('invoice-preview-box').innerHTML = previewHtml + mismatch;
+  document.getElementById('invoice-preview-box').innerHTML = previewHtml;
 }
 
 async function renderDetail() {
@@ -251,20 +245,7 @@ async function renderDetail() {
                </div>
              </div>
              
-             <!-- Discrepancy Block -->
-             ${!valInfo.allPass ? `
-             <div class="mt-6 p-4 rounded-xl border-2 border-error-container bg-error-container/10">
-               <div class="flex items-start gap-4">
-                 <div class="h-8 w-8 bg-error-container text-error rounded-full flex items-center justify-center shrink-0">
-                   <span class="material-symbols-outlined text-[18px]">warning</span>
-                 </div>
-                 <div class="flex-1">
-                   <p class="text-sm font-bold text-error mb-1">Calculation Discrepancy Detected</p>
-                   <p class="text-[11px] text-on-surface-variant mb-2">The calculated total of line items or taxes does not match the extracted grand total on the document.</p>
-                   ${valInfo.checks.filter(c => !c.pass).map(c => `<div class="bg-white/50 rounded flex justify-between p-2 text-[10px] font-mono"><span class="text-error font-bold">${c.label}</span> <span>Extracted: ${c.extracted} ≠ Calc: ${c.calculated}</span></div>`).join('')}
-                 </div>
-               </div>
-             </div>` : `<div class="mt-4 flex items-center gap-2 text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-100"><span class="material-symbols-outlined text-[16px]">verified</span> Pre-calc math validated automatically.</div>`}
+             <!-- Math validated silently -->
            </div>
          </section>
 
