@@ -460,27 +460,32 @@ async function startExtraction() {
       await Storage.saveInvoiceFile(savedId, file);
 
       _extracting = false;
-      // Show complete state for 5s then fade out — notification persists in bell
+      // Show complete state — stays until user clicks "Go to Review" or bell notification
       progressTitle.textContent = 'Extraction Complete';
-      progressDetail.textContent = 'Check the notification bell to review.';
+      progressDetail.textContent = 'Notification sent to bell — or click below to review now.';
       document.getElementById('progress-status-label').textContent = 'Done';
+      progressBar.style.width = '100%';
+      // Add a "Go to Review" button inside progress section
       const ps = document.getElementById('progress-section');
-      ps.style.transition = 'opacity 0.6s ease';
-      setTimeout(() => { ps.style.opacity = '0'; }, 4400);
-      setTimeout(() => {
-        ps.classList.add('hidden');
-        ps.style.opacity = '';
-        if (typeof pushNotification === 'function') {
-          pushNotification({
-            icon: 'description',
-            color: 'text-primary bg-primary/10',
-            title: `Ready to review: ${file.name}`,
-            detail: 'Click to approve and sync assets',
-            href: `review-detail.html?id=${savedId}`,
-          });
-        }
-        btn.disabled = false;
-      }, 5000);
+      const existingBtn = ps.querySelector('#go-review-btn');
+      if (!existingBtn) {
+        const reviewBtn = document.createElement('div');
+        reviewBtn.id = 'go-review-btn';
+        reviewBtn.className = 'px-6 pb-5';
+        reviewBtn.innerHTML = `<a href="review-detail.html?id=${savedId}" class="inline-flex items-center gap-2 px-5 py-2.5 signature-gradient text-white rounded-lg font-bold text-sm hover:opacity-90 transition-opacity no-underline"><span class="material-symbols-outlined text-[18px]">rate_review</span> Go to Review</a>
+          <button onclick="document.getElementById('progress-section').classList.add('hidden')" class="ml-3 text-xs text-on-surface-variant hover:text-on-surface font-medium">Dismiss</button>`;
+        ps.appendChild(reviewBtn);
+      }
+      if (typeof pushNotification === 'function') {
+        pushNotification({
+          icon: 'description',
+          color: 'text-primary bg-primary/10',
+          title: `Ready to review: ${file.name}`,
+          detail: 'Click to approve and sync assets',
+          href: `review-detail.html?id=${savedId}`,
+        });
+      }
+      btn.disabled = false;
 
     } catch (dbErr) {
       _extracting = false;

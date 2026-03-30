@@ -619,7 +619,7 @@ async function loadNotifications() {
 
   if (dot) dot.classList.toggle('hidden', total === 0);
   if (count) count.textContent = total > 0 ? `${total} new` : '';
-  if (clearBtn) clearBtn.classList.toggle('hidden', stored.length === 0);
+  if (clearBtn) clearBtn.classList.toggle('hidden', total === 0);
 
   if (!list) return;
   if (total === 0) {
