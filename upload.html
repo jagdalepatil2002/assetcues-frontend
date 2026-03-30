@@ -460,32 +460,20 @@ async function startExtraction() {
       await Storage.saveInvoiceFile(savedId, file);
 
       _extracting = false;
-      // Show complete state — stays until user clicks "Go to Review" or bell notification
       progressTitle.textContent = 'Extraction Complete';
-      progressDetail.textContent = 'Notification sent to bell — or click below to review now.';
+      progressDetail.textContent = 'Redirecting to review...';
       document.getElementById('progress-status-label').textContent = 'Done';
       progressBar.style.width = '100%';
-      // Add a "Go to Review" button inside progress section
+      // Auto-redirect in 1.5s — show fallback button in case redirect is slow/blocked
       const ps = document.getElementById('progress-section');
-      const existingBtn = ps.querySelector('#go-review-btn');
-      if (!existingBtn) {
-        const reviewBtn = document.createElement('div');
-        reviewBtn.id = 'go-review-btn';
-        reviewBtn.className = 'px-6 pb-5';
-        reviewBtn.innerHTML = `<a href="review-detail.html?id=${savedId}" class="inline-flex items-center gap-2 px-5 py-2.5 signature-gradient text-white rounded-lg font-bold text-sm hover:opacity-90 transition-opacity no-underline"><span class="material-symbols-outlined text-[18px]">rate_review</span> Go to Review</a>
-          <button onclick="document.getElementById('progress-section').classList.add('hidden')" class="ml-3 text-xs text-on-surface-variant hover:text-on-surface font-medium">Dismiss</button>`;
-        ps.appendChild(reviewBtn);
-      }
+      const fallback = document.createElement('div');
+      fallback.className = 'px-6 pb-5';
+      fallback.innerHTML = `<a href="review-detail.html?id=${savedId}" class="inline-flex items-center gap-2 px-5 py-2.5 signature-gradient text-white rounded-lg font-bold text-sm hover:opacity-90 transition-opacity no-underline"><span class="material-symbols-outlined text-[18px]">rate_review</span> Go to Review</a>`;
+      ps.appendChild(fallback);
       if (typeof pushNotification === 'function') {
-        pushNotification({
-          icon: 'description',
-          color: 'text-primary bg-primary/10',
-          title: `Ready to review: ${file.name}`,
-          detail: 'Click to approve and sync assets',
-          href: `review-detail.html?id=${savedId}`,
-        });
+        pushNotification({ icon: 'description', color: 'text-primary bg-primary/10', title: `Ready to review: ${file.name}`, detail: 'Click to approve and sync assets', href: `review-detail.html?id=${savedId}` });
       }
-      btn.disabled = false;
+      setTimeout(() => { window.location.href = `review-detail.html?id=${savedId}`; }, 1500);
 
     } catch (dbErr) {
       _extracting = false;
