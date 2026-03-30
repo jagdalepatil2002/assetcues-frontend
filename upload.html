@@ -105,28 +105,45 @@ tailwind.config = {
         </div>
 
         <!-- Progress UI -->
-        <section id="progress-section" class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden hidden">
-          <div class="bg-surface-container-high px-6 py-4 flex items-center justify-between">
-            <h3 class="font-headline font-bold text-sm uppercase tracking-wider">Extraction Active</h3>
+        <section id="progress-section" class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 overflow-hidden hidden">
+          <!-- Header -->
+          <div class="signature-gradient px-6 py-3 flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <span class="flex h-2 w-2 rounded-full bg-primary animate-pulse"></span>
-              <span class="text-xs text-primary font-bold">Processing</span>
+              <span class="material-symbols-outlined text-white text-[18px] animate-pulse" style="font-variation-settings:'FILL' 1">neurology</span>
+              <h3 class="font-headline font-bold text-sm text-white uppercase tracking-wider">AI Extraction Pipeline</h3>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="flex h-2 w-2 rounded-full bg-white animate-ping"></span>
+              <span id="progress-status-label" class="text-xs text-white/80 font-bold">Initializing...</span>
             </div>
           </div>
-          <div class="p-6 flex items-center gap-6">
-            <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center extracting">
-              <span class="material-symbols-outlined text-primary">neurology</span>
+          <!-- Stage Steps -->
+          <div class="px-6 pt-4 pb-2 flex items-center gap-2">
+            <div class="flex items-center gap-1.5" id="stage-upload">
+              <span class="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-black">1</span>
+              <span class="text-[10px] font-bold text-primary uppercase tracking-wide">Upload</span>
             </div>
-            <div class="flex-1">
-              <div class="flex justify-between mb-1">
-                <h4 id="progress-title" class="font-bold text-on-surface">Uploading</h4>
-                <span id="progress-pct" class="text-xs font-bold text-primary italic">0%</span>
-              </div>
-              <div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
-                <div id="progress-bar" class="bg-primary h-full transition-all duration-500" style="width: 0%"></div>
-              </div>
-              <p id="progress-detail" class="text-[10px] text-on-surface-variant mt-2 font-label uppercase">Initializing pipeline...</p>
+            <div class="flex-1 h-px bg-surface-container-high mx-1"></div>
+            <div class="flex items-center gap-1.5 opacity-40" id="stage-ai">
+              <span class="w-5 h-5 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center text-[10px] font-black">2</span>
+              <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wide">AI Processing</span>
             </div>
+            <div class="flex-1 h-px bg-surface-container-high mx-1"></div>
+            <div class="flex items-center gap-1.5 opacity-40" id="stage-done">
+              <span class="w-5 h-5 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center text-[10px] font-black">3</span>
+              <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wide">Complete</span>
+            </div>
+          </div>
+          <!-- Progress Bar -->
+          <div class="px-6 pb-5">
+            <div class="flex justify-between items-center mb-1.5">
+              <h4 id="progress-title" class="font-bold text-on-surface text-sm truncate max-w-[70%]">Uploading</h4>
+              <span id="progress-pct" class="text-xs font-black text-primary tabular-nums">0%</span>
+            </div>
+            <div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+              <div id="progress-bar" class="h-full rounded-full transition-all duration-700 signature-gradient" style="width: 0%"></div>
+            </div>
+            <p id="progress-detail" class="text-[10px] text-on-surface-variant mt-2 font-label uppercase tracking-wider">Initializing pipeline...</p>
           </div>
         </section>
 
@@ -373,20 +390,43 @@ async function startExtraction() {
   const progressPct = document.getElementById('progress-pct');
   const progressBar = document.getElementById('progress-bar');
 
+  const _setStage = (active) => {
+    const stages = { upload: 'stage-upload', ai: 'stage-ai', done: 'stage-done' };
+    const activeStyles = 'opacity-100';
+    const inactiveStyles = 'opacity-40';
+    const activeNumCls = 'bg-primary text-white';
+    const inactiveNumCls = 'bg-surface-container-high text-on-surface-variant';
+    Object.entries(stages).forEach(([key, id]) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const isActive = key === active;
+      el.classList.toggle(inactiveStyles, !isActive);
+      el.classList.toggle(activeStyles, isActive);
+      const num = el.querySelector('span');
+      if (num) { num.className = num.className.replace(/(bg-\S+|text-\S+)/g, ''); num.classList.add(...(isActive ? activeNumCls : inactiveNumCls).split(' ')); }
+    });
+  };
+
   const result = await Api.extractInvoice(file, (stage, pct) => {
     progressPct.textContent = pct + '%';
     progressBar.style.width = pct + '%';
     if (stage === 'uploading') {
-      progressTitle.textContent = 'Uploading: ' + file.name;
-      progressDetail.textContent = `Transmitting directly to Neural Pipeline`;
+      _setStage('upload');
+      progressTitle.textContent = file.name;
+      progressDetail.textContent = 'Transmitting to neural pipeline...';
+      document.getElementById('progress-status-label').textContent = 'Uploading';
     }
     if (stage === 'processing') {
-      progressTitle.textContent = 'Extracting data...';
-      progressDetail.textContent = 'Gemini VLM processing line items & totals';
+      _setStage('ai');
+      progressTitle.textContent = 'Gemini AI Extracting...';
+      progressDetail.textContent = 'Reading line items, totals & asset metadata';
+      document.getElementById('progress-status-label').textContent = 'AI Processing';
     }
     if (stage === 'complete') {
-      progressTitle.textContent = 'Complete!';
-      progressDetail.textContent = 'Extraction successful, verifying signatures';
+      _setStage('done');
+      progressTitle.textContent = 'Extraction Complete';
+      progressDetail.textContent = 'Saving to database...';
+      document.getElementById('progress-status-label').textContent = 'Saving';
     }
   });
 

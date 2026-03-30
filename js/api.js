@@ -60,25 +60,54 @@ const Api = {
     formData.append('tenant_id', settings.tenantId || 'poc');
     formData.append('mode', 'creation');
 
-    if (onProgress) onProgress('uploading', 10);
+    if (onProgress) onProgress('uploading', 5);
     this._log('UPLOAD', '⬆️  Uploading file to AI pipeline...');
     const startTime = performance.now();
 
     try {
-      const res = await fetch(url, {
-        method: 'POST',
-        body: formData,
-        // No timeout — extraction can take 30-120s
+      // Use XHR instead of fetch to get real upload progress events
+      const { status, responseText } = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        let processingTimer = null;
+        let fakePct = 38;
+
+        // Real upload progress: 5% → 35%
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable && onProgress) {
+            const pct = Math.max(5, Math.round((e.loaded / e.total) * 35));
+            onProgress('uploading', pct);
+          }
+        };
+
+        // Upload to server done → start fake AI processing ticker: 38% → 82%
+        xhr.upload.onload = () => {
+          if (onProgress) onProgress('processing', 38);
+          processingTimer = setInterval(() => {
+            fakePct = Math.min(fakePct + 1, 82);
+            if (onProgress) onProgress('processing', fakePct);
+          }, 2500);
+        };
+
+        xhr.onload = () => {
+          if (processingTimer) clearInterval(processingTimer);
+          resolve({ status: xhr.status, responseText: xhr.responseText });
+        };
+
+        xhr.onerror = () => { if (processingTimer) clearInterval(processingTimer); reject(new Error('Failed to fetch')); };
+        xhr.onabort = () => { if (processingTimer) clearInterval(processingTimer); reject(new Error('Request aborted')); };
+
+        xhr.open('POST', url);
+        xhr.send(formData);
       });
 
       const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
-      this._log('AI', `⏱️  Response received in ${elapsed}s (HTTP ${res.status})`);
+      this._log('AI', `⏱️  Response received in ${elapsed}s (HTTP ${status})`);
 
-      if (onProgress) onProgress('processing', 70);
+      if (onProgress) onProgress('processing', 90);
 
-      if (!res.ok) {
-        const body = await res.text();
-        this._err('AI', `❌ Backend error (HTTP ${res.status}):`);
+      if (status < 200 || status >= 300) {
+        const body = responseText;
+        this._err('AI', `❌ Backend error (HTTP ${status}):`);
         this._err('AI', body);
 
         // Try to parse for model-specific errors
@@ -92,10 +121,10 @@ const Api = {
           }
         } catch {}
 
-        throw new Error(`Extraction failed (HTTP ${res.status}): ${body.substring(0, 200)}`);
+        throw new Error(`Extraction failed (HTTP ${status}): ${body.substring(0, 200)}`);
       }
 
-      const data = await res.json();
+      const data = JSON.parse(responseText);
       if (onProgress) onProgress('complete', 100);
 
       // Log extraction results
