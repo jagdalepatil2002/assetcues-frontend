@@ -89,20 +89,71 @@
 
     /* Mobile responsiveness */
     @media (max-width: 768px) {
-      #sidebar { transform: translateX(-100%) !important; position: fixed !important; z-index: 999 !important; width: 260px !important; height: 100vh !important; top: 0 !important; }
-      #sidebar.open { transform: translateX(0) !important; }
-      .sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:998; }
-      .sidebar-overlay.active { display:block; }
-      main { margin-left: 0 !important; padding-bottom: 88px !important; }
-      .px-6, .px-8 { padding-left: 16px !important; padding-right: 16px !important; }
+      /* Sidebar — smooth slide in/out */
+      #sidebar {
+        transform: translateX(-100%) !important;
+        position: fixed !important;
+        z-index: 999 !important;
+        width: 72vw !important;
+        max-width: 280px !important;
+        height: 100vh !important;
+        top: 0 !important;
+        transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: none;
+      }
+      #sidebar.open {
+        transform: translateX(0) !important;
+        box-shadow: 8px 0 32px rgba(0,0,0,0.18) !important;
+      }
+      /* Overlay — fade in/out */
+      .sidebar-overlay {
+        display: block !important;
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,0.45);
+        z-index: 998;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease;
+      }
+      .sidebar-overlay.active { opacity: 1 !important; pointer-events: all !important; }
+
+      /* Main content */
+      main { margin-left: 0 !important; padding-bottom: 90px !important; }
+      .px-6, .px-8 { padding-left: 14px !important; padding-right: 14px !important; }
+
+      /* Grid stack to single column */
       .grid-cols-12 { grid-template-columns: 1fr !important; }
-      .lg\\:col-span-8, .lg\\:col-span-7, .lg\\:col-span-4, .lg\\:col-span-5 { grid-column: span 1 !important; }
-      h3.text-3xl { font-size: 1.25rem !important; }
-      h3.text-4xl { font-size: 1.5rem !important; }
-      .text-2xl { font-size: 1.125rem !important; }
-      table { font-size: 12px; }
+      [class*="col-span-"] { grid-column: span 1 / span 1 !important; }
+
+      /* Typography scale-down */
+      h1.text-4xl { font-size: 1.5rem !important; line-height: 1.25 !important; }
+      .text-3xl { font-size: 1.25rem !important; }
+      .text-2xl { font-size: 1.1rem !important; }
+
+      /* Tables scroll horizontally instead of leaking */
+      .overflow-x-auto, table { max-width: 100%; }
+      table { font-size: 12px; display: block; overflow-x: auto; white-space: nowrap; }
       table th, table td { padding: 6px 8px !important; }
+
+      /* Notification panel — full width on mobile, no overflow */
+      #notif-panel {
+        position: fixed !important;
+        top: 56px !important;
+        right: 8px !important;
+        left: 8px !important;
+        width: auto !important;
+      }
+
+      /* Prevent any fixed-width items from leaking */
+      .w-72 { width: 100% !important; }
+      .max-w-\[1600px\] { max-width: 100% !important; }
       .hidden-mobile { display: none !important; }
+
+      /* Gap/spacing reduction */
+      .gap-8 { gap: 1rem !important; }
+      .gap-6 { gap: 0.75rem !important; }
+      .py-6 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+      .pb-32 { padding-bottom: 2rem !important; }
     }
   `;
   document.head.appendChild(style);
