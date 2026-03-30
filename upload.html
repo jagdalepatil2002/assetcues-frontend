@@ -460,14 +460,27 @@ async function startExtraction() {
       await Storage.saveInvoiceFile(savedId, file);
 
       _extracting = false;
-      // Show complete state for 5s then fade out and redirect
+      // Show complete state for 5s then fade out — notification persists in bell
       progressTitle.textContent = 'Extraction Complete';
-      progressDetail.textContent = 'Redirecting to review in 5 seconds...';
+      progressDetail.textContent = 'Check the notification bell to review.';
       document.getElementById('progress-status-label').textContent = 'Done';
       const ps = document.getElementById('progress-section');
       ps.style.transition = 'opacity 0.6s ease';
       setTimeout(() => { ps.style.opacity = '0'; }, 4400);
-      setTimeout(() => { window.location.href = `review-detail.html?id=${savedId}`; }, 5000);
+      setTimeout(() => {
+        ps.classList.add('hidden');
+        ps.style.opacity = '';
+        if (typeof pushNotification === 'function') {
+          pushNotification({
+            icon: 'description',
+            color: 'text-primary bg-primary/10',
+            title: `Ready to review: ${file.name}`,
+            detail: 'Click to approve and sync assets',
+            href: `review-detail.html?id=${savedId}`,
+          });
+        }
+        btn.disabled = false;
+      }, 5000);
 
     } catch (dbErr) {
       _extracting = false;
