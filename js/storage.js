@@ -279,15 +279,26 @@ const Storage = {
     return 1001;
   },
 
+  _splitSerials(raw) {
+    // Normalize a serial string or array — splits slash-separated values the VLM returns as one string
+    const arr = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+    const out = [];
+    arr.forEach(s => {
+      if (s && s.includes('/')) s.split('/').forEach(p => { if (p.trim()) out.push(p.trim()); });
+      else if (s) out.push(s);
+    });
+    return out;
+  },
+
   _parseSerialNumbers(json) {
     const serials = [];
     (json.assets_to_create || []).forEach(a => { if (a.serial_number) serials.push(a.serial_number); });
-    if (serials.length > 0) return serials;
+    if (serials.length > 0) return this._splitSerials(serials);
     (json.line_items || []).forEach(li => {
       if (li.serial_numbers_listed && Array.isArray(li.serial_numbers_listed))
         li.serial_numbers_listed.forEach(s => serials.push(s));
     });
-    return serials;
+    return this._splitSerials(serials);
   },
 
   async _expandAssets(extraction) {
@@ -320,7 +331,7 @@ const Storage = {
         const srcLine = lineItemsAll[a.source_line_index] || {};
         const hsnCode = _unwrap(srcLine.hsn_sac_code) || null;
         // Serial: prefer asset-level, then positional from line item's list, then fallback array
-        const lineSerials = srcLine.serial_numbers_listed || [];
+        const lineSerials = this._splitSerials(srcLine.serial_numbers_listed || []);
         const serialFromLine = lineSerials[a.quantity_index - 1] || lineSerials[0] || null;
         assetRows.push({
           org_id: ORG_ID, extraction_id: extraction.id, asset_number: assetNumber,

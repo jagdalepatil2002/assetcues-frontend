@@ -1,476 +1,600 @@
 <!DOCTYPE html>
-<html lang="en" class="light"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Scan Asset | AssetCues</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="js/theme.js"></script>
+<html lang="en" class="light">
 
-<style>
-    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-    .signature-gradient { background: linear-gradient(135deg, #005DA9 0%, #0176D3 100%); }
-    .glass-panel { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
-    .cloud-shadow { box-shadow: 0 12px 32px -4px rgba(26, 28, 28, 0.08); }
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>Scan Asset | AssetCues</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+    rel="stylesheet" />
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="js/theme.js"></script>
+
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+
+    .signature-gradient {
+      background: linear-gradient(135deg, #005DA9 0%, #0176D3 100%);
+    }
+
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    .cloud-shadow {
+      box-shadow: 0 12px 32px -4px rgba(26, 28, 28, 0.08);
+    }
 
     /* Scanner styles */
-    #reader { width: 100%; height: 100%; position: absolute; inset: 0; background: #000; z-index: 10; }
-    #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
-    #reader img { display: none !important; }
+    #reader {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      inset: 0;
+      background: #000;
+      z-index: 10;
+    }
+
+    #reader video {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+    }
+
+    #reader img {
+      display: none !important;
+    }
 
     /* Crosshair Custom */
     .scan-line {
-        position: absolute; left: 16px; right: 16px; height: 2px;
-        background: linear-gradient(90deg, transparent, #a4c9ff, transparent);
-        box-shadow: 0 0 15px #a4c9ff;
-        animation: scan-sweep 2s linear infinite;
-        top: 10px;
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #a4c9ff, transparent);
+      box-shadow: 0 0 15px #a4c9ff;
+      animation: scan-sweep 2s linear infinite;
+      top: 10px;
     }
+
     @keyframes scan-sweep {
-        0%   { top: 10px; opacity: 1; }
-        90%  { top: calc(100% - 10px); opacity: 1; }
-        100% { top: 10px; opacity: 0; }
+      0% {
+        top: 10px;
+        opacity: 1;
+      }
+
+      90% {
+        top: calc(100% - 10px);
+        opacity: 1;
+      }
+
+      100% {
+        top: 10px;
+        opacity: 0;
+      }
     }
-</style>
-<script id="tailwind-config">
+  </style>
+  <script id="tailwind-config">
     tailwind.config = {
-        darkMode: "class",
-        theme: {
-            extend: {
-                colors: {
-                    "error-container": "#ffdad6", "secondary-fixed-dim": "#adc8f2", "on-primary-container": "#fefcff",
-                    "on-error": "#ffffff", "tertiary-fixed-dim": "#ffb68b", "surface-container-lowest": "#ffffff",
-                    "on-secondary-container": "#415b7f", "surface-dim": "#dadada", "surface-bright": "#f9f9f9",
-                    "surface-container": "#eeeeee", "on-primary-fixed-variant": "#004884", "surface-variant": "#e2e2e2",
-                    "on-background": "#1a1c1c", "primary-fixed": "#d4e3ff", "primary-container": "#0176d3",
-                    "error": "#ba1a1a", "tertiary-container": "#bc5800", "primary-fixed-dim": "#a4c9ff",
-                    "inverse-surface": "#2f3131", "tertiary": "#964500", "on-tertiary": "#ffffff",
-                    "inverse-primary": "#a4c9ff", "on-tertiary-fixed-variant": "#753400", "on-secondary-fixed": "#001c39",
-                    "on-surface-variant": "#414752", "on-secondary-fixed-variant": "#2d486b", "surface-container-high": "#e8e8e8",
-                    "surface-container-highest": "#e2e2e2", "outline-variant": "#c0c7d4", "surface-tint": "#005fac",
-                    "primary": "#005da9", "secondary-container": "#b9d3fe", "on-tertiary-container": "#fffcff",
-                    "on-primary": "#ffffff", "outline": "#717784", "on-surface": "#1a1c1c",
-                    "surface-container-low": "#f3f3f3", "background": "#f9f9f9", "on-error-container": "#93000a",
-                    "on-tertiary-fixed": "#321200", "secondary-fixed": "#d4e3ff", "secondary": "#466084",
-                    "surface": "#f9f9f9", "on-primary-fixed": "#001c39", "inverse-on-surface": "#f1f1f1",
-                    "tertiary-fixed": "#ffdbc8", "on-secondary": "#ffffff"
-                },
-                fontFamily: { "headline": ["Manrope"], "body": ["Inter"], "label": ["Inter"] },
-            },
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "error-container": "#ffdad6", "secondary-fixed-dim": "#adc8f2", "on-primary-container": "#fefcff",
+            "on-error": "#ffffff", "tertiary-fixed-dim": "#ffb68b", "surface-container-lowest": "#ffffff",
+            "on-secondary-container": "#415b7f", "surface-dim": "#dadada", "surface-bright": "#f9f9f9",
+            "surface-container": "#eeeeee", "on-primary-fixed-variant": "#004884", "surface-variant": "#e2e2e2",
+            "on-background": "#1a1c1c", "primary-fixed": "#d4e3ff", "primary-container": "#0176d3",
+            "error": "#ba1a1a", "tertiary-container": "#bc5800", "primary-fixed-dim": "#a4c9ff",
+            "inverse-surface": "#2f3131", "tertiary": "#964500", "on-tertiary": "#ffffff",
+            "inverse-primary": "#a4c9ff", "on-tertiary-fixed-variant": "#753400", "on-secondary-fixed": "#001c39",
+            "on-surface-variant": "#414752", "on-secondary-fixed-variant": "#2d486b", "surface-container-high": "#e8e8e8",
+            "surface-container-highest": "#e2e2e2", "outline-variant": "#c0c7d4", "surface-tint": "#005fac",
+            "primary": "#005da9", "secondary-container": "#b9d3fe", "on-tertiary-container": "#fffcff",
+            "on-primary": "#ffffff", "outline": "#717784", "on-surface": "#1a1c1c",
+            "surface-container-low": "#f3f3f3", "background": "#f9f9f9", "on-error-container": "#93000a",
+            "on-tertiary-fixed": "#321200", "secondary-fixed": "#d4e3ff", "secondary": "#466084",
+            "surface": "#f9f9f9", "on-primary-fixed": "#001c39", "inverse-on-surface": "#f1f1f1",
+            "tertiary-fixed": "#ffdbc8", "on-secondary": "#ffffff"
+          },
+          fontFamily: { "headline": ["Manrope"], "body": ["Inter"], "label": ["Inter"] },
         },
+      },
     }
-</script>
+  </script>
 </head>
+
 <body class="bg-surface font-body text-on-surface flex flex-col h-screen overflow-hidden">
 
-<!-- Topbar -->
-<header id="topbar" class="shrink-0 flex justify-between items-center w-full px-6 md:px-8 py-3 bg-white border-b border-surface-container z-50"></header>
+  <!-- Topbar -->
+  <header id="topbar"
+    class="shrink-0 flex justify-between items-center w-full px-6 md:px-8 py-3 bg-white border-b border-surface-container z-50">
+  </header>
 
-<div class="flex flex-1 overflow-hidden relative">
-  <!-- Sidebar -->
-  <aside id="sidebar" class="h-[calc(100vh-64px)] w-64 flex flex-col py-6 bg-slate-50 border-r border-slate-200 shrink-0 z-40"></aside>
-  
-  <!-- Main Content Area -->
-  <main class="flex-1 flex flex-col h-full overflow-y-auto bg-surface" id="content">
-    <div class="p-8 pb-32 max-w-[1600px] mx-auto w-full space-y-8">
-        
+  <div class="flex flex-1 overflow-hidden relative">
+    <!-- Sidebar -->
+    <aside id="sidebar"
+      class="h-[calc(100vh-64px)] w-64 flex flex-col py-6 bg-slate-50 border-r border-slate-200 shrink-0 z-40"></aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col h-full overflow-y-auto bg-surface" id="content">
+      <div class="p-8 pb-32 max-w-[1600px] mx-auto w-full space-y-8">
+
         <!-- Page Header -->
         <div class="flex flex-col md:flex-row justify-between items-end gap-6 pb-6 border-b border-surface-container">
-            <div>
-                <nav class="flex items-center gap-2 text-xs font-label text-outline mb-2 tracking-widest uppercase">
-                    <span>Inventory</span>
-                    <span class="material-symbols-outlined text-[10px]">chevron_right</span>
-                    <span class="text-primary font-bold">Scan & Digital Twin</span>
-                </nav>
-                <h1 class="font-headline font-extrabold text-4xl text-on-surface tracking-tight">Scan Asset</h1>
-            </div>
-            <div class="flex gap-3">
-                <button onclick="flipCamera()" class="px-6 py-2.5 rounded-lg border border-outline-variant text-sm font-semibold hover:bg-surface-container-low transition-colors flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[18px]">cameraswitch</span> Flip Camera
-                </button>
-            </div>
+          <div>
+            <nav class="flex items-center gap-2 text-xs font-label text-outline mb-2 tracking-widest uppercase">
+              <span>Inventory</span>
+              <span class="material-symbols-outlined text-[10px]">chevron_right</span>
+              <span class="text-primary font-bold">Scan & Digital Twin</span>
+            </nav>
+            <h1 class="font-headline font-extrabold text-4xl text-on-surface tracking-tight">Scan Asset</h1>
+          </div>
+          <div class="flex gap-3">
+            <button onclick="flipCamera()"
+              class="px-6 py-2.5 rounded-lg border border-outline-variant text-sm font-semibold hover:bg-surface-container-low transition-colors flex items-center gap-2">
+              <span class="material-symbols-outlined text-[18px]">cameraswitch</span> Flip Camera
+            </button>
+          </div>
         </div>
 
         <!-- Bento Layout Content -->
         <div class="grid grid-cols-12 gap-6 items-start">
-            
-            <!-- Camera Feed Section (Digital Twin Interface) -->
-            <div class="col-span-12 lg:col-span-8 space-y-6">
-                <!-- Camera Container -->
-                <div class="relative rounded-xl overflow-hidden bg-on-background shadow-xl border border-outline-variant/10 aspect-[4/5] md:aspect-video group">
-                    <div id="reader" class="absolute inset-0 z-10"></div>
-                    
-                    <!-- HUD Elements (Z-index 20 over video) -->
-                    <div class="absolute inset-0 p-6 md:p-8 flex flex-col justify-between pointer-events-none z-20" id="scan-overlay" style="display:none">
-                        <!-- Top HUD -->
-                        <div class="flex justify-between items-start">
-                            <div class="glass-panel px-4 py-2 rounded-lg flex items-center gap-3 text-on-surface">
-                                <span class="w-2 h-2 rounded-full" id="status-dot"></span>
-                                <span class="text-xs font-bold font-label tracking-wider uppercase" id="status-text">Initializing...</span>
-                            </div>
-                        </div>
-                        
-                        <!-- Scanning Reticle -->
-                        <div class="self-center w-64 h-64 md:w-80 md:h-80 border-2 border-white/20 rounded-[2rem] relative">
-                            <!-- Corners -->
-                            <div class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary-fixed-dim rounded-tl-[2rem]"></div>
-                            <div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary-fixed-dim rounded-tr-[2rem]"></div>
-                            <div class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary-fixed-dim rounded-bl-[2rem]"></div>
-                            <div class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary-fixed-dim rounded-br-[2rem]"></div>
-                            <!-- Laser -->
-                            <div class="scan-line"></div>
-                        </div>
 
-                        <!-- Bottom HUD -->
-                        <div class="flex justify-center">
-                            <p class="glass-panel px-6 py-3 rounded-full text-sm font-bold shadow-lg">Align QR Code within frame</p>
-                        </div>
-                    </div>
+          <!-- Camera Feed Section (Digital Twin Interface) -->
+          <div class="col-span-12 lg:col-span-8 space-y-6">
+            <!-- Camera Container -->
+            <div
+              class="relative rounded-xl overflow-hidden bg-on-background shadow-xl border border-outline-variant/10 aspect-[4/5] md:aspect-video group">
+              <div id="reader" class="absolute inset-0 z-10"></div>
 
-                    <!-- Idle / Fallback -->
-                    <div id="idle-state" class="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80 text-white">
-                        <span class="material-symbols-outlined text-6xl mb-3 text-primary-fixed">qr_code_Scanner</span>
-                        <p class="font-headline font-bold text-lg">Initializing Camera</p>
-                        <p class="text-xs text-outline mt-1 px-8 text-center" id="idle-msg">Please allow camera permissions if prompted</p>
-                    </div>
+              <!-- HUD Elements (Z-index 20 over video) -->
+              <div class="absolute inset-0 p-6 md:p-8 flex flex-col justify-between pointer-events-none z-20"
+                id="scan-overlay" style="display:none">
+                <!-- Top HUD -->
+                <div class="flex justify-between items-start">
+                  <div class="glass-panel px-4 py-2 rounded-lg flex items-center gap-3 text-on-surface">
+                    <span class="w-2 h-2 rounded-full" id="status-dot"></span>
+                    <span class="text-xs font-bold font-label tracking-wider uppercase"
+                      id="status-text">Initializing...</span>
+                  </div>
                 </div>
 
-                <!-- Match Panel & Manual Input -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    
-                    <!-- AI Match / Success Result -->
-                    <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20 relative overflow-hidden" id="match-card">
-                        <div class="absolute top-0 right-0 px-3 py-1 bg-surface-container-high text-on-surface-variant text-[10px] font-bold uppercase tracking-widest" id="match-badge">Waiting</div>
-                        <h3 class="font-headline font-bold text-lg mb-4 flex items-center gap-2">
-                            <span class="material-symbols-outlined text-tertiary">psychology</span>
-                            Smart Recognition
-                        </h3>
-                        <div class="flex items-center gap-4 hidden" id="result-success">
-                            <div class="w-16 h-16 rounded bg-primary-fixed/20 flex items-center justify-center overflow-hidden shrink-0" id="result-img-wrap">
-                                <span class="material-symbols-outlined text-3xl text-primary" style="font-variation-settings:'FILL' 1" id="result-check-icon">check_circle</span>
-                            </div>
-                            <div class="flex-1">
-                                <p class="text-sm font-bold text-on-surface">Asset Found</p>
-                                <p class="text-xs font-bold text-primary mt-0.5 truncate max-w-[200px]" id="result-assetnum">Redirecting...</p>
-                                <a id="result-link" href="#" class="mt-2 inline-block px-3 py-1.5 bg-primary text-white text-[10px] font-bold uppercase rounded hover:opacity-90">Open Record</a>
-                            </div>
-                        </div>
-                        <div id="result-idle" class="flex flex-col items-center justify-center py-2 opacity-50">
-                            <span class="material-symbols-outlined animate-spin text-3xl mb-2">autorenew</span>
-                            <span class="text-xs font-bold uppercase tracking-widest">Scanning Feed</span>
-                        </div>
-                    </div>
-
-                    <!-- Manual Entry -->
-                    <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20">
-                        <h3 class="font-headline font-bold text-lg mb-4 flex items-center gap-2">
-                            <span class="material-symbols-outlined text-primary">keyboard</span>
-                            Manual Entry
-                        </h3>
-                        <div>
-                            <label class="block text-[10px] font-bold text-outline mb-1.5 uppercase tracking-wider">Asset ID / Serial Number</label>
-                            <div class="flex gap-2 relative">
-                                <input id="manual-input" type="text" placeholder="e.g. SN-992-X" class="flex-1 bg-surface-container-low border border-outline-variant/30 rounded py-2 px-3 text-sm focus:bg-white focus:ring-2 focus:ring-primary focus:outline-none transition-all font-bold" onkeydown="if(event.key==='Enter')manualLookup()"/>
-                                <button onclick="manualLookup()" class="bg-primary text-white px-4 rounded font-bold text-sm hover:opacity-90">Verify</button>
-                            </div>
-                            <p id="manual-error" class="absolute text-[10px] text-error font-bold mt-1.5 hidden">Record not found. Try scanning QR.</p>
-                        </div>
-                    </div>
+                <!-- Scanning Reticle -->
+                <div class="self-center w-64 h-64 md:w-80 md:h-80 border-2 border-white/20 rounded-[2rem] relative">
+                  <!-- Corners -->
+                  <div
+                    class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary-fixed-dim rounded-tl-[2rem]">
+                  </div>
+                  <div
+                    class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary-fixed-dim rounded-tr-[2rem]">
+                  </div>
+                  <div
+                    class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary-fixed-dim rounded-bl-[2rem]">
+                  </div>
+                  <div
+                    class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary-fixed-dim rounded-br-[2rem]">
+                  </div>
+                  <!-- Laser -->
+                  <div class="scan-line"></div>
                 </div>
+
+                <!-- Bottom HUD -->
+                <div class="flex justify-center">
+                  <p class="glass-panel px-6 py-3 rounded-full text-sm font-bold shadow-lg">Align QR Code within frame
+                  </p>
+                </div>
+              </div>
+
+              <!-- Idle / Fallback -->
+              <div id="idle-state"
+                class="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80 text-white">
+                <span class="material-symbols-outlined text-6xl mb-3 text-primary-fixed">qr_code_Scanner</span>
+                <p class="font-headline font-bold text-lg">Initializing Camera</p>
+                <p class="text-xs text-outline mt-1 px-8 text-center" id="idle-msg">Please allow camera permissions if
+                  prompted</p>
+              </div>
             </div>
 
-            <!-- Right Rail: Scan History & Context -->
-            <div class="col-span-12 lg:col-span-4 space-y-6 flex flex-col h-full">
-                
-                <div class="bg-surface-container-lowest rounded-xl p-6 flex flex-col flex-1 border border-outline-variant/20 shadow-sm relative overflow-hidden">
-                    <div class="flex items-center justify-between mb-6 relative z-10">
-                        <h3 class="font-headline font-extrabold text-lg">Session History</h3>
-                        <button onclick="clearHistory()" class="text-xs font-bold text-outline hover:text-primary transition-colors uppercase tracking-wider">Clear</button>
-                    </div>
-                    
-                    <div class="space-y-3 relative z-10 max-h-[500px] overflow-y-auto pr-2 custom-scroll" id="recent-scans-list">
-                        <!-- Items injected by JS -->
-                        <div class="flex flex-col items-center justify-center h-48 opacity-50">
-                            <span class="material-symbols-outlined text-4xl mb-2">history</span>
-                            <span class="text-xs font-bold uppercase tracking-widest">No Recent Scans</span>
-                        </div>
-                    </div>
+            <!-- Match Panel & Manual Input -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                    <!-- Background flourish -->
-                    <div class="absolute -right-16 -bottom-16 w-48 h-48 bg-primary/5 rounded-full blur-2xl pointer-events-none"></div>
+              <!-- AI Match / Success Result -->
+              <div
+                class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20 relative overflow-hidden"
+                id="match-card">
+                <div
+                  class="absolute top-0 right-0 px-3 py-1 bg-surface-container-high text-on-surface-variant text-[10px] font-bold uppercase tracking-widest"
+                  id="match-badge">Waiting</div>
+                <h3 class="font-headline font-bold text-lg mb-4 flex items-center gap-2">
+                  <span class="material-symbols-outlined text-tertiary">psychology</span>
+                  Smart Recognition
+                </h3>
+                <div class="flex items-center gap-4 hidden" id="result-success">
+                  <div
+                    class="w-16 h-16 rounded bg-primary-fixed/20 flex items-center justify-center overflow-hidden shrink-0"
+                    id="result-img-wrap">
+                    <span class="material-symbols-outlined text-3xl text-primary"
+                      style="font-variation-settings:'FILL' 1" id="result-check-icon">check_circle</span>
+                  </div>
+                  <div class="flex-1">
+                    <p class="text-sm font-bold text-on-surface">Asset Found</p>
+                    <p class="text-xs font-bold text-primary mt-0.5 truncate max-w-[200px]" id="result-assetnum">
+                      Redirecting...</p>
+                    <a id="result-link" href="#"
+                      class="mt-2 inline-block px-3 py-1.5 bg-primary text-white text-[10px] font-bold uppercase rounded hover:opacity-90">Open
+                      Record</a>
+                  </div>
                 </div>
+                <div id="result-idle" class="flex flex-col items-center justify-center py-2 opacity-50">
+                  <span class="material-symbols-outlined animate-spin text-3xl mb-2">autorenew</span>
+                  <span class="text-xs font-bold uppercase tracking-widest">Scanning Feed</span>
+                </div>
+              </div>
 
-                <!-- Strategic Summary Hook -->
-                <div class="bg-primary text-white p-6 rounded-xl relative overflow-hidden shadow-lg">
-                    <div class="absolute -right-4 -bottom-4 opacity-10 pointer-events-none">
-                        <span class="material-symbols-outlined text-9xl">contact_support</span>
-                    </div>
-                    <h4 class="font-headline font-bold mb-2">Experiencing Issues?</h4>
-                    <p class="text-[11px] text-white/80 leading-relaxed mb-4">Ensure adequate lighting and clean the QR tag surface. Alternatively, use absolute manual entry.</p>
-                    <button onclick="document.getElementById('manual-input').focus()" class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider hover:underline bg-white/10 px-3 py-1.5 rounded w-max">
-                        Focus Manual Entry <span class="material-symbols-outlined text-xs">keyboard_tab</span>
-                    </button>
+              <!-- Manual Entry -->
+              <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/20">
+                <h3 class="font-headline font-bold text-lg mb-4 flex items-center gap-2">
+                  <span class="material-symbols-outlined text-primary">keyboard</span>
+                  Manual Entry
+                </h3>
+                <div>
+                  <label class="block text-[10px] font-bold text-outline mb-1.5 uppercase tracking-wider">Asset ID /
+                    Serial Number</label>
+                  <div class="flex gap-2 relative">
+                    <input id="manual-input" type="text" placeholder="e.g. SN-992-X"
+                      class="flex-1 bg-surface-container-low border border-outline-variant/30 rounded py-2 px-3 text-sm focus:bg-white focus:ring-2 focus:ring-primary focus:outline-none transition-all font-bold"
+                      onkeydown="if(event.key==='Enter')manualLookup()" />
+                    <button onclick="manualLookup()"
+                      class="bg-primary text-white px-4 rounded font-bold text-sm hover:opacity-90">Verify</button>
+                  </div>
+                  <p id="manual-error" class="absolute text-[10px] text-error font-bold mt-1.5 hidden">Record not found.
+                    Try scanning QR.</p>
                 </div>
+              </div>
             </div>
+          </div>
+
+          <!-- Right Rail: Scan History & Context -->
+          <div class="col-span-12 lg:col-span-4 space-y-6 flex flex-col h-full">
+
+            <div
+              class="bg-surface-container-lowest rounded-xl p-6 flex flex-col flex-1 border border-outline-variant/20 shadow-sm relative overflow-hidden">
+              <div class="flex items-center justify-between mb-6 relative z-10">
+                <h3 class="font-headline font-extrabold text-lg">Session History</h3>
+                <button onclick="clearHistory()"
+                  class="text-xs font-bold text-outline hover:text-primary transition-colors uppercase tracking-wider">Clear</button>
+              </div>
+
+              <div class="space-y-3 relative z-10 max-h-[500px] overflow-y-auto pr-2 custom-scroll"
+                id="recent-scans-list">
+                <!-- Items injected by JS -->
+                <div class="flex flex-col items-center justify-center h-48 opacity-50">
+                  <span class="material-symbols-outlined text-4xl mb-2">history</span>
+                  <span class="text-xs font-bold uppercase tracking-widest">No Recent Scans</span>
+                </div>
+              </div>
+
+              <!-- Background flourish -->
+              <div
+                class="absolute -right-16 -bottom-16 w-48 h-48 bg-primary/5 rounded-full blur-2xl pointer-events-none">
+              </div>
+            </div>
+
+            <!-- Strategic Summary Hook -->
+            <div class="bg-primary text-white p-6 rounded-xl relative overflow-hidden shadow-lg">
+              <div class="absolute -right-4 -bottom-4 opacity-10 pointer-events-none">
+                <span class="material-symbols-outlined text-9xl">contact_support</span>
+              </div>
+              <h4 class="font-headline font-bold mb-2">Experiencing Issues?</h4>
+              <p class="text-[11px] text-white/80 leading-relaxed mb-4">Ensure adequate lighting and clean the QR tag
+                surface. Alternatively, use absolute manual entry.</p>
+              <button onclick="document.getElementById('manual-input').focus()"
+                class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider hover:underline bg-white/10 px-3 py-1.5 rounded w-max">
+                Focus Manual Entry <span class="material-symbols-outlined text-xs">keyboard_tab</span>
+              </button>
+            </div>
+          </div>
         </div>
-    </div>
-  </main>
-</div>
+      </div>
+    </main>
+  </div>
 
-<script src="js/supabase.js"></script>
-<script src="js/storage.js"></script>
-<script src="js/api.js"></script>
-<script src="js/app.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
 
-<script>
-let html5QrcodeScanner = null;
-let scanHistory = [];
+  <script>
+    let html5QrcodeScanner = null;
+    let scanHistory = [];
 
-document.addEventListener('DOMContentLoaded', async () => {
-  await Storage.init();
-  injectSidebar('scanner.html');
-  injectTopBar('Scan Asset');
-  // Load scan history from Supabase
-  try {
-    const audits = await Supabase.query('physical_audits', { order: 'scanned_at.desc', limit: 50 });
-    scanHistory = (audits || []).map(a => ({
-      assetId: a.asset_id,
-      assetUrl: `asset-detail.html?id=${a.asset_id}`,
-      label: a.notes || `Asset ${a.asset_id}`,
-      scannedAt: a.scanned_at,
-    }));
-  } catch(e) { console.warn('Scan history load failed:', e); }
-  renderRecentScans();
-  
-  // Need to wait slightly for UI to settle before initializing html5Qrcode over ID #reader
-  setTimeout(startScanner, 200);
-});
-
-let availableCameras = [];
-let currentCameraIndex = 0;
-
-async function startScanner(flip = false) {
-  const idleEl = document.getElementById('idle-state');
-  const overlayEl = document.getElementById('scan-overlay');
-  const statusText = document.getElementById('status-text');
-
-  // Stop and destroy any previous instance cleanly
-  if (html5QrcodeScanner) {
-    try {
-      if (html5QrcodeScanner.isScanning) await html5QrcodeScanner.stop();
-      html5QrcodeScanner.clear();
-    } catch(e) {}
-    html5QrcodeScanner = null;
-  }
-
-  document.getElementById('result-success').classList.add('hidden');
-  document.getElementById('result-idle').classList.remove('hidden');
-  document.getElementById('match-badge').textContent = 'Live Feed';
-  document.getElementById('match-badge').className = "absolute top-0 right-0 px-3 py-1 bg-primary text-white text-[10px] font-bold uppercase tracking-widest";
-  document.getElementById('match-card').classList.remove('ring-2', 'ring-primary');
-
-  const isMobile = window.innerWidth < 768;
-  const boxSize = isMobile ? Math.min(window.innerWidth - 100, 220) : 200;
-  const config = { fps: 15, qrbox: { width: boxSize, height: boxSize }, disableFlip: false };
-
-  const onStarted = () => {
-    if (idleEl) idleEl.style.display = 'none';
-    if (overlayEl) overlayEl.style.display = 'flex';
-    statusText.textContent = 'Awaiting Tag';
-    updateStatusDot('bg-green-400', 'animate-pulse');
-  };
-  const onFailed = (err) => {
-    console.warn('Camera start failed:', err);
-    statusText.textContent = 'Camera Off';
-    updateStatusDot('bg-error', '');
-    if (idleEl) {
-      idleEl.querySelector('p.font-headline').textContent = 'Camera Unavailable';
-      document.getElementById('idle-msg').textContent = 'Use manual entry to search for assets';
-    }
-  };
-
-  html5QrcodeScanner = new Html5Qrcode('reader');
-
-  try {
-    if (flip && availableCameras.length > 1) {
-      currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
-      await html5QrcodeScanner.start(availableCameras[currentCameraIndex].id, config, onScanSuccess, () => {});
-      onStarted();
-      return;
-    }
-
-    // Default start (attempts rear camera first)
-    await html5QrcodeScanner.start({ facingMode: 'environment' }, config, onScanSuccess, () => {});
-    onStarted();
-    
-    // Once permissions are granted by the start above, cache available cameras in background
-    if (availableCameras.length === 0) {
-      Html5Qrcode.getCameras().then(c => { availableCameras = c || []; }).catch(()=>{});
-    }
-  } catch (e1) {
-    // Fallback if environment facingMode fails
-    try {
-      await html5QrcodeScanner.start({ facingMode: 'user' }, config, onScanSuccess, () => {});
-      onStarted();
-      if (availableCameras.length === 0) {
-        Html5Qrcode.getCameras().then(c => { availableCameras = c || []; }).catch(()=>{});
-      }
-    } catch (e2) {
-      // Final fallback: just try first available camera by ID if we somehow have it
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Storage.init();
+      injectSidebar('scanner.html');
+      injectTopBar('Scan Asset');
+      // Load scan history from Supabase
       try {
-        if (availableCameras.length === 0) availableCameras = await Html5Qrcode.getCameras() || [];
-        if (availableCameras.length > 0) {
-           await html5QrcodeScanner.start(availableCameras[0].id, config, onScanSuccess, () => {});
-           onStarted();
-        } else {
-           onFailed(e2);
+        const audits = await Supabase.query('physical_audits', { order: 'scanned_at.desc', limit: 50 });
+        scanHistory = (audits || []).map(a => ({
+          assetId: a.asset_id,
+          assetUrl: `asset-detail.html?id=${a.asset_id}`,
+          label: a.notes || `Asset ${a.asset_id}`,
+          scannedAt: a.scanned_at,
+        }));
+      } catch (e) { console.warn('Scan history load failed:', e); }
+      renderRecentScans();
+
+      // Need to wait slightly for UI to settle before initializing html5Qrcode over ID #reader
+      setTimeout(startScanner, 200);
+    });
+
+    let availableCameras = [];
+    let currentCameraIndex = 0;
+
+    async function startScanner(flip = false) {
+      const idleEl = document.getElementById('idle-state');
+      const overlayEl = document.getElementById('scan-overlay');
+      const statusText = document.getElementById('status-text');
+
+      // Stop and destroy any previous instance cleanly
+      if (html5QrcodeScanner) {
+        try {
+          if (html5QrcodeScanner.isScanning) await html5QrcodeScanner.stop();
+          html5QrcodeScanner.clear();
+        } catch (e) { }
+        html5QrcodeScanner = null;
+      }
+
+      document.getElementById('result-success').classList.add('hidden');
+      document.getElementById('result-idle').classList.remove('hidden');
+      document.getElementById('match-badge').textContent = 'Live Feed';
+      document.getElementById('match-badge').className = "absolute top-0 right-0 px-3 py-1 bg-primary text-white text-[10px] font-bold uppercase tracking-widest";
+      document.getElementById('match-card').classList.remove('ring-2', 'ring-primary');
+
+      const isMobile = window.innerWidth < 768;
+      const boxSize = isMobile ? Math.min(window.innerWidth - 100, 220) : 200;
+      const config = { fps: 15, qrbox: { width: boxSize, height: boxSize }, disableFlip: false };
+
+      const onStarted = () => {
+        if (idleEl) idleEl.style.display = 'none';
+        if (overlayEl) overlayEl.style.display = 'flex';
+        statusText.textContent = 'Awaiting Tag';
+        updateStatusDot('bg-green-400', 'animate-pulse');
+      };
+      const onFailed = (err) => {
+        console.warn('Camera start failed:', err);
+        statusText.textContent = 'Camera Off';
+        updateStatusDot('bg-error', '');
+        if (idleEl) {
+          idleEl.querySelector('p.font-headline').textContent = 'Camera Unavailable';
+          document.getElementById('idle-msg').textContent = 'Use manual entry to search for assets';
         }
-      } catch (e3) {
-        onFailed(e3);
+      };
+
+      html5QrcodeScanner = new Html5Qrcode('reader');
+
+      try {
+        if (flip && availableCameras.length > 1) {
+          currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
+          await html5QrcodeScanner.start(availableCameras[currentCameraIndex].id, config, onScanSuccess, () => { });
+          onStarted();
+          return;
+        }
+
+        // Default start (attempts rear camera first)
+        await html5QrcodeScanner.start({ facingMode: 'environment' }, config, onScanSuccess, () => { });
+        onStarted();
+
+        // Once permissions are granted by the start above, cache available cameras in background
+        if (availableCameras.length === 0) {
+          Html5Qrcode.getCameras().then(c => { availableCameras = c || []; }).catch(() => { });
+        }
+      } catch (e1) {
+        // Fallback if environment facingMode fails
+        try {
+          await html5QrcodeScanner.start({ facingMode: 'user' }, config, onScanSuccess, () => { });
+          onStarted();
+          if (availableCameras.length === 0) {
+            Html5Qrcode.getCameras().then(c => { availableCameras = c || []; }).catch(() => { });
+          }
+        } catch (e2) {
+          // Final fallback: just try first available camera by ID if we somehow have it
+          try {
+            if (availableCameras.length === 0) availableCameras = await Html5Qrcode.getCameras() || [];
+            if (availableCameras.length > 0) {
+              await html5QrcodeScanner.start(availableCameras[0].id, config, onScanSuccess, () => { });
+              onStarted();
+            } else {
+              onFailed(e2);
+            }
+          } catch (e3) {
+            onFailed(e3);
+          }
+        }
       }
     }
-  }
-}
 
-function onScanSuccess(decodedText) {
-  if (html5QrcodeScanner) { try { html5QrcodeScanner.stop(); } catch(e) {} }
+    function onScanSuccess(decodedText) {
+      if (html5QrcodeScanner) { try { html5QrcodeScanner.stop(); } catch (e) { } }
 
-  // Parse asset ID
-  let assetId = null;
-  let assetUrl = null;
+      console.log('[SCANNER] Raw QR content:', JSON.stringify(decodedText));
 
-  try {
-    const url = new URL(decodedText, window.location.href);
-    assetId = url.searchParams.get('id');
-    if (assetId) {
-      assetUrl = `asset-detail.html?id=${assetId}`;
-    } else {
-      throw new Error("Missing ID param in URL");
+      // Parse asset ID
+      let assetId = null;
+      let assetUrl = null;
+
+      // Strategy 1: Regex extract ?id= from any URL-like string (most reliable)
+      const idMatch = decodedText.match(/[?&]id=([^&\s#]+)/i);
+      if (idMatch) {
+        assetId = decodeURIComponent(idMatch[1]);
+        assetUrl = `asset-detail.html?id=${assetId}`;
+        console.log('[SCANNER] Strategy 1 (regex ?id=) matched:', assetId);
+      }
+
+      // Strategy 2: Try URL parsing if strategy 1 failed
+      if (!assetId) {
+        try {
+          const url = new URL(decodedText);
+          const paramId = url.searchParams.get('id');
+          if (paramId) {
+            assetId = paramId;
+            assetUrl = `asset-detail.html?id=${assetId}`;
+            console.log('[SCANNER] Strategy 2 (URL parse) matched:', assetId);
+          }
+        } catch (e) {
+          // Not a valid absolute URL — that's fine, move to strategy 3
+        }
+      }
+
+      // Strategy 3: Raw asset lookup (plain text like AST-1004, serial numbers, UUIDs)
+      if (!assetId) {
+        const assets = Storage.getAssets();
+        const dt = decodedText.trim();
+        const dtLower = dt.toLowerCase();
+        const parsedNum = parseInt(dt.replace(/\D/g, ''), 10);
+        const numToMatch = isNaN(parsedNum) ? -1 : parsedNum;
+
+        const match = assets.find(a =>
+          a.id === dt ||
+          (a.tempAssetId || '').toLowerCase() === dtLower ||
+          a.assetNumber === numToMatch ||
+          (a.serialNumber || '').toLowerCase() === dtLower ||
+          (a.barcode || '').toLowerCase() === dtLower ||
+          String(a.assetId) === dt
+        );
+        if (match) {
+          assetId = match.id;
+          assetUrl = `asset-detail.html?id=${assetId}`;
+          console.log('[SCANNER] Strategy 3 (asset lookup) matched:', assetId, 'via', match.tempAssetId);
+        }
+      }
+
+      if (!assetId || !assetUrl) {
+        // Unknown QR — show what was scanned for debugging
+        console.warn('[SCANNER] No match found. Raw content:', decodedText);
+        console.warn('[SCANNER] Assets in cache:', Storage.getAssets().length);
+        document.getElementById('status-text').textContent = 'No Match';
+        updateStatusDot('bg-error', '');
+
+        // Show the scanned content in the result panel
+        document.getElementById('result-idle').classList.add('hidden');
+        document.getElementById('result-success').classList.remove('hidden');
+        document.getElementById('result-check-icon').style.display = '';
+        const wrap = document.getElementById('result-img-wrap');
+        wrap.innerHTML = `<span class="material-symbols-outlined text-3xl text-error" style="font-variation-settings:'FILL' 1">error</span>`;
+        document.getElementById('result-assetnum').textContent = decodedText.length > 60 ? decodedText.substring(0, 57) + '...' : decodedText;
+        document.getElementById('result-link').textContent = 'Try Again';
+        document.getElementById('result-link').href = '#';
+        document.getElementById('result-link').onclick = (e) => { e.preventDefault(); restartScanner(); };
+        document.getElementById('match-badge').textContent = 'Not Found';
+        document.getElementById('match-badge').className = "absolute top-0 right-0 px-3 py-1 bg-error text-white text-[10px] font-bold uppercase tracking-widest";
+
+        setTimeout(restartScanner, 4000);
+        return;
+      }
+
+      // Cache lookup for history
+      const asset = assetId ? Storage.getAsset(assetId) : null;
+      const assetLabel = asset ? `${asset.tempAssetId || 'Asset'} — ${asset.name}` : `ID: ${assetId}`;
+
+      // Save to Supabase physical_audits
+      const scanEntry = { assetId, assetUrl, label: assetLabel, scannedAt: new Date().toISOString() };
+      scanHistory = [scanEntry, ...scanHistory.filter(s => s.assetId !== assetId)].slice(0, 50);
+      if (assetId) {
+        Supabase.insert('physical_audits', {
+          asset_id: assetId, audit_method: 'qr_scan',
+          notes: assetLabel, scanned_at: new Date().toISOString(),
+        }).catch(e => console.warn('Scan save failed:', e));
+      }
+
+      // Show UI Result
+      document.getElementById('status-text').textContent = 'Matched';
+      updateStatusDot('bg-primary', '');
+
+      document.getElementById('result-idle').classList.add('hidden');
+      document.getElementById('result-success').classList.remove('hidden');
+      document.getElementById('result-assetnum').textContent = assetLabel;
+      document.getElementById('result-link').href = assetUrl;
+
+      // Show asset image if available
+      if (assetId) {
+        const imgData = Storage.getAssetImage(assetId);
+        if (imgData) {
+          const wrap = document.getElementById('result-img-wrap');
+          document.getElementById('result-check-icon').style.display = 'none';
+          wrap.innerHTML = `<img src="${imgData}" style="width:100%;height:100%;object-fit:cover;border-radius:0.5rem;" alt="Asset"/>`;
+        }
+      }
+
+      document.getElementById('match-badge').textContent = 'Match Detected (99%)';
+      document.getElementById('match-badge').className = "absolute top-0 right-0 px-3 py-1 bg-tertiary-container text-on-tertiary-container text-[10px] font-bold uppercase tracking-widest";
+      document.getElementById('match-card').classList.add('ring-2', 'ring-primary/50');
+
+      renderRecentScans();
+
+      // Auto redirect
+      setTimeout(() => { window.location.href = assetUrl; }, 1500);
     }
-  } catch(e) {
-    // raw lookup (Plain text QR: AST-1004, S/N, Barcode, etc)
-    const assets = Storage.getAssets();
-    const dt = decodedText.toLowerCase().trim();
-    const parsedNum = parseInt(decodedText.replace(/\D/g, ''), 10);
-    const numToMatch = isNaN(parsedNum) ? -1 : parsedNum;
-    
-    const match = assets.find(a => 
-      a.id === decodedText || 
-      (a.tempAssetId||'').toLowerCase() === dt || 
-      a.assetNumber === numToMatch || 
-      (a.serialNumber||'').toLowerCase() === dt || 
-      (a.barcode||'').toLowerCase() === dt || 
-      String(a.assetId) === decodedText
-    );
-    if (match) { 
-      assetId = match.id; 
-      assetUrl = `asset-detail.html?id=${assetId}`; 
+
+    function restartScanner() {
+      document.getElementById('status-text').textContent = 'Restarting...';
+      updateStatusDot('bg-secondary', 'animate-pulse');
+      startScanner(false);
     }
-  }
 
-  if (!assetId || !assetUrl) {
-    // Unknown QR
-    document.getElementById('status-text').textContent = 'Unknown QR';
-    updateStatusDot('bg-error', '');
-    setTimeout(restartScanner, 2000);
-    return;
-  }
-
-  // Cache lookup for history
-  const asset = assetId ? Storage.getAsset(assetId) : null;
-  const assetLabel = asset ? `${asset.tempAssetId || 'Asset'} — ${asset.name}` : `ID: ${assetId}`;
-
-  // Save to Supabase physical_audits
-  const scanEntry = { assetId, assetUrl, label: assetLabel, scannedAt: new Date().toISOString() };
-  scanHistory = [scanEntry, ...scanHistory.filter(s => s.assetId !== assetId)].slice(0, 50);
-  if (assetId) {
-    Supabase.insert('physical_audits', {
-      asset_id: assetId, audit_method: 'qr_scan',
-      notes: assetLabel, scanned_at: new Date().toISOString(),
-    }).catch(e => console.warn('Scan save failed:', e));
-  }
-
-  // Show UI Result
-  document.getElementById('status-text').textContent = 'Matched';
-  updateStatusDot('bg-primary', '');
-
-  document.getElementById('result-idle').classList.add('hidden');
-  document.getElementById('result-success').classList.remove('hidden');
-  document.getElementById('result-assetnum').textContent = assetLabel;
-  document.getElementById('result-link').href = assetUrl;
-
-  // Show asset image if available
-  if (assetId) {
-    const imgData = Storage.getAssetImage(assetId);
-    if (imgData) {
-      const wrap = document.getElementById('result-img-wrap');
-      document.getElementById('result-check-icon').style.display = 'none';
-      wrap.innerHTML = `<img src="${imgData}" style="width:100%;height:100%;object-fit:cover;border-radius:0.5rem;" alt="Asset"/>`;
+    function flipCamera() {
+      document.getElementById('status-text').textContent = 'Flipping...';
+      updateStatusDot('bg-secondary', 'animate-pulse');
+      startScanner(true);
     }
-  }
-  
-  document.getElementById('match-badge').textContent = 'Match Detected (99%)';
-  document.getElementById('match-badge').className = "absolute top-0 right-0 px-3 py-1 bg-tertiary-container text-on-tertiary-container text-[10px] font-bold uppercase tracking-widest";
-  document.getElementById('match-card').classList.add('ring-2', 'ring-primary/50');
 
-  renderRecentScans();
-  
-  // Auto redirect
-  setTimeout(() => { window.location.href = assetUrl; }, 1500);
-}
+    function manualLookup() {
+      const val = document.getElementById('manual-input').value.trim();
+      if (!val) return;
+      const errEl = document.getElementById('manual-error');
+      errEl.classList.add('hidden');
 
-function restartScanner() {
-  document.getElementById('status-text').textContent = 'Restarting...';
-  updateStatusDot('bg-secondary', 'animate-pulse');
-  startScanner(false);
-}
+      const assets = Storage.getAssets();
+      const vl = val.toLowerCase().trim();
+      const match = assets.find(a => a.id === val || (a.tempAssetId || '').toLowerCase() === vl || a.assetNumber === parseInt(val.replace(/\D/g, '')) || (a.serialNumber || '').toLowerCase() === vl || (a.barcode || '').toLowerCase() === vl || String(a.assetId) === val);
 
-function flipCamera() {
-  document.getElementById('status-text').textContent = 'Flipping...';
-  updateStatusDot('bg-secondary', 'animate-pulse');
-  startScanner(true);
-}
+      if (match) {
+        onScanSuccess(`asset-detail.html?id=${match.id}`);
+      } else {
+        errEl.classList.remove('hidden');
+        setTimeout(() => errEl.classList.add('hidden'), 3000);
+      }
+    }
 
-function manualLookup() {
-  const val = document.getElementById('manual-input').value.trim();
-  if (!val) return;
-  const errEl = document.getElementById('manual-error');
-  errEl.classList.add('hidden');
+    function updateStatusDot(colorCls, animCls) {
+      const dot = document.getElementById('status-dot');
+      if (dot) dot.className = `w-2 h-2 rounded-full ${colorCls} ${animCls}`;
+    }
 
-  const assets = Storage.getAssets();
-  const vl = val.toLowerCase().trim();
-  const match = assets.find(a => a.id === val || (a.tempAssetId||'').toLowerCase() === vl || a.assetNumber === parseInt(val.replace(/\D/g,'')) || (a.serialNumber||'').toLowerCase() === vl || (a.barcode||'').toLowerCase() === vl || String(a.assetId) === val);
+    async function clearHistory() {
+      scanHistory = [];
+      await Supabase.deleteWhere('physical_audits');
+      renderRecentScans();
+      showToast('Scan history cleared', 'info');
+    }
 
-  if (match) {
-    onScanSuccess(`asset-detail.html?id=${match.id}`);
-  } else {
-    errEl.classList.remove('hidden');
-    setTimeout(() => errEl.classList.add('hidden'), 3000);
-  }
-}
+    function renderRecentScans() {
+      const el = document.getElementById('recent-scans-list');
+      if (!scanHistory.length) {
+        el.innerHTML = '<div class="flex flex-col items-center justify-center h-48 opacity-50"><span class="material-symbols-outlined text-4xl mb-2">history</span><span class="text-xs font-bold uppercase tracking-widest">No Recent Scans</span></div>';
+        return;
+      }
 
-function updateStatusDot(colorCls, animCls) {
-  const dot = document.getElementById('status-dot');
-  if (dot) dot.className = `w-2 h-2 rounded-full ${colorCls} ${animCls}`;
-}
-
-async function clearHistory() {
-    scanHistory = [];
-    await Supabase.deleteWhere('physical_audits');
-    renderRecentScans();
-    showToast('Scan history cleared', 'info');
-}
-
-function renderRecentScans() {
-  const el = document.getElementById('recent-scans-list');
-  if (!scanHistory.length) {
-    el.innerHTML = '<div class="flex flex-col items-center justify-center h-48 opacity-50"><span class="material-symbols-outlined text-4xl mb-2">history</span><span class="text-xs font-bold uppercase tracking-widest">No Recent Scans</span></div>';
-    return;
-  }
-  
-  el.innerHTML = scanHistory.map((s, idx) => `
+      el.innerHTML = scanHistory.map((s, idx) => `
     <a href="${s.assetUrl}" class="bg-surface-container-low p-4 rounded-lg hover:ring-1 hover:ring-primary/30 transition-all cursor-pointer block group no-underline">
         <div class="flex items-start justify-between">
             <div class="flex gap-3">
@@ -486,6 +610,8 @@ function renderRecentScans() {
         </div>
     </a>
   `).join('');
-}
-</script>
-</body></html>
+    }
+  </script>
+</body>
+
+</html>
