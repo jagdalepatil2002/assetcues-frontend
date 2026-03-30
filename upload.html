@@ -418,7 +418,7 @@ async function startExtraction() {
     }
     if (stage === 'processing') {
       _setStage('ai');
-      progressTitle.textContent = 'Gemini AI Extracting...';
+      progressTitle.textContent = 'AssetCues AI Extracting...';
       progressDetail.textContent = 'Reading line items, totals & asset metadata';
       document.getElementById('progress-status-label').textContent = 'AI Processing';
     }
@@ -454,8 +454,14 @@ async function startExtraction() {
       await Storage.saveInvoiceFile(savedId, file);
 
       _extracting = false;
-      showToast('AI extraction complete \u2014 redirecting to review', 'success');
-      setTimeout(() => { window.location.href = `review-detail.html?id=${savedId}`; }, 1200);
+      // Show complete state for 5s then fade out and redirect
+      progressTitle.textContent = 'Extraction Complete';
+      progressDetail.textContent = 'Redirecting to review in 5 seconds...';
+      document.getElementById('progress-status-label').textContent = 'Done';
+      const ps = document.getElementById('progress-section');
+      ps.style.transition = 'opacity 0.6s ease';
+      setTimeout(() => { ps.style.opacity = '0'; }, 4400);
+      setTimeout(() => { window.location.href = `review-detail.html?id=${savedId}`; }, 5000);
 
     } catch (dbErr) {
       _extracting = false;
