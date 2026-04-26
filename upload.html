@@ -578,7 +578,7 @@ async function _startAssetPhotoIdentification() {
     });
   };
 
-  const result = await Api.identifyAsset(file, (stage, pct) => {
+  const result = await Api.identifyAsset(file, null, (stage, pct) => {
     progressPct.textContent = pct + '%';
     progressBar.style.width = pct + '%';
     if (stage === 'uploading') { _setStage('stage-upload'); progressTitle.textContent = 'Uploading Photo...'; }
@@ -590,33 +590,45 @@ async function _startAssetPhotoIdentification() {
       _setStage('stage-done');
       progressTitle.textContent = 'Saving Asset...';
       
-      const assetDataRaw = result.data.data;
+      const d = result.data.data;
       
-      // The endpoint returns ImageIdentificationResult structure where fields are {"value": ..., "confidence": ...}
-      // Generate standard asset object
-      const safeVal = (field) => field && field.value ? field.value : null;
-      const safeConf = (field) => field && field.confidence ? field.confidence : 1.0;
+      // All fields are ConfidentValue: { value, confidence }
+      const v = (field) => field && field.value != null ? field.value : null;
+      const c = (field) => field && field.confidence != null ? field.confidence : 1.0;
       
       // Get next asset number via Storage
       const nextNum = await Storage._getNextAssetNumber();
       const assetNumber = `AST-${String(nextNum).padStart(4, '0')}`;
       
+      // Category suggestion is nested: { value: { category, subcategory, make, model }, confidence }
+      const catSugg = v(d.category_suggestion) || {};
+      
       const newAsset = {
         org_id: DEFAULT_ORG_ID,
         asset_number: assetNumber,
-        name: safeVal(assetDataRaw.asset_name) || 'Unknown Asset',
-        name_confidence: safeConf(assetDataRaw.asset_name),
-        description: safeVal(assetDataRaw.description) || safeVal(assetDataRaw.asset_name) || '',
-        serial_number: safeVal(assetDataRaw.serial_number),
-        category: safeVal(assetDataRaw.category) || 'Equipment',
-        sub_category: safeVal(assetDataRaw.sub_category),
-        make: safeVal(assetDataRaw.manufacturer),
-        model: safeVal(assetDataRaw.model_number),
-        condition: safeVal(assetDataRaw.condition) || 'Used',
+        name: v(d.asset_name) || 'Unknown Asset',
+        name_confidence: c(d.asset_name),
+        description: v(d.asset_description) || v(d.asset_name) || '',
+        description_confidence: c(d.asset_description),
+        serial_number: v(d.serial_number),
+        category: catSugg.category || 'Equipment',
+        sub_category: catSugg.subcategory || null,
+        category_confidence: c(d.category_suggestion),
+        make: catSugg.make || v(d.manufacturer),
+        model: catSugg.model || v(d.make_model),
+        asset_class: v(d.asset_class) || 'Tangible',
+        asset_type: v(d.asset_type) || 'Movable',
+        asset_criticality: v(d.asset_criticality) || 'Medium',
+        condition: v(d.asset_condition) || 'Used',
         condition_source: 'image_ai',
+        condition_details: v(d.condition_details),
+        barcode_raw_data: v(d.barcode_raw_data),
+        tracking_config: d.tracking_config || {},
+        tracking_config_confidence: d.tracking_config_confidence || 1.0,
+        tracking_config_source: d.tracking_config_source || 'rules',
         status: 'draft',
         source: 'image_identification',
-        confidence: safeConf(assetDataRaw.asset_name),
+        confidence: c(d.asset_name),
       };
       
       const inserted = await Supabase.insert('assets', [newAsset]);
@@ -624,25 +636,22 @@ async function _startAssetPhotoIdentification() {
       if (inserted && inserted[0]) {
         // Upload the photo to Supabase Storage
         try {
-          await Storage.saveAssetImage(inserted[0].id, URL.createObjectURL(file));
+          const path = `${inserted[0].id}/asset_photo.${file.name.split('.').pop()}`;
+          const url = await Supabase.uploadFile('asset-images', path, file);
+          if (url) {
+            await Supabase.update('assets', inserted[0].id, { asset_image_url: url });
+          }
         } catch(e) { 
-          console.warn('Photo upload skipped/failed:', e.message);
-          // Fallback: try direct file upload
-          try {
-            const path = `${inserted[0].id}/${file.name}`;
-            const url = await Supabase.uploadFile('asset-images', path, file);
-            if (url) {
-              const finalUrl = url.includes('?') ? url : url;
-              await Supabase.update('assets', inserted[0].id, { asset_image_url: finalUrl });
-            }
-          } catch(e2) { console.warn('Direct photo upload also failed:', e2.message); }
+          console.warn('Photo upload failed:', e.message);
         }
         
         // Refresh cache
         await Storage.fetchAssets();
         
         progressTitle.textContent = 'Registration Complete';
-        setTimeout(() => { window.location.href = `review-detail.html`; }, 1500);
+        progressPct.textContent = '100%';
+        progressBar.style.width = '100%';
+        setTimeout(() => { window.location.href = `registry.html`; }, 1500);
       } else {
         throw new Error('Database insert failed');
       }

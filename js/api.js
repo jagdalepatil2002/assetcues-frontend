@@ -247,30 +247,62 @@ const Api = {
   /* ═══════════════════════════════════════════════════════
    * ASSET IMAGE IDENTIFICATION — /api/v1/identify/upload
    * ═══════════════════════════════════════════════════════ */
-  async identifyAsset(imageFile, onProgress) {
+  async identifyAsset(imageFile, barcodeFile, onProgress) {
     const url = `${this._getBaseUrl()}/identify/upload`;
     this._log('IDENTIFY', `📷 Asset identification: ${imageFile.name}`);
 
     const formData = new FormData();
-    formData.append('file', imageFile);
+    formData.append('asset_image', imageFile);
+    if (barcodeFile) formData.append('barcode_image', barcodeFile);
 
     if (onProgress) onProgress('uploading', 10);
+    const startTime = performance.now();
 
     try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: this._buildHeaders(),
-        body: formData,
+      const { status, responseText } = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        let processingTimer = null;
+        let fakePct = 30;
+
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable && onProgress) {
+            const pct = Math.max(10, Math.round((e.loaded / e.total) * 30));
+            onProgress('uploading', pct);
+          }
+        };
+        xhr.upload.onload = () => {
+          if (onProgress) onProgress('processing', 35);
+          processingTimer = setInterval(() => { fakePct = Math.min(fakePct + 2, 85); if (onProgress) onProgress('processing', fakePct); }, 1500);
+        };
+        xhr.onload = () => { if (processingTimer) clearInterval(processingTimer); resolve({ status: xhr.status, responseText: xhr.responseText }); };
+        xhr.onerror = () => { if (processingTimer) clearInterval(processingTimer); reject(new Error('Failed to fetch')); };
+        xhr.onabort = () => { if (processingTimer) clearInterval(processingTimer); reject(new Error('Request aborted')); };
+
+        xhr.open('POST', url);
+        const apiKey = this._getApiKey();
+        if (apiKey) xhr.setRequestHeader('X-API-Key', apiKey);
+        xhr.send(formData);
       });
 
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`Identification failed (HTTP ${res.status}): ${errText.substring(0, 200)}`);
+      const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+      this._log('IDENTIFY', `⏱️  Response in ${elapsed}s (HTTP ${status})`);
+
+      if (status < 200 || status >= 300) {
+        const errText = responseText;
+        this._err('IDENTIFY', `❌ Backend error (HTTP ${status}): ${errText.substring(0, 300)}`);
+        throw new Error(`Identification failed (HTTP ${status}): ${errText.substring(0, 200)}`);
       }
 
-      const data = await res.json();
+      const data = JSON.parse(responseText);
       if (onProgress) onProgress('complete', 100);
+
+      // Log identification results
       this._log('IDENTIFY', `✅ Asset identified: ${data.data?.asset_name?.value || '?'}`);
+      this._log('IDENTIFY', `   📦 Category: ${data.data?.category_suggestion?.value?.category || '?'}`);
+      this._log('IDENTIFY', `   🏭 Make: ${data.data?.manufacturer?.value || '?'} / ${data.data?.make_model?.value || '?'}`);
+      this._log('IDENTIFY', `   📋 Serial: ${data.data?.serial_number?.value || 'not visible'}`);
+      this._log('IDENTIFY', `   🔧 Condition: ${data.data?.asset_condition?.value || '?'}`);
+
       return { ok: true, data };
     } catch(e) {
       this._err('IDENTIFY', `❌ ${e.message}`);
@@ -281,13 +313,14 @@ const Api = {
   /* ═══════════════════════════════════════════════════════
    * ASSET IMAGE ENHANCEMENT — /api/v1/identify/enhance
    * ═══════════════════════════════════════════════════════ */
-  async enhanceAsset(imageFile, invoiceFile, onProgress) {
+  async enhanceAsset(imageFile, existingAssetData, barcodeFile, onProgress) {
     const url = `${this._getBaseUrl()}/identify/enhance`;
     this._log('ENHANCE', `📷+📄 Asset enhancement`);
 
     const formData = new FormData();
     formData.append('asset_image', imageFile);
-    if (invoiceFile) formData.append('invoice_file', invoiceFile);
+    formData.append('existing_asset_data', JSON.stringify(existingAssetData || {}));
+    if (barcodeFile) formData.append('barcode_image', barcodeFile);
 
     if (onProgress) onProgress('uploading', 10);
 
@@ -305,7 +338,7 @@ const Api = {
 
       const data = await res.json();
       if (onProgress) onProgress('complete', 100);
-      this._log('ENHANCE', `✅ Asset enhanced successfully`);
+      this._log('ENHANCE', `✅ Asset enhanced — ${data.enhancements?.length || 0} fields improved`);
       return { ok: true, data };
     } catch(e) {
       this._err('ENHANCE', `❌ ${e.message}`);
