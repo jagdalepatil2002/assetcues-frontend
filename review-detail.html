@@ -70,6 +70,7 @@ tailwind.config = {
 
 <script src="js/supabase.js"></script>
 <script src="js/storage.js"></script>
+<script src="js/review-sections.js"></script>
 <script src="js/api.js"></script>
 <script src="js/app.js"></script>
 <script>
@@ -85,7 +86,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!ext) { document.getElementById('content-layout').innerHTML = '<p class="text-center py-20 text-error">Extraction not found</p>'; return; }
   currentExt = ext;
   const json = ext.extractionJson || {};
-  const invNo = getVal(json.invoice_header, 'invoice_number') || ext.fileName;
+  
+  // Forward compatibility helper for page_1 dynamic schema
+  let allHeaders = {};
+  let allFooters = {};
+  let allOther = {};
+  let allTables = [];
+
+  if (json && Object.keys(json).some(k => k.startsWith('page_'))) {
+     for (const key of Object.keys(json)) {
+         if (key.startsWith('page_')) {
+             const page = json[key];
+             if (page.header) Object.assign(allHeaders, page.header);
+             if (page.footer) Object.assign(allFooters, page.footer);
+         }
+     }
+  }
+
+  let invoiceNumRaw = allHeaders.inv_no || allHeaders.doc_no || allHeaders.waybill_no || getVal(json.invoice_header, 'invoice_number');
+  const invNo = invoiceNumRaw || ext.fileName;
   injectTopBar('');
   
   // Custom secondary Header specific to this page layout
@@ -155,13 +174,154 @@ function _renderPreviewPanel(url, ext, valInfo) {
 async function renderDetail() {
   const ext = currentExt;
   const json = ext.extractionJson || {};
-  const vendor = json.vendor_details || {};
-  const buyer = json.buyer_details || {};
-  const header = json.invoice_header || {};
-  const totals = json.totals || {};
-  const lineItems = json.line_items || [];
+  const meta = ext.extractionMetadata || {};
+  
+  let vendor = {}, buyer = {}, shipTo = {}, header = {}, totals = {}, logistics = {}, bank = {};
+  let lineItems = [], otherData = {};
+
+  if (json && Object.keys(json).some(k => k.startsWith('page_'))) {
+     let allHeaders = {}, allFooters = {}, allOther = {}, allTables = [];
+     
+     for (const key of Object.keys(json)) {
+         if (key.startsWith('page_')) {
+             const page = json[key];
+             if (page.header) Object.assign(allHeaders, page.header);
+             if (page.footer) Object.assign(allFooters, page.footer);
+             if (page.other_data) Object.assign(allOther, page.other_data);
+             if (page.tables && Array.isArray(page.tables)) {
+                 page.tables.forEach(t => {
+                     if (Array.isArray(t)) allTables.push(...t);
+                     else if (t.rows && Array.isArray(t.rows)) allTables.push(...t.rows);
+                 });
+             }
+         }
+     }
+
+     // Vendor
+     vendor = {
+         name: allHeaders.vnd_name || allHeaders.shipper_company || '',
+         addr: allHeaders.vnd_addr || '', tel: allHeaders.vnd_tel || allHeaders.vnd_ph || '',
+         email: allHeaders.vnd_email || '', gstin: allHeaders.vnd_gstin || allHeaders.shipper_gstin || '',
+         pan: allHeaders.vnd_pan || allFooters.vnd_pan || '', state_code: allHeaders.vnd_state_code || '',
+         cin: allHeaders.cin || ''
+     };
+
+     // Buyer
+     buyer = {
+         name: allHeaders.buy_name || allHeaders.consignee_company || '',
+         addr: allHeaders.buy_addr || '', gstin: allHeaders.buy_gstin || '',
+         state: allHeaders.buy_state || '', state_code: allHeaders.buy_state_code || '',
+         pan: allHeaders.buy_pan || '', contact: allHeaders.buy_contact_person || '',
+         mobile: allHeaders.buy_mobile_no || ''
+     };
+
+     // Ship-To
+     shipTo = {
+         name: allHeaders.ship_name || '', addr: allHeaders.ship_addr || '',
+         gstin: allHeaders.ship_gstin || '', state: allHeaders.ship_state || '',
+         state_code: allHeaders.ship_state_code || '', pan: allHeaders.ship_pan || '',
+         contact: allHeaders.ship_contact_person || '', mobile: allHeaders.ship_mobile_no || ''
+     };
+
+     // Invoice Header
+     header = {
+         inv_type: allHeaders.inv_type || '', copy_type: allHeaders.copy_type || '',
+         inv_no: allHeaders.inv_no || allHeaders.doc_no || allHeaders.waybill_no || '',
+         inv_dt: allHeaders.inv_dt || allHeaders.ship_dt || allHeaders.doc_dt || '',
+         po_no: allHeaders.po_no || allHeaders.buy_po_no || '', po_dt: allHeaders.po_dt || allHeaders.buy_po_dt || '',
+         place_of_supply: allHeaders.place_of_supply || '',
+         irn: allHeaders.irn || '', ack_no: allHeaders.ack_no || '', ack_dt: allHeaders.ack_dt || '',
+         eway_bill_no: allHeaders.eway_bill_no || '', amendment_no: allHeaders.amendment_no || '',
+         invoice_type: allHeaders.invoice_type || '', payment_terms: allHeaders.payment_terms || ''
+     };
+
+     // Financials / Totals
+     totals = {
+         subtotal: allFooters.sub_total_taxable || allFooters.sub_total || allFooters.total_product_amount || allFooters.basic_amt || allFooters.total_taxable_value || null,
+         cgst_rate: allFooters.cgst_rate || null, cgst_amt: allFooters.cgst_amt || allFooters.total_cgst || null,
+         sgst_rate: allFooters.sgst_rate || null, sgst_amt: allFooters.sgst_amt || allFooters.total_sgst || null,
+         igst_rate: allFooters.igst_rate || null, igst_amt: allFooters.igst_amt || allFooters.total_igst || null,
+         rounding: allFooters.rounding || allFooters.rounding_off || allFooters.round_off || null,
+         grand_total: allFooters.grand_total || allHeaders.grand_total || allHeaders.declared_val || null,
+         amt_in_words: allFooters.amt_in_words || null,
+         due_dt: allFooters.due_dt || allHeaders.payment_due_dt || null,
+         credit_days: allFooters.payment_credit_days || null,
+         declaration: allFooters.declaration || null, jurisdiction: allFooters.jurisdiction || null,
+         authorized_signatory: allFooters.authorized_signatory || null
+     };
+
+     // Logistics
+     logistics = {
+         transporter: allHeaders.transporter || '', vehicle_no: allHeaders.vehicle_no || '',
+         dispatch_from: allHeaders.dispatch_from || '', dispatch_to: allHeaders.dispatch_to || '',
+         dispatch_mode: allHeaders.dispatch_mode || '', lr_no: allHeaders.lr_no || '',
+         lr_dt: allHeaders.lr_dt || '', sales_person: allHeaders.sales_person || '',
+         sales_order_no: allHeaders.sales_order_no || ''
+     };
+
+     // Bank
+     bank = {
+         name: allFooters.bank_name || allFooters.vnd_bank_name || '',
+         acct: allFooters.bank_acct || '', ifsc: allFooters.bank_ifsc || '',
+         branch: allFooters.bank_branch || '', swift: allFooters.bank_swift || '',
+         micr: allFooters.bank_micr || ''
+     };
+
+     // Line Items
+     let parsedItems = [];
+     for (const r of allTables) {
+         if (r.product_description || r.desc || r.description || r.qty) {
+             parsedItems.push({
+                 sr_no: r.sl_no || r.sr_no || '',
+                 description: r.product_description || r.desc || r.description || '',
+                 hsn: r.hsn_code || r.hsn || r.hsn_sac || '',
+                 uom: r.uqc || r.uom || '',
+                 qty: r.qty || '',
+                 rate: r.unit_price || r.rate || '',
+                 amt: r.amount || r.amt || r.taxable_value || '',
+                 total_amt: r.total_amt || '',
+                 serial_no: r.serial_no || '', part_no: r.part_no || r.item_code || '',
+                 igst_rate: r.igst_rate || '', igst_amt: r.igst_amt || '',
+                 cgst_rate: r.cgst_rate || '', cgst_amt: r.cgst_amt || '',
+                 sgst_rate: r.sgst_utgst_rate || '', sgst_amt: r.sgst_utgst_amt || '',
+                 discount: r.discount || ''
+             });
+         }
+     }
+     if (parsedItems.length > 0) lineItems = parsedItems;
+
+     otherData = Object.assign({}, allHeaders, allFooters, allOther);
+  }
+
   const isEditable = ext.status === 'draft';
   const valInfo = calcValidation(ext);
+  const _v = v => (v && v !== '-' && v !== '0' && v !== 'null') ? v : '';
+  const _mask = v => v ? ('••••' + v.slice(-4)) : '';
+
+  // Comprehensive exclude list — all fields shown in dedicated sections
+  const excludeKeys = [
+    'vnd_name','vnd_addr','vnd_tel','vnd_ph','vnd_email','vnd_gstin','vnd_pan','vnd_state_code','cin',
+    'buy_name','buy_addr','buy_gstin','buy_state','buy_state_code','buy_pan','buy_contact_person','buy_mobile_no',
+    'ship_name','ship_addr','ship_gstin','ship_state','ship_state_code','ship_pan','ship_contact_person','ship_mobile_no',
+    'shipper_company','shipper_gstin','consignee_company',
+    'inv_type','copy_type','inv_no','inv_dt','ship_dt','doc_dt','doc_no','waybill_no',
+    'po_no','buy_po_no','po_dt','buy_po_dt','place_of_supply','irn','ack_no','ack_dt',
+    'eway_bill_no','amendment_no','invoice_type','payment_terms','payment_due_dt',
+    'sub_total_taxable','sub_total','total_product_amount','basic_amt','total_taxable_value','taxable_value',
+    'cgst_rate','cgst_amt','total_cgst','sgst_rate','sgst_amt','total_sgst',
+    'igst_rate','igst_amt','total_igst','igst_amt_in_words','cgst_amt_in_words','sgst_amt_in_words',
+    'rounding','rounding_off','round_off','grand_total','declared_val','value_of_goods',
+    'amt_in_words','due_dt','payment_credit_days','declaration','jurisdiction','authorized_signatory','digital_signature_details',
+    'bank_name','vnd_bank_name','bank_acct','bank_ifsc','bank_branch','bank_swift','bank_micr',
+    'transporter','vehicle_no','dispatch_from','dispatch_to','dispatch_mode','lr_no','lr_dt',
+    'sales_person','sales_order_no',
+    'header','footer','tables','other_data','low_confidence_fields',
+    'profit_center','sub_location','last_scan_latitude','last_scan_longitude','location_radius',
+    'business_segment','cost_center','group','legal_entity','controlling_region',
+    'installation_date','nbv_date','put_to_use_date','residual_value','items_in_total',
+    'msme_no'
+  ];
+  const otherKeys = Object.keys(otherData).filter(k => otherData[k] && !excludeKeys.includes(k));
 
   const splitView = document.getElementById('split-view');
 
@@ -185,69 +345,45 @@ async function renderDetail() {
         <span class="ml-auto text-[10px] font-label text-on-surface-variant uppercase bg-surface-container px-2 py-1 rounded">V3.4 ENGINE</span>
       </div>
       <div class="flex-1 overflow-y-auto p-4 lg:p-8 space-y-8 pb-32">
-         <!-- Metadata -->
-         <section>
-           <h3 class="text-[10px] font-label uppercase tracking-widest text-outline mb-4">Core Metadata</h3>
-           <div class="grid grid-cols-2 gap-6">
-             <div class="space-y-1">
-               <label class="text-[11px] font-medium text-on-surface-variant">Vendor Name</label>
-               ${editableField('vendor_name', getVal(vendor,'vendor_name'), isEditable)}
-             </div>
-             <div class="space-y-1">
-               <label class="text-[11px] font-medium text-on-surface-variant">Document Date</label>
-               ${editableField('invoice_date', getVal(header,'invoice_date'), isEditable)}
-             </div>
-             <div class="space-y-1">
-               <label class="text-[11px] font-medium text-on-surface-variant">Vendor GSTIN</label>
-               ${editableField('vendor_gstin', getVal(vendor,'vendor_gstin'), isEditable, 'font-mono text-xs uppercase')}
-             </div>
-             <div class="space-y-1">
-               <label class="text-[11px] font-medium text-on-surface-variant">Vendor PAN</label>
-               ${editableField('vendor_pan', getVal(vendor,'vendor_pan'), isEditable, 'font-mono text-xs uppercase')}
-             </div>
-           </div>
-         </section>
+         <!-- Invoice Header -->
+         ${renderInvoiceHeaderSection(header)}
+
+         <!-- Vendor -->
+         ${renderVendorSection(vendor)}
+
+         <!-- Buyer -->
+         ${renderBuyerSection(buyer)}
+
+         <!-- Ship-To -->
+         ${renderShipToSection(shipTo)}
 
          <!-- Line Items -->
-         <section>
-           <h3 class="text-[10px] font-label uppercase tracking-widest text-outline mb-4 flex justify-between items-center">
-             Line Items & Taxes <span class="bg-surface-container px-2 py-0.5 rounded text-[9px] text-on-surface-variant">${lineItems.length} Extracted</span>
-           </h3>
-           <div class="space-y-2">
-             ${lineItems.length === 0 ? '<p class="text-xs text-on-surface-variant text-center py-4 bg-surface-container-lowest border border-dashed rounded-lg">No line items detected.</p>' : ''}
-             ${lineItems.map((li, i) => {
-               const qty = li.quantity || 1;
-               const price = li.unit_price || 0;
-               return `
-               <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 hover:border-outline-variant transition-colors">
-                 <p class="text-sm font-bold text-on-surface mb-2">${li.description || 'Item '+(i+1)}</p>
-                 <div class="grid grid-cols-4 gap-2 text-[11px]">
-                   <div><span class="text-on-surface-variant block mb-0.5">HSN Code</span><span class="font-mono font-bold">${li.hsn_sac_code || '—'}</span></div>
-                   <div><span class="text-on-surface-variant block mb-0.5">Quantity</span><span class="font-bold">${qty}</span></div>
-                   <div><span class="text-on-surface-variant block mb-0.5">Unit Price</span><span class="font-bold">${formatCurrency(price)}</span></div>
-                   <div><span class="text-on-surface-variant block mb-0.5">Tax %</span><span class="font-bold">${(li.cgst_rate||0) > 0 ? (li.cgst_rate+'%+'+li.sgst_rate+'%') : (li.igst_rate ? li.igst_rate+'%' : '—')}</span></div>
-                 </div>
-               </div>`;
-             }).join('')}
-           </div>
-         </section>
+         ${renderLineItemsSection(lineItems, ext.confidence)}
 
          <!-- Financials -->
+         ${renderFinancialsSection(totals)}
+
+         <!-- Logistics & Payment -->
+         ${renderLogisticsSection(logistics, bank)}
+
+         <!-- Other Data -->
+         ${otherKeys.length > 0 ? `
          <section>
-           <h3 class="text-[10px] font-label uppercase tracking-widest text-outline mb-4">Financials & Validation</h3>
-           <div class="bg-surface-container-low rounded-xl p-5 border border-surface-container">
-             <div class="space-y-2">
-               <div class="flex justify-between items-center text-sm"><span class="text-on-surface-variant">Subtotal</span><span class="font-bold font-mono">${formatCurrency(getVal(totals,'subtotal_before_tax'))}</span></div>
-               <div class="flex justify-between items-center text-sm"><span class="text-on-surface-variant">Tax Total</span><span class="font-bold font-mono">${formatCurrency(parseNum(getVal(totals,'total_cgst'))+parseNum(getVal(totals,'total_sgst'))+parseNum(getVal(totals,'total_igst')))}</span></div>
-               <div class="flex justify-between items-center pt-3 border-t border-outline-variant/30 mt-2">
-                 <span class="text-sm font-black uppercase text-on-surface">Grand Total</span>
-                 ${editableField('grand_total', getVal(totals,'grand_total'), false, 'font-mono text-lg text-right !bg-transparent !p-0 block')}
-               </div>
+           <h3 class="text-[10px] font-label uppercase tracking-widest text-outline mb-4 flex justify-between items-center">
+             <span class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">data_object</span> Other Data</span>
+             <span class="bg-surface-container px-2 py-0.5 rounded text-[9px] text-on-surface-variant">${otherKeys.length} Extracted</span>
+           </h3>
+           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+             ${otherKeys.map(k => `
+             <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-lg p-3">
+               <p class="text-[10px] text-on-surface-variant uppercase font-bold mb-1 break-words">${k.replace(/_/g, ' ')}</p>
+               <p class="text-sm font-medium text-on-surface break-words">${otherData[k]}</p>
              </div>
-             
-             <!-- Math validated silently -->
+             `).join('')}
            </div>
          </section>
+         ` : ''}
+
 
          <!-- Asset Mapping -->
          <section>
@@ -256,21 +392,61 @@ async function renderDetail() {
               <span class="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">${(ext.assetIds||[]).length} Assets Generated</span>
             </div>
             
-            <div class="grid grid-cols-1 gap-3">
-              ${(ext.assetIds||[]).slice(0,3).map(aid => {
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
+              ${(ext.assetIds||[]).slice(0,4).map((aid, idx) => {
                 const a = Storage.getAsset(aid);
-                return `<div class="p-3 bg-surface-container-lowest rounded-xl border border-outline-variant/30 flex items-center gap-4 hover:border-primary transition-colors cursor-pointer" onclick="openAssetModal('${a.id}')">
-                   <div class="h-10 w-10 rounded bg-surface-container flex items-center justify-center shrink-0 text-on-surface-variant">
-                     <span class="material-symbols-outlined">${a.isBulkAsset ? 'scale' : a.parentAssetId ? 'subdirectory_arrow_right' : 'inventory_2'}</span>
+                const raw = (json.assets && json.assets[idx]) ? json.assets[idx] : a;
+                const cost = raw.cost || a.totalCost || 0;
+                const total = raw.total_amount || a.totalCost || cost;
+                const gstText = raw.taxes ? Object.keys(raw.taxes).map(tk => tk+': '+formatCurrency(raw.taxes[tk])).join(', ') : 'N/A';
+                const catInfo = raw.category_suggestion || {};
+                const classification = [catInfo.category, catInfo.subcategory].filter(Boolean).join(' > ') || a.category || 'Uncategorized';
+                const makeModel = [catInfo.make, catInfo.model].filter(Boolean).join(' / ') || 'Not Specified';
+                const title = raw.title || a.name || 'Unknown Asset';
+                const desc = raw.description || a.description || 'No description provided';
+                const serial = raw.serial_number || a.serialNumber || raw.dummy_asset_number || a.tempAssetId;
+                const currency = raw.currency || 'INR';
+                const count = raw.uom ? ' (1 '+raw.uom+')' : '';
+
+                return `<div class="p-4 bg-surface-container-lowest rounded-xl border border-outline-variant/30 hover:border-primary transition-colors cursor-pointer flex flex-col gap-3 group" onclick="openAssetModal('${a.id}')">
+                   <div class="flex justify-between items-start gap-4">
+                     <div class="flex items-start gap-3 flex-1 min-w-0">
+                        <div class="h-10 w-10 rounded bg-surface-container flex items-center justify-center shrink-0 text-on-surface-variant">
+                           <span class="material-symbols-outlined">${a.isBulkAsset ? 'scale' : a.parentAssetId ? 'subdirectory_arrow_right' : 'inventory_2'}</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                           <p class="text-sm font-bold text-on-surface line-clamp-1" title="${title}">${title}</p>
+                           <p class="text-[11px] text-primary font-mono bg-primary/10 px-1.5 py-0.5 rounded inline-block mt-0.5" title="Serial/ID SN: ${serial}">${serial}</p>
+                        </div>
+                     </div>
+                     <div class="text-right shrink-0">
+                       <p class="text-sm font-bold text-on-surface font-mono">${currency} ${formatCurrency(total)}${count}</p>
+                       <p class="text-[10px] text-on-surface-variant font-mono">Cost: ${formatCurrency(cost)}</p>
+                     </div>
                    </div>
-                   <div class="flex-1 min-w-0">
-                     <p class="text-sm font-bold text-on-surface truncate">${a.tempAssetId || 'AST'}</p>
-                     <p class="text-[11px] text-on-surface-variant truncate">${a.name || a.category || 'Unknown Asset'}</p>
+                   <div class="grid grid-cols-2 gap-2 border-t border-outline-variant/30 pt-3">
+                      <div>
+                         <p class="text-[9px] text-outline uppercase font-label">Classification</p>
+                         <p class="text-[11px] text-on-surface-variant font-medium mt-0.5 line-clamp-1" title="${classification}">${classification}</p>
+                      </div>
+                      <div>
+                         <p class="text-[9px] text-outline uppercase font-label">Make / Model</p>
+                         <p class="text-[11px] text-on-surface-variant font-medium mt-0.5 line-clamp-1" title="${makeModel}">${makeModel}</p>
+                      </div>
+                      <div class="col-span-2 flex items-center justify-between">
+                         <div>
+                            <p class="text-[9px] text-outline uppercase font-label">Taxes & Logistics</p>
+                            <p class="text-[11px] text-on-surface-variant font-mono mt-0.5 truncate">${gstText}</p>
+                         </div>
+                      </div>
                    </div>
-                   <span class="material-symbols-outlined text-sm text-outline group-hover:text-primary">arrow_forward_ios</span>
+                   <div class="bg-surface-container rounded p-2.5 mt-1 relative">
+                      <p class="text-[11px] text-on-surface-variant italic line-clamp-2 pr-6">${desc}</p>
+                      <span class="material-symbols-outlined text-sm text-outline absolute top-2 right-2 group-hover:text-primary transition-colors">arrow_forward_ios</span>
+                   </div>
                 </div>`;
               }).join('')}
-              ${(ext.assetIds||[]).length > 3 ? `<button class="w-full text-xs font-bold text-primary py-2 hover:bg-surface-container-low rounded-lg transition-colors border-2 border-dashed border-primary/20" onclick="window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'})">View all ${(ext.assetIds||[]).length} assets in mapping table ↓</button>` : ''}
+              ${(ext.assetIds||[]).length > 4 ? `<button class="w-full md:col-span-2 lg:col-span-1 xl:col-span-2 text-xs font-bold text-primary py-3 mt-2 hover:bg-surface-container-low rounded-xl transition-colors border-2 border-dashed border-primary/20" onclick="window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'})">View all ${(ext.assetIds||[]).length} generated assets in mapping table ↓</button>` : ''}
             </div>
          </section>
 
@@ -340,11 +516,30 @@ function calcValidation(ext) {
   return { checks, allPass: checks.every(c => c.pass) };
 }
 
-function parseNum(v) { return parseFloat(v) || 0; }
+function parseNum(v) { if (v == null) return 0; const s = String(v).replace(/,/g, '').replace(/[^\d.\-]/g, ''); return parseFloat(s) || 0; }
 function getVal(obj, key) {
   if (!obj) return null;
-  if (typeof obj[key] === 'object' && obj[key] !== null) return obj[key].value || obj[key];
+  if (typeof obj[key] === 'object' && obj[key] !== null && 'value' in obj[key]) return obj[key].value;
   return obj[key];
+}
+
+function getConfidence(obj, key, fallback = null) {
+  if (!obj) return fallback;
+  const v = obj[key];
+  if (v && typeof v === 'object' && 'confidence' in v) {
+    const c = Number(v.confidence);
+    if (Number.isFinite(c)) return c;
+  }
+  return fallback;
+}
+
+function fieldConfidenceChip(c) {
+  if (c == null) return '<span class="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-bold bg-surface-container text-on-surface-variant">N/A</span>';
+  const pct = Math.max(0, Math.min(100, Math.round(Number(c) * 100)));
+  let cls = 'bg-red-100 text-red-700';
+  if (pct >= 90) cls = 'bg-green-100 text-green-700';
+  else if (pct >= 70) cls = 'bg-blue-100 text-blue-700';
+  return `<span class="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-bold ${cls}">${pct}%</span>`;
 }
 
 // Copy rest of existing functions needed for table/modals exactly
@@ -354,21 +549,26 @@ function renderAssetsTable(ext) {
   let rows = '';
   assetIds.forEach((aid, idx) => {
     const a = Storage.getAsset(aid);
-    if (!a) return;
+    const raw = (ext.generatedAssets || [])[idx] || {};
+    const title = a.name || raw.title || '—';
+    const cost = a.totalCost || raw.total_amount || 0;
+    const serial = a.serialNumber || raw.serial_number || '—';
+    const hsn = a.hsnCode || raw.hsn_code || '—';
     rows += `<tr class="border-b border-surface-container hover:bg-surface-container-low cursor-pointer asset-row transition-colors" onclick="openAssetModal('${a.id}')">
       <td class="px-4 py-2 text-[10px] text-on-surface-variant">${idx+1}</td>
       <td class="px-4 py-2 font-mono text-[11px] font-bold">${a.tempAssetId || 'AST'}</td>
-      <td class="px-4 py-2 text-[11px] truncate max-w-[120px]">${a.name || '—'}</td>
-      <td class="px-4 py-2 font-mono text-[10px]">${a.serialNumber ? (a.serialNumber.length > 10 ? a.serialNumber.slice(0,8)+'…' : a.serialNumber) : '—'}</td>
-      <td class="px-4 py-2 text-right text-[11px] font-bold">${formatCurrency(a.totalCost)}</td>
+      <td class="px-4 py-2 text-[11px] font-bold truncate max-w-[200px] text-primary hover:underline">${title}</td>
+      <td class="px-4 py-2 font-mono text-[10px]">${serial.length > 20 ? serial.slice(0,18)+'…' : serial}</td>
+      <td class="px-4 py-2 font-mono text-[10px] text-primary font-bold">${hsn}</td>
+      <td class="px-4 py-2 text-right text-[11px] font-bold font-mono">${formatCurrency(cost)}</td>
     </tr>`;
   });
   return `<table class="w-full text-left bg-white"><thead class="bg-surface-container-low/50 sticky top-0"><tr class="text-[9px] font-bold text-outline uppercase tracking-wider">
-    <th class="px-4 py-3 w-8">#</th><th class="px-4 py-3">Asset ID</th><th class="px-4 py-3">Description</th><th class="px-4 py-3">Serial</th><th class="px-4 py-3 text-right">Total Cost</th>
+    <th class="px-4 py-3 w-8">#</th><th class="px-4 py-3">Asset ID</th><th class="px-4 py-3">Asset Title</th><th class="px-4 py-3">Serial No</th><th class="px-4 py-3">HSN/SAC</th><th class="px-4 py-3 text-right">Total Cost</th>
   </tr></thead><tbody>${rows}</tbody></table>`;
 }
 
-function formatCurrency(val) { return new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR'}).format(val||0); }
+function formatCurrency(val) { return new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR'}).format(parseNum(val)); }
 function formatDate(isoStr) { if(!isoStr) return '—'; const d = new Date(isoStr); return isNaN(d) ? isoStr : d.toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}); }
 
 async function approveExtraction(id) {
@@ -403,20 +603,118 @@ async function rejectExtraction(id) {
 function openAssetModal(assetId) {
   const a = Storage.getAsset(assetId);
   if (!a) return;
-  document.getElementById('modal-body').innerHTML = `
-    <div class="bg-primary-container text-white p-5 rounded-t-xl flex justify-between">
-      <div><p class="text-[10px] font-bold uppercase text-primary-fixed-dim">Asset Details</p><h3 class="font-headline text-xl font-bold">${a.tempAssetId}</h3></div>
-      <button onclick="closeModal()" class="p-1 hover:bg-white/10 rounded-lg"><span class="material-symbols-outlined text-white">close</span></button>
+  const currentExt = Storage.getExtraction(a.extractionId);
+  const idx = (currentExt?.assetIds || []).indexOf(assetId);
+  const raw = (currentExt?.generatedAssets || [])[idx] || {};
+  const cat = raw.category_suggestion || {};
+
+  // Extract base headers just in case we need invoice data
+  let allHeaders = {};
+  if (currentExt?.extractionJson) {
+      const eJson = currentExt.extractionJson;
+      for (const key of Object.keys(eJson)) {
+          if (key.startsWith('page_')) {
+              const p = eJson[key];
+              if (p.header) Object.assign(allHeaders, p.header);
+              Object.assign(allHeaders, p); 
+          }
+      }
+  }
+
+  const fields = [
+    { label: 'Asset Name', key: 'name', isNative: true, value: a.name || '' },
+    { label: 'Serial Number', key: 'serialNumber', isNative: true, value: a.serialNumber || '' },
+    { label: 'Asset Description', key: 'description', isNative: true, value: a.description || '' },
+    { label: 'Manufacturer', key: 'make', isNative: true, value: a.make || '' },
+    { label: 'Asset Make/Model', key: 'model', isNative: true, value: a.model || '' },
+    { label: 'Asset Category', key: 'category', isNative: true, value: a.category || '' },
+    { label: 'Asset Sub Category', key: 'subCategory', isNative: true, value: a.subCategory || '' },
+    { label: 'Cost', key: 'purchasePrice', isNative: true, value: a.totalCost || '' },
+    { label: 'Currency', key: 'currency', isNative: true, value: a.currency || 'INR' },
+    { label: 'UOM', key: 'unitOfMeasure', isNative: true, value: a.unitOfMeasure || 'Nos' },
+    { label: 'Count', key: 'bulkQuantity', isNative: true, value: a.bulkQuantity || '1' },
+    { label: 'Invoice Date', key: 'invoiceDate', isNative: true, value: a.invoiceDate || '' },
+    { label: 'Invoice Number', key: 'invoiceNumber', isNative: true, value: a.invoiceNumber || '' },
+    
+    // Core data mapped to new dedicated columns
+    { label: 'PO Date', key: 'poDate', isNative: true, value: a.poDate || '' },
+    { label: 'PO Number', key: 'poNumber', isNative: true, value: a.poNumber || '' },
+    { label: 'HSN/SAC Code', key: 'hsnCode', isNative: true, value: a.hsnCode || '' },
+    { label: 'Audit Indicator', key: 'auditIndicator', isNative: true, value: a.customFields?.['Audit Indicator'] || '' },
+    { label: 'Audit Method', key: 'auditMethod', isNative: true, value: a.customFields?.['Audit Method'] || '' },
+    { label: 'Acquisition Date', key: 'acquisitionDate', isNative: true, value: a.acquisitionDate || '' },
+    { label: 'Asset Created On', key: 'assetCreatedOn', isNative: true, value: a.createdAt || '' },
+    { label: 'Asset Class', key: 'assetClass', isNative: true, value: a.assetClass || '' },
+    { label: 'Department', key: 'departmentId', isNative: true, value: a.departmentId || '' },
+    { label: 'Asset Nature', key: 'assetNature', isNative: true, value: a.assetNature || '' },
+    { label: 'Asset Criticality', key: 'assetCriticality', isNative: true, value: a.assetCriticality || '' },
+    { label: 'Insurance Start Date', key: 'insuranceStartDate', isNative: true, value: a.insuranceStartDate || '' },
+    { label: 'AMC Start Date', key: 'amcStartDate', isNative: true, value: a.amcStartDate || '' },
+    { label: 'Insurance End Date', key: 'insuranceEndDate', isNative: true, value: a.insuranceEndDate || '' },
+    { label: 'AMC End Date', key: 'amcEndDate', isNative: true, value: a.amcEndDate || '' },
+    { label: 'Warranty Start Date', key: 'warrantyStartDate', isNative: true, value: a.warrantyStartDate || '' },
+    { label: 'Warranty Expiry Date', key: 'warrantyEndDate', isNative: true, value: a.warrantyEndDate || '' },
+    { label: 'Lease Start Date', key: 'leaseStartDate', isNative: true, value: a.leaseStartDate || '' },
+    { label: 'Lease End Date', key: 'leaseEndDate', isNative: true, value: a.leaseEndDate || '' },
+    { label: 'Insurance Number', key: 'insuranceNumber', isNative: true, value: a.insuranceNumber || '' },
+    { label: 'AMC Number', key: 'amcNumber', isNative: true, value: a.amcNumber || '' },
+    { label: 'Insurance Vendor', key: 'insuranceVendor', isNative: true, value: a.insuranceVendor || '' },
+    { label: 'AMC Vendor', key: 'amcProvider', isNative: true, value: a.amcProvider || '' },
+    { label: 'Lease Cost', key: 'leaseCost', isNative: true, value: a.leaseCost || '' },
+    { label: 'Lease Contract Number', key: 'leaseContractNumber', isNative: true, value: a.leaseContractNumber || '' },
+    { label: 'Lease Vendor', key: 'leaseVendor', isNative: true, value: a.leaseVendor || '' },
+    { label: 'Asset Expiry Date', key: 'assetExpiryDate', isNative: true, value: a.assetExpiryDate || '' },
+    { label: 'NBV', key: 'nbv', isNative: true, value: a.nbv || '' },
+    { label: 'NBV Date', key: 'nbvDate', isNative: true, value: a.nbvDate || '' },
+    { label: 'Useful Life', key: 'usefulLifeYears', isNative: true, value: a.usefulLifeYears || '' },
+    { label: 'Put to Use date', key: 'putToUseDate', isNative: true, value: a.putToUseDate || '' },
+    { label: 'Residual Value', key: 'residualValue', isNative: true, value: a.residualValue || '' },
+    { label: 'Residual Value Percentage', key: 'residualValuePercentage', isNative: true, value: a.residualValuePercentage || '' },
+    { label: 'Installation Date', key: 'installationDate', isNative: true, value: a.installationDate || '' },
+    { label: 'Business Segment', key: 'businessSegment', isNative: true, value: a.businessSegment || '' },
+    { label: 'Cost Center', key: 'costCenter', isNative: true, value: a.costCenter || '' },
+    { label: 'Group', key: 'groupName', isNative: true, value: a.groupName || '' },
+    { label: 'Legal Entity', key: 'legalEntity', isNative: true, value: a.legalEntity || '' },
+    { label: 'Controlling Region', key: 'controllingRegion', isNative: true, value: a.controllingRegion || '' },
+    { label: 'Plant/Location', key: 'plantLocation', isNative: true, value: a.plantLocation || '' },
+    { label: 'Profit Center', key: 'profitCenter', isNative: true, value: a.profitCenter || '' },
+    { label: 'Sub Location', key: 'subLocation', isNative: true, value: a.subLocation || '' },
+    { label: 'GRN Date', key: 'grnDate', isNative: true, value: a.grnDate || '' },
+    { label: 'GRN Number', key: 'grnNumber', isNative: true, value: a.grnNumber || '' },
+    { label: 'Allocated To', key: 'allocatedTo', isNative: true, value: a.allocatedTo || '' },
+    { label: 'PR Number', key: 'prNumber', isNative: true, value: a.prNumber || '' }
+  ];
+
+  let gridHtml = fields.map(f => {
+    const isNativeStr = f.isNative ? 'true' : 'false';
+    const fieldKey = f.isNative ? f.key : f.label;
+    const saveMethod = f.isNative ? 'Storage.updateAssetField' : 'Storage.updateAssetCustomField';
+    return `
+    <div>
+       <label class="text-[9px] uppercase font-bold text-on-surface-variant truncate block mb-1" title="${f.label}">${f.label}</label>
+       <input type="text" 
+          class="w-full text-xs font-medium bg-surface-container-lowest border border-outline-variant/30 rounded px-2 py-1.5 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors ${f.value ? 'border-primary/40 bg-primary/5' : ''}" 
+          value="${f.value}" 
+          onchange="${saveMethod}('${a.id}', '${fieldKey}', this.value)"
+       />
     </div>
-    <div class="p-6 space-y-4">
-      <div class="grid grid-cols-2 gap-4">
-        <div><label class="text-[10px] uppercase font-bold text-on-surface-variant">Asset Name</label><input type="text" class="editable-field" value="${a.name}" onchange="Storage.updateAssetField('${a.id}','name',this.value).then(()=>showToast('Saved','success'))"/></div>
-        <div><label class="text-[10px] uppercase font-bold text-on-surface-variant">Serial</label><input type="text" class="editable-field font-mono text-xs" value="${a.serialNumber||''}" onchange="Storage.updateAssetField('${a.id}','serialNumber',this.value).then(()=>showToast('Saved','success'))"/></div>
+    `;
+  }).join('');
+
+  document.getElementById('modal-body').innerHTML = `
+    <div class="bg-primary-container text-white p-5 rounded-t-xl flex justify-between shrink-0">
+      <div>
+        <p class="text-[10px] font-bold uppercase text-primary-fixed-dim">FAR Details Verification</p>
+        <h3 class="font-headline text-xl font-bold">${a.tempAssetId}</h3>
       </div>
-      <div class="grid grid-cols-3 gap-4 border-t border-surface-container pt-4">
-        <div><p class="text-[10px] uppercase font-bold text-on-surface-variant">Unit Price</p><p class="text-sm font-bold">${formatCurrency(a.purchasePrice)}</p></div>
-        <div><p class="text-[10px] uppercase font-bold text-on-surface-variant">Tax</p><p class="text-sm font-bold">${formatCurrency((a.cgst||0)+(a.sgst||0)+(a.igst||0))}</p></div>
-        <div><p class="text-[10px] uppercase font-bold text-on-surface-variant">Total Cost</p><p class="text-sm font-bold text-primary">${formatCurrency(a.totalCost)}</p></div>
+      <button onclick="closeModal()" class="p-1 hover:bg-white/10 rounded-lg transition-colors"><span class="material-symbols-outlined text-white">close</span></button>
+    </div>
+    <div class="p-6 bg-white overflow-y-auto" style="max-height: calc(90vh - 80px);">
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+         ${gridHtml}
+      </div>
+      <div class="mt-6 flex justify-end">
+         <button onclick="closeModal(); showToast('Asset details verified locally', 'success');" class="bg-primary text-white font-bold text-sm px-6 py-2.5 rounded hover:bg-primary/90 transition-colors">Confirm & Save</button>
       </div>
     </div>`;
   document.getElementById('asset-modal').classList.add('active');

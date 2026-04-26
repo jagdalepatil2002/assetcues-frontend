@@ -2,8 +2,8 @@
  * Supabase Client — Assetcues Agentic AI
  * Connects frontend to Supabase backend
  */
-const SUPABASE_URL = 'https://ocgywyoehuurkcojaeqm.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jZ3l3eW9laHV1cmtjb2phZXFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NzM4MjAsImV4cCI6MjA5MDM0OTgyMH0.7wBfu42QTj9zYUhfe8KHtZNMktS8ZSEKVJ8zm6jXI48';
+const SUPABASE_URL = 'https://fhitjckyalqoyrkhyjrg.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoaXRqY2t5YWxxb3lya2h5anJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTcyODgsImV4cCI6MjA5MjY3MzI4OH0.VHEeQzWnBFF6FaowjySRIFMhOgJDhOIOZOSCizJrnR4';
 const DEFAULT_ORG_ID = '00000000-0000-0000-0000-000000000001';
 
 // Lightweight Supabase REST client (no SDK needed)
@@ -32,34 +32,49 @@ const Supabase = {
     const headers = this._headers();
     if (single) headers['Accept'] = 'application/vnd.pgrst.object+json';
     console.log(`%c[SUPABASE] SELECT ${table}`, 'color:#7c839b', Object.keys(filters).length ? filters : '');
-    const res = await fetch(url, { headers });
-    if (!res.ok) {
-      const err = await res.text();
-      console.error(`%c[SUPABASE] ❌ SELECT ${table} FAILED (${res.status}):`, 'color:#ba1a1a;font-weight:bold', err);
+    try {
+      const res = await fetch(url, { headers });
+      if (!res.ok) {
+        const err = await res.text();
+        console.error(`%c[SUPABASE] ⨯ SELECT ${table} FAILED (${res.status}):`, 'color:#ba1a1a;font-weight:bold', err);
+        return single ? null : [];
+      }
+      const data = await res.json();
+      console.log(`%c[SUPABASE] ✅ SELECT ${table}`, 'color:#7c839b', `→ ${Array.isArray(data) ? data.length : 1} row(s)`);
+      return data;
+    } catch (e) {
+      console.error(`%c[SUPABASE] FETCH ERROR (${table}):`, 'color:#ba1a1a;font-weight:bold', e.message);
       return single ? null : [];
     }
-    const data = await res.json();
-    console.log(`%c[SUPABASE] ✅ SELECT ${table}`, 'color:#7c839b', `→ ${Array.isArray(data) ? data.length : 1} row(s)`);
-    return data;
   },
 
   async insert(table, data) {
     const url = `${SUPABASE_URL}/rest/v1/${table}`;
     const rowCount = Array.isArray(data) ? data.length : 1;
     console.log(`%c[SUPABASE] INSERT ${table}`, 'color:#009668;font-weight:bold', `(${rowCount} row(s))`);
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: this._headers(),
-      body: JSON.stringify(Array.isArray(data) ? data : [data])
-    });
-    if (!res.ok) {
-      const err = await res.text();
-      console.error(`%c[SUPABASE] ❌ INSERT ${table} FAILED (${res.status}):`, 'color:#ba1a1a;font-weight:bold', err);
-      return null;
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: this._headers(),
+        body: JSON.stringify(Array.isArray(data) ? data : [data])
+      });
+      if (!res.ok) {
+        const err = await res.text();
+        console.error(`%c[SUPABASE] ⨯ INSERT ${table} FAILED (${res.status}):`, 'color:#ba1a1a;font-weight:bold', err);
+        let parsedErrMsg = err;
+        try {
+           const parsed = JSON.parse(err);
+           parsedErrMsg = parsed.message || parsed.details || err;
+        } catch(e) {}
+        throw new Error(parsedErrMsg);
+      }
+      const result = await res.json();
+      console.log(`%c[SUPABASE] ✅ INSERT ${table}`, 'color:#009668', `→ ID: ${result[0]?.id || '?'}`);
+      return Array.isArray(data) ? result : result[0];
+    } catch (e) {
+      console.error(`%c[SUPABASE] FETCH ERROR (${table}):`, 'color:#ba1a1a;font-weight:bold', e.message);
+      throw e;
     }
-    const result = await res.json();
-    console.log(`%c[SUPABASE] ✅ INSERT ${table}`, 'color:#009668', `→ ID: ${result[0]?.id || '?'}`);
-    return Array.isArray(data) ? result : result[0];
   },
 
   async update(table, id, data) {
@@ -144,16 +159,22 @@ const Supabase = {
   // File upload to Supabase Storage
   async uploadFile(bucket, path, file) {
     const url = `${SUPABASE_URL}/storage/v1/object/${bucket}/${path}`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-      },
-      body: file
-    });
-    if (!res.ok) return null;
-    return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': file.type || 'application/octet-stream'
+        },
+        body: file
+      });
+      if (!res.ok) return null;
+      return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
+    } catch(e) {
+      console.error(`%c[SUPABASE] UPLOAD ERROR (${bucket}):`, 'color:#ba1a1a;font-weight:bold', e.message);
+      return null;
+    }
   },
 
   getPublicUrl(bucket, path) {

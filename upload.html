@@ -76,13 +76,24 @@ tailwind.config = {
     <div class="grid grid-cols-12 gap-6">
       <!-- Left side (Drop Zone & Queue) -->
       <div class="col-span-12 xl:col-span-8 space-y-6">
+
+        <!-- Mode Selector -->
+        <div class="flex items-center gap-4 bg-surface-container-lowest p-2 rounded-xl border border-outline-variant/30 w-fit">
+          <button id="mode-btn-invoice" class="px-6 py-2 rounded-lg text-sm font-bold bg-primary text-white shadow-sm transition-colors" onclick="setUploadMode('invoice')">
+            Invoice Upload
+          </button>
+          <button id="mode-btn-asset" class="px-6 py-2 rounded-lg text-sm font-bold text-on-surface-variant hover:bg-surface-container-low transition-colors" onclick="setUploadMode('asset')">
+            Asset Image Registration
+          </button>
+        </div>
+
         <!-- Drop Zone -->
         <div id="drop-zone" class="drop-zone relative group bg-surface-container-low rounded-xl border-2 border-dashed border-outline-variant hover:border-primary transition-all p-12 flex flex-col items-center justify-center text-center cursor-pointer">
           <div class="w-20 h-20 signature-gradient rounded-full flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform">
-            <span class="material-symbols-outlined text-white text-4xl">upload_file</span>
+            <span class="material-symbols-outlined text-white text-4xl" id="upload-icon">upload_file</span>
           </div>
-          <h3 class="text-2xl font-bold font-headline mb-2">Drag and drop technical files</h3>
-          <p class="text-on-surface-variant mb-8">PDF, CAD, XLSX, or High-Res Images. Up to 8 pages per batch.</p>
+          <h3 class="text-2xl font-bold font-headline mb-2" id="upload-title">Drag and drop technical files</h3>
+          <p class="text-on-surface-variant mb-8" id="upload-desc">PDF, CAD, XLSX, or High-Res Images. Up to 8 pages per batch.</p>
           <div class="flex gap-4 relative z-10" onclick="event.stopPropagation()">
             <label class="signature-gradient text-on-primary px-8 py-3 rounded-lg font-bold shadow hover:opacity-90 transition-opacity cursor-pointer">
               Select Files
@@ -352,6 +363,47 @@ function updateCapacity() {
 }
 
 let _extracting = false;
+let uploadMode = 'invoice'; // 'invoice' or 'asset'
+
+// Logger functions
+function _log(tag, ...args) { console.log(`[${tag}]`, ...args); }
+function _err(tag, ...args) { console.error(`[${tag}]`, ...args); }
+
+function setUploadMode(mode) {
+  uploadMode = mode;
+  selectedFiles = [];
+  renderPreviews();
+  updateCapacity();
+
+  const btnInvoice = document.getElementById('mode-btn-invoice');
+  const btnAsset = document.getElementById('mode-btn-asset');
+  const title = document.getElementById('upload-title');
+  const desc = document.getElementById('upload-desc');
+  const icon = document.getElementById('upload-icon');
+  const btnExtract = document.getElementById('extract-btn');
+  const input = document.getElementById('file-input');
+
+  if (mode === 'invoice') {
+    btnInvoice.className = 'px-6 py-2 rounded-lg text-sm font-bold bg-primary text-white shadow-sm transition-colors';
+    btnAsset.className = 'px-6 py-2 rounded-lg text-sm font-bold text-on-surface-variant hover:bg-surface-container-low transition-colors';
+    title.textContent = 'Drag and drop technical files';
+    desc.textContent = 'PDF, CAD, XLSX, or High-Res Images. Up to 8 pages per batch.';
+    icon.textContent = 'upload_file';
+    btnExtract.textContent = 'Start AI Extraction';
+    input.accept = '.pdf,.jpg,.jpeg,.png,.tiff,.heic,.bmp,.webp';
+    input.removeAttribute('capture');
+  } else {
+    btnAsset.className = 'px-6 py-2 rounded-lg text-sm font-bold bg-primary text-white shadow-sm transition-colors';
+    btnInvoice.className = 'px-6 py-2 rounded-lg text-sm font-bold text-on-surface-variant hover:bg-surface-container-low transition-colors';
+    title.textContent = 'Capture or upload asset photo';
+    desc.textContent = 'High-Res Images (Nameplate, Barcode, Full Unit).';
+    icon.textContent = 'photo_camera';
+    btnExtract.textContent = 'Identify & Register Asset';
+    input.accept = 'image/*';
+    input.setAttribute('capture', 'environment');
+  }
+}
+
 window.addEventListener('beforeunload', (e) => {
   if (_extracting) { e.preventDefault(); e.returnValue = ''; }
 });
@@ -374,27 +426,32 @@ async function getPdfPageCount(file) {
 async function startExtraction() {
   if (selectedFiles.length === 0) return;
 
-  const file = selectedFiles[0];
+  if (uploadMode === 'asset') {
+    return _startAssetPhotoIdentification();
+  }
 
-  // Page limit check for PDFs
-  if (file.type === 'application/pdf') {
-    const pageCount = await getPdfPageCount(file);
-    if (pageCount !== null && pageCount > PDF_PAGE_LIMIT) {
-      document.getElementById('error-section').classList.remove('hidden');
-      document.getElementById('error-message').textContent = `PDF too large — ${pageCount} pages detected. Maximum allowed is ${PDF_PAGE_LIMIT} pages. Please split the document and re-upload.`;
-      return;
+  // === INVOICE UPLOAD LOGIC ===
+  // Page limit check for all PDFs
+  for (const file of selectedFiles) {
+    if (file.type === 'application/pdf') {
+      const pageCount = await getPdfPageCount(file);
+      if (pageCount !== null && pageCount > PDF_PAGE_LIMIT) {
+        document.getElementById('error-section').classList.remove('hidden');
+        document.getElementById('error-message').textContent = `${file.name}: PDF too large — ${pageCount} pages detected. Maximum allowed is ${PDF_PAGE_LIMIT} pages.`;
+        return;
+      }
     }
   }
 
   _extracting = true;
-  const btn = document.getElementById('extract-btn');
-  btn.disabled = true;
+  document.getElementById('extract-btn').disabled = true;
   document.getElementById('progress-section').classList.remove('hidden');
   document.getElementById('error-section').classList.add('hidden');
   const progressTitle = document.getElementById('progress-title');
   const progressDetail = document.getElementById('progress-detail');
   const progressPct = document.getElementById('progress-pct');
   const progressBar = document.getElementById('progress-bar');
+  const totalFiles = selectedFiles.length;
 
   const _setStage = (active) => {
     const stages = { upload: 'stage-upload', ai: 'stage-ai', done: 'stage-done' };
@@ -405,93 +462,177 @@ async function startExtraction() {
     Object.entries(stages).forEach(([key, id]) => {
       const el = document.getElementById(id);
       if (!el) return;
-      const isActive = key === active;
-      el.classList.toggle(inactiveStyles, !isActive);
-      el.classList.toggle(activeStyles, isActive);
+      el.classList.toggle(inactiveStyles, key !== active);
+      el.classList.toggle(activeStyles, key === active);
       const num = el.querySelector('span');
-      if (num) { num.className = num.className.replace(/(bg-\S+|text-\S+)/g, ''); num.classList.add(...(isActive ? activeNumCls : inactiveNumCls).split(' ')); }
+      if (num) { num.className = num.className.replace(/(bg-\S+|text-\S+)/g, ''); num.classList.add(...(key === active ? activeNumCls : inactiveNumCls).split(' ')); }
     });
   };
 
-  const result = await Api.extractInvoice(file, (stage, pct) => {
+  const savedIds = [];
+  const errors = [];
+
+  // Process each file sequentially (batch mode — works for single file too)
+  for (let i = 0; i < totalFiles; i++) {
+    const file = selectedFiles[i];
+    const fileLabel = totalFiles > 1 ? `[${i + 1}/${totalFiles}] ` : '';
+
+    const result = await Api.extractInvoice(file, (stage, pct) => {
+      // Scale progress across all files
+      const overallPct = Math.round(((i + pct / 100) / totalFiles) * 100);
+      progressPct.textContent = overallPct + '%';
+      progressBar.style.width = overallPct + '%';
+      if (stage === 'uploading') {
+        _setStage('upload');
+        progressTitle.textContent = `${fileLabel}${file.name}`;
+        progressDetail.textContent = 'Transmitting to neural pipeline...';
+        document.getElementById('progress-status-label').textContent = 'Uploading';
+      }
+      if (stage === 'processing') {
+        _setStage('ai');
+        progressTitle.textContent = `${fileLabel}AssetCues AI Extracting...`;
+        progressDetail.textContent = 'Reading line items, totals & asset metadata';
+        document.getElementById('progress-status-label').textContent = 'AI Processing';
+      }
+      if (stage === 'complete') {
+        progressDetail.textContent = 'Saving to database...';
+      }
+    });
+
+    if (result.ok) {
+      try {
+        const vlmResponse = result.data;
+        const saved = await Storage.createExtraction(file.name, vlmResponse);
+        savedIds.push(saved.id);
+
+        try {
+          await Storage.saveInvoiceFile(saved.id, file);
+        } catch (uploadErr) {
+          console.warn(`DB Save OK but File Upload Failed for ${file.name}:`, uploadErr);
+        }
+      } catch (dbErr) {
+        errors.push(`${file.name}: DB save failed — ${dbErr.message}`);
+      }
+    } else {
+      errors.push(`${file.name}: ${result.error}`);
+    }
+  }
+
+  _extracting = false;
+  progressBar.style.width = '100%';
+  progressPct.textContent = '100%';
+
+  if (savedIds.length > 0) {
+    _setStage('done');
+    progressTitle.textContent = 'Extraction Complete';
+    document.getElementById('progress-status-label').textContent = 'Done';
+
+    if (errors.length > 0) {
+      progressDetail.textContent = `${savedIds.length}/${totalFiles} succeeded. ${errors.length} failed.`;
+    } else {
+      progressDetail.textContent = totalFiles > 1
+        ? `All ${totalFiles} invoices processed. Redirecting...`
+        : 'Redirecting to review...';
+    }
+
+    // Redirect: single file → review-detail, multiple files → review list
+    const redirectUrl = savedIds.length === 1
+      ? `review-detail.html?id=${savedIds[0]}`
+      : 'review.html';
+
+    const ps = document.getElementById('progress-section');
+    const fallback = document.createElement('div');
+    fallback.className = 'px-6 pb-5';
+    fallback.innerHTML = `<a href="${redirectUrl}" class="inline-flex items-center gap-2 px-5 py-2.5 signature-gradient text-white rounded-lg font-bold text-sm hover:opacity-90 transition-opacity no-underline"><span class="material-symbols-outlined text-[18px]">rate_review</span> Go to Review</a>`;
+    ps.appendChild(fallback);
+
+    if (typeof pushNotification === 'function') {
+      const title = totalFiles > 1 ? `${savedIds.length} invoices ready for review` : `Ready to review: ${selectedFiles[0].name}`;
+      pushNotification({ icon: 'description', color: 'text-primary bg-primary/10', title, detail: 'Click to approve and sync assets', href: redirectUrl });
+    }
+    setTimeout(() => { window.location.href = redirectUrl; }, 1500);
+  } else {
+    // All failed
+    document.getElementById('error-section').classList.remove('hidden');
+    document.getElementById('error-message').textContent = errors.join(' | ');
+    document.getElementById('progress-section').classList.add('hidden');
+    document.getElementById('extract-btn').disabled = false;
+  }
+}
+
+async function _startAssetPhotoIdentification() {
+  const file = selectedFiles[0];
+  _extracting = true;
+  document.getElementById('extract-btn').disabled = true;
+  document.getElementById('progress-section').classList.remove('hidden');
+  document.getElementById('error-section').classList.add('hidden');
+  
+  const progressTitle = document.getElementById('progress-title');
+  const progressPct = document.getElementById('progress-pct');
+  const progressBar = document.getElementById('progress-bar');
+  
+  const _setStage = (active) => {
+    ['stage-upload', 'stage-ai', 'stage-done'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.opacity = active === id ? '1' : '0.4';
+    });
+  };
+
+  const result = await Api.identifyAsset(file, (stage, pct) => {
     progressPct.textContent = pct + '%';
     progressBar.style.width = pct + '%';
-    if (stage === 'uploading') {
-      _setStage('upload');
-      progressTitle.textContent = file.name;
-      progressDetail.textContent = 'Transmitting to neural pipeline...';
-      document.getElementById('progress-status-label').textContent = 'Uploading';
-    }
-    if (stage === 'processing') {
-      _setStage('ai');
-      progressTitle.textContent = 'AssetCues AI Extracting...';
-      progressDetail.textContent = 'Reading line items, totals & asset metadata';
-      document.getElementById('progress-status-label').textContent = 'AI Processing';
-    }
-    if (stage === 'complete') {
-      _setStage('done');
-      progressTitle.textContent = 'Extraction Complete';
-      progressDetail.textContent = 'Saving to database...';
-      document.getElementById('progress-status-label').textContent = 'Saving';
-    }
+    if (stage === 'uploading') { _setStage('stage-upload'); progressTitle.textContent = 'Uploading Photo...'; }
+    if (stage === 'processing') { _setStage('stage-ai'); progressTitle.textContent = 'AI Vision Identifying...'; }
   });
 
-  if (result.ok) {
+  if (result.ok && result.data && result.data.data) {
     try {
-      const data = result.data;
-      const extractions = data.extractions || [];
-      let savedId = null;
-
-      if (extractions.length > 0) {
-        for (const ext of extractions) {
-          const saved = await Storage.createExtraction(
-            file.name,
-            ext.extraction_json || ext,
-            ext.confidence || data.total_confidence || 0.85,
-            ext.source_pages?.length || selectedFiles.length,
-          );
-          if (!savedId) savedId = saved.id;
-        }
+      _setStage('stage-done');
+      progressTitle.textContent = 'Saving Asset...';
+      
+      const assetDataRaw = result.data.data;
+      
+      // The endpoint returns ImageIdentificationResult structure where fields are {"value": ..., "confidence": ...}
+      // Generate standard asset object
+      const safeVal = (field) => field && field.value ? field.value : null;
+      
+      const newAsset = {
+        name: safeVal(assetDataRaw.asset_name) || 'Unknown Asset',
+        serial_number: safeVal(assetDataRaw.serial_number),
+        category: safeVal(assetDataRaw.category) || 'Equipment',
+        make: safeVal(assetDataRaw.manufacturer),
+        model: safeVal(assetDataRaw.model_number),
+        status: 'draft',
+        source: 'image_identification'
+      };
+      
+      const inserted = await Supabase.insert('assets', [newAsset]);
+      
+      if (inserted && inserted[0]) {
+        // Try uploading photo
+        try {
+          const fileObj = await Storage._uploadFile('asset-images', `${inserted[0].id}/${file.name}`, file);
+          if (fileObj) await Supabase.update('assets', inserted[0].id, { photo_url: fileObj.url });
+        } catch(e) { console.warn('Photo upload skipped/failed'); }
+        
+        progressTitle.textContent = 'Registration Complete';
+        setTimeout(() => { window.location.href = `asset-detail.html?id=${inserted[0].id}`; }, 1500);
       } else {
-        const saved = await Storage.createExtraction(file.name, data, data.total_confidence || 0.85, selectedFiles.length);
-        savedId = saved.id;
+        throw new Error('Database insert failed');
       }
-
-      await Storage.saveInvoiceFile(savedId, file);
-
-      _extracting = false;
-      progressTitle.textContent = 'Extraction Complete';
-      progressDetail.textContent = 'Redirecting to review...';
-      document.getElementById('progress-status-label').textContent = 'Done';
-      progressBar.style.width = '100%';
-      // Auto-redirect in 1.5s — show fallback button in case redirect is slow/blocked
-      const ps = document.getElementById('progress-section');
-      const fallback = document.createElement('div');
-      fallback.className = 'px-6 pb-5';
-      fallback.innerHTML = `<a href="review-detail.html?id=${savedId}" class="inline-flex items-center gap-2 px-5 py-2.5 signature-gradient text-white rounded-lg font-bold text-sm hover:opacity-90 transition-opacity no-underline"><span class="material-symbols-outlined text-[18px]">rate_review</span> Go to Review</a>`;
-      ps.appendChild(fallback);
-      if (typeof pushNotification === 'function') {
-        pushNotification({ icon: 'description', color: 'text-primary bg-primary/10', title: `Ready to review: ${file.name}`, detail: 'Click to approve and sync assets', href: `review-detail.html?id=${savedId}` });
-      }
-      setTimeout(() => { window.location.href = `review-detail.html?id=${savedId}`; }, 1500);
-
-    } catch (dbErr) {
+    } catch(e) {
       _extracting = false;
       document.getElementById('error-section').classList.remove('hidden');
-      document.getElementById('error-message').textContent = `Saved to AI but DB save failed: ${dbErr.message}`;
+      document.getElementById('error-message').textContent = e.message;
       document.getElementById('progress-section').classList.add('hidden');
-      btn.disabled = false;
+      document.getElementById('extract-btn').disabled = false;
     }
   } else {
     _extracting = false;
     document.getElementById('error-section').classList.remove('hidden');
-    const rawError = result.error || '';
-    const friendlyError = (rawError.includes('Failed to fetch') || rawError.includes('NetworkError'))
-      ? 'Server timed out — the PDF may be too large or the backend restarted mid-request. Please try again with a smaller file (max 10 pages).'
-      : rawError;
-    document.getElementById('error-message').textContent = friendlyError;
+    document.getElementById('error-message').textContent = result.error || 'Failed to identify asset';
     document.getElementById('progress-section').classList.add('hidden');
-    btn.disabled = false;
+    document.getElementById('extract-btn').disabled = false;
   }
 }
 

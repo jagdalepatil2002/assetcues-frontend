@@ -51,7 +51,7 @@ const Storage = {
       const raw = localStorage.getItem('ac_settings');
       if (raw) return JSON.parse(raw);
     } catch {}
-    return { apiUrl: 'https://assetcues-backend.onrender.com', tenantId: 'poc' };
+    return { apiUrl: 'http://localhost:8000', tenantId: 'poc', apiKey: '' };
   },
   saveSettings(s) { try { localStorage.setItem('ac_settings', JSON.stringify(s)); } catch {} },
 
@@ -95,21 +95,46 @@ const Storage = {
     return data;
   },
 
-  async createExtraction(fileName, extractionJson, confidence, pageCount) {
-    console.log('%c[STORAGE] 📥 createExtraction starting...', 'color:#005da9;font-weight:bold');
+  /**
+   * Create extraction from VLM-OCR response envelope.
+   * @param {string} fileName - uploaded file name
+   * @param {object} vlmResponse - full VLM-OCR response { success, data, assets, metadata }
+   */
+  async createExtraction(fileName, vlmResponse) {
+    console.log('%c[STORAGE] 📥 createExtraction (VLM-OCR) starting...', 'color:#005da9;font-weight:bold');
 
-    const vendorName = (_unwrap(extractionJson?.vendor_details?.vendor_name)) || 'Unknown';
-    const invoiceNumber = (_unwrap(extractionJson?.invoice_header?.invoice_number)) || '';
-    const invoiceDateRaw = (_unwrap(extractionJson?.invoice_header?.invoice_date)) || null;
+    const rawData = vlmResponse.data || {};       // { page_1: {...}, page_2: {...} }
+    const generatedAssets = vlmResponse.assets || [];  // IndividualAsset[]
+    const metadata = vlmResponse.metadata || {};
+
+    // Extract header info from the first page
+    const firstPageKey = Object.keys(rawData).sort()[0] || 'page_1';
+    const firstPage = rawData[firstPageKey] || {};
+    const header = firstPage.header || {};
+    const footer = firstPage.footer || {};
+
+    const vendorName = header.vnd_name || header.vendor || 'Unknown';
+    const invoiceNumber = header.inv_no || '';
+    const invoiceDateRaw = header.inv_dt || null;
     const invoiceDate = _normalizeDate(invoiceDateRaw);
-    const grandTotal = parseFloat(_unwrap(extractionJson?.totals?.grand_total)) || 0;
+    const grandTotalRaw = (footer.total || header.cost || '0').toString().replace(/[^\d.]/g, '');
+    const grandTotal = parseFloat(grandTotalRaw) || 0;
+    const pageCount = metadata.page_count || Object.keys(rawData).length || 1;
+    const confidence = generatedAssets.length > 0
+      ? generatedAssets.reduce((s, a) => s + (a.title_confidence || 0), 0) / generatedAssets.length
+      : 0;
 
     // Check for duplicates
     const isDuplicate = await this._checkDuplicateInvoice(invoiceNumber, vendorName, grandTotal, invoiceDate);
 
     const extraction = {
       id: crypto.randomUUID(),
-      fileName, extractionJson, confidence, pageCount,
+      fileName, 
+      extractionJson: rawData,       // The { page_1, page_2 } object
+      generatedAssets,              // The IndividualAsset[] array
+      extractionMetadata: metadata,
+      extractionType: 'standard',
+      confidence, pageCount,
       vendorName, invoiceNumber, invoiceDate, grandTotal,
       status: 'draft',
       timestamp: new Date().toISOString(),
@@ -119,29 +144,31 @@ const Storage = {
     // Insert extraction to DB
     await Supabase.insert('extractions', {
       id: extraction.id, org_id: ORG_ID, file_name: fileName, status: 'draft',
-      confidence, extraction_json: extractionJson, vendor_name: vendorName,
-      invoice_number: invoiceNumber, invoice_date: invoiceDate, grand_total: grandTotal,
+      extraction_type: 'standard',
+      confidence, extraction_json: rawData, generated_assets: generatedAssets,
+      vendor_name: vendorName, invoice_number: invoiceNumber,
+      invoice_date: invoiceDate, grand_total: grandTotal,
+      currency: header.currency || 'INR',
+      po_number: header.po_no || null,
+      extraction_metadata: metadata,
       duplicate_of: typeof isDuplicate === 'string' ? isDuplicate : null,
     });
 
-    // Expand assets
-    const assets = await this._expandAssets(extraction);
+    // Expand VLM-OCR generated assets into individual asset rows
+    const assets = await this._expandVlmAssets(extraction, generatedAssets);
     extraction.assetIds = assets.map(a => a.id);
 
-    // Check serial number duplicates across extracted assets
-    const lineItems = extractionJson?.line_items || [];
-    for (const item of lineItems) {
-      const serial = _unwrap(item.serial_number);
-      if (serial) {
-        const existingAsset = await this.checkDuplicateSerial(serial);
+    // Check serial number duplicates across generated assets
+    for (const asset of generatedAssets) {
+      if (asset.serial_number) {
+        const existingAsset = await this.checkDuplicateSerial(asset.serial_number);
         if (existingAsset) {
           await Supabase.insert('anomaly_alerts', {
             org_id: ORG_ID, alert_type: 'duplicate_serial', severity: 'high',
-            title: `Duplicate serial number: ${serial}`,
-            description: `Serial ${serial} already registered as asset ${existingAsset.asset_number || existingAsset.id}.`,
+            title: `Duplicate serial number: ${asset.serial_number}`,
+            description: `Serial ${asset.serial_number} already registered as asset ${existingAsset.asset_number || existingAsset.id}.`,
             related_extraction_id: extraction.id,
           });
-          // Alert is created, skip updating extraction.duplicate_of with invalid UUID strings
         }
       }
     }
@@ -301,116 +328,239 @@ const Storage = {
     return this._splitSerials(serials);
   },
 
-  async _expandAssets(extraction) {
-    const json = extraction.extractionJson;
-    if (!json) return [];
+  /**
+   * Expand VLM-OCR generated assets into individual asset rows.
+   * This replaces the old _expandAssets — VLM-OCR Stage 2 already does
+   * the heavy lifting (splitting, grouping, math distribution).
+   */
+  async _expandVlmAssets(extraction, generatedAssets) {
+    if (!generatedAssets || generatedAssets.length === 0) return [];
 
     let nextNum = await this._getNextAssetNumber();
-    const serialNumbers = this._parseSerialNumbers(json);
-    const vendor = (_unwrap(json.vendor_details?.vendor_name)) || 'Unknown';
-    const invoiceNumber = (_unwrap(json.invoice_header?.invoice_number)) || '';
-    const invoiceDateRaw = (_unwrap(json.invoice_header?.invoice_date)) || '';
-    const invoiceDate = _normalizeDate(invoiceDateRaw);
-    const totals = json.totals || {};
-    const totalCgst = parseFloat(_unwrap(totals.total_cgst)) || 0;
-    const totalSgst = parseFloat(_unwrap(totals.total_sgst)) || 0;
-    const totalIgst = parseFloat(_unwrap(totals.total_igst)) || 0;
-    const subtotal = parseFloat(_unwrap(totals.subtotal_before_tax)) || 0;
-
-    const BULK_UNITS = ['kg','kgs','g','gm','gram','grams','l','ltr','litre','litres','liter','liters','ml','mt','ton','tons','tonne','tonnes','quintal','qtl','mtr','meter','meters','metre','ft','feet','sqft','mm','cm','inch','inches'];
     const assetRows = [];
-    const groupInfo = [];
 
-    const lineItemsAll = json.line_items || [];
-    const atc = json.assets_to_create || [];
-    if (atc.length >= 1) {
-      atc.forEach((a, i) => {
-        const assetNum = nextNum++;
-        const assetNumber = `AST-${String(assetNum).padStart(4,'0')}`;
-        // Cross-reference source line item for fields not in AssetToCreate
-        const srcLine = lineItemsAll[a.source_line_index] || {};
-        const hsnCode = _unwrap(srcLine.hsn_sac_code) || null;
-        // Serial: prefer asset-level, then positional from line item's list, then fallback array
-        const lineSerials = this._splitSerials(srcLine.serial_numbers_listed || []);
-        const serialFromLine = lineSerials[a.quantity_index - 1] || lineSerials[0] || null;
-        assetRows.push({
-          org_id: ORG_ID, extraction_id: extraction.id, asset_number: assetNumber,
-          name: a.asset_name || a.description || `Asset ${i+1}`,
-          category: a.suggested_category || 'IT Equipment',
-          sub_category: a.suggested_sub_category || null,
-          asset_class: a.suggested_asset_class || null,
-          make: a.suggested_make || null, model: a.suggested_model || null,
-          serial_number: a.serial_number || serialFromLine || serialNumbers[i] || null,
-          purchase_price: a.individual_cost_before_tax || a.individual_cost_with_tax || 0,
-          cgst: a.individual_cgst || 0, sgst: a.individual_sgst || 0,
-          igst: a.individual_igst || 0, tax: a.individual_tax || 0,
-          total_cost: a.individual_cost_with_tax || a.individual_cost_before_tax || 0,
-          vendor, invoice_number: invoiceNumber, invoice_date: invoiceDate || null,
-          status: 'in_review', hsn_code: hsnCode,
-          acquisition_date: invoiceDate || new Date().toISOString().split('T')[0],
-          confidence: a.confidence_overall || extraction.confidence || 0,
-          unit_of_measure: a.unit_of_measure || 'Nos',
-          bulk_quantity: a.bulk_quantity || null, is_bulk_asset: a.is_bulk_asset || false,
-          custom_fields: {},
-        });
-        groupInfo.push({
-          tempId: a.temp_asset_id, action: a.group_action || 'none',
-          parentTempId: a.group_parent_temp_id || null, reason: a.group_reason || null,
-        });
-      });
-    } else {
-      const lineItems = json.line_items || [];
-      lineItems.forEach((li, liIdx) => {
-        const rawQty = _unwrap(li.quantity) || 1;
-        const unitRaw = _unwrap(li.unit) || 'Nos';
-        const unitNorm = unitRaw.toLowerCase().trim().replace(/\.$/, '');
-        const isBulk = BULK_UNITS.includes(unitNorm);
-        const expandQty = isBulk ? 1 : Math.max(Math.round(rawQty), 1);
-        const bulkQuantity = isBulk ? rawQty : null;
+    // Extract vendor/invoice from extraction header
+    const rawData = extraction.extractionJson || {};
+    const firstPageKey = Object.keys(rawData).sort()[0] || 'page_1';
+    const firstPage = rawData[firstPageKey] || {};
+    const header = firstPage.header || {};
+    const vendor = header.vnd_name || header.vendor || extraction.vendorName || 'Unknown';
+    const invoiceNumber = header.inv_no || extraction.invoiceNumber || '';
+    const invoiceDate = _normalizeDate(header.inv_dt) || extraction.invoiceDate || null;
 
-        const unitPrice = (_unwrap(li.unit_price) || (subtotal / Math.max(rawQty, 1))) * (isBulk ? rawQty : 1) / Math.max(expandQty, 1);
-        const unitCgst = (_unwrap(li.cgst_amount) || 0) / Math.max(expandQty, 1);
-        const unitSgst = (_unwrap(li.sgst_amount) || 0) / Math.max(expandQty, 1);
-        const unitIgst = (_unwrap(li.igst_amount) || 0) / Math.max(expandQty, 1);
-        const unitTax = unitCgst + unitSgst + unitIgst;
-        const unitTotal = unitPrice + unitTax;
-        const desc = _unwrap(li.description) || `Item ${liIdx+1}`;
-        const hsnCode = _unwrap(li.hsn_sac_code) || '';
-
-        for (let q = 0; q < expandQty; q++) {
-          const assetNum = nextNum++;
-          const assetNumber = `AST-${String(assetNum).padStart(4,'0')}`;
-          assetRows.push({
-            org_id: ORG_ID, extraction_id: extraction.id, asset_number: assetNumber,
-            name: desc, category: 'IT Equipment',
-            serial_number: serialNumbers[assetRows.length] || null,
-            purchase_price: Math.round(unitPrice * 100) / 100,
-            cgst: Math.round(unitCgst * 100) / 100, sgst: Math.round(unitSgst * 100) / 100,
-            igst: Math.round(unitIgst * 100) / 100, tax: Math.round(unitTax * 100) / 100,
-            total_cost: Math.round(unitTotal * 100) / 100,
-            vendor, invoice_number: invoiceNumber, invoice_date: invoiceDate || null,
-            hsn_code: hsnCode || null, status: 'in_review',
-            acquisition_date: invoiceDate || new Date().toISOString().split('T')[0],
-            confidence: extraction.confidence || 0,
-            unit_of_measure: unitRaw, bulk_quantity: bulkQuantity, is_bulk_asset: isBulk,
-            custom_fields: {},
+    // Build flat table rows for HSN lookup by source_line_index
+    const allTableRows = [];
+    for (const pk of Object.keys(rawData).sort()) {
+      if (pk.startsWith('page_')) {
+        const pg = rawData[pk];
+        if (pg.tables && Array.isArray(pg.tables)) {
+          pg.tables.forEach(t => {
+            if (Array.isArray(t)) allTableRows.push(...t);
+            else if (t.rows && Array.isArray(t.rows)) allTableRows.push(...t.rows);
           });
-          groupInfo.push({ tempId: `tmp_${assetRows.length}`, action: _unwrap(li.group_action) || 'none', parentTempId: null, reason: null });
         }
-      });
+      }
     }
 
-    // Distribute invoice-level tax if per-asset tax is zero
-    const assetTaxSum = assetRows.reduce((s, r) => s + (r.cgst || 0) + (r.sgst || 0) + (r.igst || 0), 0);
-    if (assetTaxSum === 0 && (totalCgst || totalSgst || totalIgst) && assetRows.length > 0) {
-      const n = assetRows.length;
-      const perCgst = Math.round((totalCgst / n) * 100) / 100;
-      const perSgst = Math.round((totalSgst / n) * 100) / 100;
-      const perIgst = Math.round((totalIgst / n) * 100) / 100;
-      const perTax = perCgst + perSgst + perIgst;
-      assetRows.forEach(r => {
-        r.cgst = perCgst; r.sgst = perSgst; r.igst = perIgst;
-        r.tax = perTax; r.total_cost = Math.round(((r.purchase_price || 0) + perTax) * 100) / 100;
+    for (let i = 0; i < generatedAssets.length; i++) {
+      const a = generatedAssets[i];
+      const assetNum = nextNum++;
+      const assetNumber = `AST-${String(assetNum).padStart(4, '0')}`;
+
+      // Map category suggestion
+      const catSuggestion = a.category_suggestion || {};
+
+      // Parse cost — handle string values like "60000/-"
+      const costRaw = a.cost || a.total_amount || 0;
+      const cost = typeof costRaw === 'string' ? parseFloat(costRaw.replace(/[^\d.]/g, '')) || 0 : costRaw;
+      const totalAmount = typeof a.total_amount === 'string' ? parseFloat(a.total_amount.toString().replace(/[^\d.]/g, '')) || 0 : (a.total_amount || cost);
+
+      // Parse taxes (deterministic from Python, NOT LLM)
+      const taxes = a.taxes || {};
+      const cgst = parseFloat(taxes.cgst) || 0;
+      const sgst = parseFloat(taxes.sgst) || 0;
+      const igst = parseFloat(taxes.igst) || 0;
+      const totalTax = cgst + sgst + igst;
+
+      assetRows.push({
+        org_id: ORG_ID,
+        extraction_id: extraction.id,
+        asset_number: assetNumber,
+        dummy_asset_number: a.dummy_asset_number || null,
+
+        // Core identity
+        name: a.title || a.description || `Asset ${i + 1}`,
+        name_confidence: a.title_confidence || 1.0,
+        description: a.description || a.title || '',
+        description_confidence: a.description_confidence || 1.0,
+
+        // Classification
+        category: catSuggestion.category || firstPage.asset_category || 'IT Equipment',
+        sub_category: catSuggestion.subcategory || firstPage.asset_sub_category || null,
+        make: catSuggestion.make || a.manufacturer || firstPage.manufacturer || null,
+        model: catSuggestion.model || firstPage.asset_make_model || null,
+        category_confidence: a.category_suggestion_confidence || 1.0,
+
+        // Identification
+        serial_number: a.serial_number || firstPage.serial_number || null,
+        hsn_code: a.hsn_code || (() => {
+          const lineIdx = a.invoice_provenance?.source_line_index;
+          if (lineIdx !== undefined && allTableRows[lineIdx]) {
+            return allTableRows[lineIdx].hsn_code || allTableRows[lineIdx].hsn || allTableRows[lineIdx].hsn_sac || null;
+          }
+          return null;
+        })(),
+
+        // Financials (mathematically distributed by VLM-OCR Python)
+        purchase_price: cost,
+        cost_confidence: a.cost_confidence || 1.0,
+        cgst, sgst, igst,
+        tax: totalTax,
+        taxes_detail: taxes,
+        taxes_confidence: a.taxes_confidence || 1.0,
+        installation_charges: a.installation_charges || 0,
+        installation_confidence: a.installation_charges_confidence || 1.0,
+        total_cost: totalAmount,
+        currency: a.currency || firstPage.currency || 'INR',
+
+        // Invoice metadata
+        vendor, invoice_number: invoiceNumber, invoice_date: _normalizeDate(invoiceDate),
+        acquisition_date: _normalizeDate(invoiceDate) || new Date().toISOString().split('T')[0],
+
+        // Parent-child relationships
+        is_parent_asset: a.is_parent_asset !== undefined ? a.is_parent_asset : true,
+        is_parent_confidence: a.is_parent_asset_confidence || 1.0,
+        parent_asset_dummy_number: a.parent_asset_dummy_number || null,
+        asset_group_id: a.asset_group_id || null,
+
+        // Tracking config (from VLM-OCR rules engine)
+        tracking_config: a.tracking_config || {},
+        tracking_config_confidence: a.tracking_config?.confidence || 1.0,
+        tracking_config_source: 'rules',
+
+        // Invoice provenance
+        invoice_provenance: a.invoice_provenance || {},
+
+        // Condition
+        condition: a.condition || firstPage.asset_condition || 'New',
+        condition_source: a.condition_source || 'default',
+
+        // Source
+        source: 'invoice',
+        status: 'in_review',
+
+        // VLM-OCR V1.4 Additional Fields
+        po_number: firstPage.po_number || header.buy_po_no || null,
+        po_date: _normalizeDate(firstPage.po_date || header.buy_po_dt) || null,
+        grn_number: firstPage.grn_number || null,
+        grn_date: _normalizeDate(firstPage.grn_date) || null,
+        pr_number: firstPage.pr_number || null,
+        asset_nature: firstPage.asset_nature || null,
+        insurance_start_date: _normalizeDate(firstPage.insurance_start_date) || null,
+        insurance_end_date: _normalizeDate(firstPage.insurance_end_date) || null,
+        insurance_number: firstPage.insurance_number || null,
+        insurance_vendor: firstPage.insurance_vendor || null,
+        lease_start_date: _normalizeDate(firstPage.lease_start_date) || null,
+        lease_end_date: _normalizeDate(firstPage.lease_end_date) || null,
+        lease_cost: firstPage.lease_cost ? parseFloat(firstPage.lease_cost.toString().replace(/[^\d.]/g, '')) : null,
+        lease_contract_number: firstPage.lease_contract_number || null,
+        lease_vendor: firstPage.lease_vendor || null,
+        asset_expiry_date: _normalizeDate(firstPage.asset_expiry_date) || null,
+        nbv: firstPage.nbv ? parseFloat(firstPage.nbv.toString().replace(/[^\d.]/g, '')) : null,
+        nbv_date: _normalizeDate(firstPage.nbv_date) || null,
+        put_to_use_date: _normalizeDate(firstPage.put_to_use_date) || null,
+        residual_value: firstPage.residual_value ? parseFloat(firstPage.residual_value.toString().replace(/[^\d.]/g, '')) : null,
+        residual_value_percentage: firstPage.residual_value_percentage ? parseFloat(firstPage.residual_value_percentage.toString().replace(/[^\d.]/g, '')) : null,
+        installation_date: _normalizeDate(firstPage.installation_date) || null,
+        business_segment: firstPage.business_segment || null,
+        group_name: firstPage.group || null,
+        legal_entity: firstPage.legal_entity || null,
+        controlling_region: firstPage.controlling_region || null,
+        profit_center: firstPage.profit_center || null,
+        sub_location: firstPage.sub_location || null,
+        last_scan_latitude: firstPage.last_scan_latitude ? parseFloat(firstPage.last_scan_latitude) : null,
+        last_scan_longitude: firstPage.last_scan_longitude ? parseFloat(firstPage.last_scan_longitude) : null,
+        location_radius: firstPage.location_radius ? parseFloat(firstPage.location_radius) : null,
+        allocated_to: firstPage.allocated_to || null,
+        asset_status_date: _normalizeDate(firstPage.asset_status_date) || null,
+        asset_condition_date: _normalizeDate(firstPage.asset_condition_date) || null,
+        last_scan_date: _normalizeDate(firstPage.last_scan_date) || null,
+        last_scan_city: firstPage.last_scan_city || null,
+        asset_created_by: firstPage.asset_created_by || null,
+        asset_geo_fence_status: firstPage.asset_geo_fence_status || null,
+        assignee_type: firstPage.assignee_type || null,
+        old_asset_number: firstPage.old_asset_number || null,
+
+        // Overall confidence
+        confidence: a.title_confidence || extraction.confidence || 0,
+
+        custom_fields: (() => {
+          const c = {
+            'PO Date': firstPage.po_date || header.buy_po_dt || '',
+            'PO Number': firstPage.po_number || header.buy_po_no || '',
+            'Audit Indicator': firstPage.audit_indicator || a.tracking_config?.indicator || '',
+            'Audit Method': firstPage.audit_method || (a.tracking_config?.audit_methods ? a.tracking_config.audit_methods.join(', ') : ''),
+            'Acquisition Date': firstPage.acquisition_date || '',
+            'Asset Created On': firstPage.asset_created_on || '',
+            'Asset Class': firstPage.asset_class || '',
+            'Department': firstPage.department || '',
+            'Asset Nature': firstPage.asset_nature || '',
+            'Asset Criticality': firstPage.asset_criticality || '',
+            'Insurance Start Date': firstPage.insurance_start_date || '',
+            'AMC Start Date': firstPage.amc_start_date || '',
+            'Insurance End Date': firstPage.insurance_end_date || '',
+            'AMC End Date': firstPage.amc_end_date || '',
+            'Warranty Start Date': firstPage.warranty_start_date || a.warranty_start_date || '',
+            'Warranty Expiry Date': firstPage.warranty_expiry_date || a.warranty_expiry_date || '',
+            'Lease Start Date': firstPage.lease_start_date || '',
+            'Lease End Date': firstPage.lease_end_date || '',
+            'Insurance Number': firstPage.insurance_number || '',
+            'AMC Number': firstPage.amc_number || '',
+            'Insurance Vendor': firstPage.insurance_vendor || '',
+            'AMC Vendor': firstPage.amc_vendor || '',
+            'Lease Cost': firstPage.lease_cost || '',
+            'Lease Contract Number': firstPage.lease_contract_number || '',
+            'Lease Vendor': firstPage.lease_vendor || '',
+            'Asset Expiry Date': firstPage.asset_expiry_date || '',
+            'NBV': firstPage.nbv || '',
+            'Useful Life': firstPage.useful_life || '',
+            'NBV Date': firstPage.nbv_date || '',
+            'Put to Use date': firstPage.put_to_use_date || '',
+            'Residual Value': firstPage.residual_value || '',
+            'Installation Date': firstPage.installation_date || '',
+            'Business Segment': firstPage.business_segment || '',
+            'Cost Center': firstPage.cost_center || '',
+            'Group': firstPage.group || '',
+            'Legal Entity': firstPage.legal_entity || '',
+            'Controlling Region': firstPage.controlling_region || '',
+            'Plant/Location': firstPage.plant_location || a.plant_location || '',
+            'Profit Center': firstPage.profit_center || '',
+            'Sub Location': firstPage.sub_location || '',
+            'Last Scan Latitude': firstPage.last_scan_latitude || '',
+            'Last Scan Longitude': firstPage.last_scan_longitude || '',
+            'Location Radius': firstPage.location_radius || '',
+            'GRN Date': firstPage.grn_date || '',
+            'GRN Number': firstPage.grn_number || '',
+            'Allocated To': firstPage.allocated_to || '',
+            'PR Number': firstPage.pr_number || '',
+            'Asset Status': firstPage.asset_status || '',
+            'Asset Status Date': firstPage.asset_status_date || '',
+            'Asset Condition': firstPage.asset_condition || a.condition || '',
+            'Asset Condition Date': firstPage.asset_condition_date || '',
+            'Last Scan Date': firstPage.last_scan_date || '',
+            'Last Scan City': firstPage.last_scan_city || '',
+            'Asset Created By': firstPage.asset_created_by || '',
+            'Asset Geo Fence Status': firstPage.asset_geo_fence_status || '',
+            'Assignee Type': firstPage.assignee_type || '',
+            'Residual Value Percentage': firstPage.residual_value_percentage || ''
+          };
+          Object.keys(c).forEach(k => {
+            if (c[k] === null || c[k] === undefined || c[k] === '') {
+              delete c[k];
+            }
+          });
+          return c;
+        })(),
       });
     }
 
@@ -422,12 +572,22 @@ const Storage = {
     await this.fetchAssets();
     const createdAssets = _cache.assets.filter(a => a.extractionId === extraction.id);
 
-    // Apply vendor custom fields
+    // Apply vendor custom fields if matched
     const vendorProfile = await this.matchVendorProfile(vendor);
     if (vendorProfile) createdAssets.forEach(a => this.applyVendorCustomFields(a, vendorProfile));
 
-    console.log(`[STORAGE] ✅ ${createdAssets.length} asset(s) created`);
+    console.log(`[STORAGE] ✅ ${createdAssets.length} asset(s) created from VLM-OCR`);
     return createdAssets;
+  },
+
+  // Legacy fallback — kept for backward compatibility with old response format
+  async _expandAssets(extraction) {
+    // If generatedAssets is already present, use VLM-OCR path
+    if (extraction.generatedAssets && extraction.generatedAssets.length > 0) {
+      return this._expandVlmAssets(extraction, extraction.generatedAssets);
+    }
+    console.warn('[STORAGE] No VLM-OCR generated assets found, skipping expansion.');
+    return [];
   },
 
   async updateAssetField(assetId, field, value) {
@@ -436,6 +596,19 @@ const Storage = {
     await Supabase.update('assets', assetId, { [dbField]: value });
     const asset = this.getAsset(assetId);
     if (asset) asset[field] = value;
+  },
+
+  async updateAssetCustomField(assetId, customKey, value) {
+    if (!assetId || !customKey) return;
+    const asset = this.getAsset(assetId);
+    if (!asset) return;
+    
+    // Ensure customFields exists
+    if (!asset.customFields) asset.customFields = {};
+    asset.customFields[customKey] = value;
+    
+    // Update the jsonb column in Supabase
+    await Supabase.update('assets', assetId, { custom_fields: asset.customFields });
   },
 
   // ═══════════════════════════════════════════════════
@@ -786,9 +959,20 @@ const Storage = {
       id: row.id, fileName: row.file_name, status: row.status,
       confidence: parseFloat(row.confidence) || 0,
       extractionJson: row.extraction_json,
+      generatedAssets: row.generated_assets || [],
+      extractionType: row.extraction_type || 'standard',
+      extractionMetadata: row.extraction_metadata || {},
+      preciseRows: row.precise_rows || null,
+      pageAnalyses: row.page_analyses || null,
+      invoiceGroups: row.invoice_groups || null,
+      invoiceSummary: row.invoice_summary || null,
       vendorName: row.vendor_name, invoiceNumber: row.invoice_number,
       invoiceDate: row.invoice_date, grandTotal: parseFloat(row.grand_total) || 0,
-      pageCount: 1, timestamp: row.created_at, assetIds: [],
+      poNumber: row.po_number || null,
+      currency: row.currency || 'INR',
+      mathValidation: row.math_validation || {},
+      pageCount: row.extraction_metadata?.page_count || 1,
+      timestamp: row.created_at, assetIds: [],
       approvedAt: row.updated_at, duplicateOf: row.duplicate_of,
       fileUrl: row.file_url || null,
     };
@@ -797,10 +981,17 @@ const Storage = {
   _extractionToDb(ext) {
     return {
       file_name: ext.fileName, status: ext.status, confidence: ext.confidence,
+      extraction_type: ext.extractionType || 'standard',
       extraction_json: ext.extractionJson,
-      vendor_name: ext.vendorName || (_unwrap(ext.extractionJson?.vendor_details?.vendor_name)),
-      invoice_number: ext.invoiceNumber || (_unwrap(ext.extractionJson?.invoice_header?.invoice_number)),
+      generated_assets: ext.generatedAssets || null,
+      extraction_metadata: ext.extractionMetadata || null,
+      precise_rows: ext.preciseRows || null,
+      page_analyses: ext.pageAnalyses || null,
+      invoice_groups: ext.invoiceGroups || null,
+      invoice_summary: ext.invoiceSummary || null,
+      vendor_name: ext.vendorName, invoice_number: ext.invoiceNumber,
       invoice_date: ext.invoiceDate || null, grand_total: ext.grandTotal || 0,
+      po_number: ext.poNumber || null, currency: ext.currency || 'INR',
     };
   },
 
@@ -810,7 +1001,7 @@ const Storage = {
       const parent = _cache.assets.find(a => a.id === row.parent_asset_id);
       parentAssetNumber = parent ? parent.assetNumber : 0;
     }
-    // Short display name: first 40 chars
+    // Short display name: first 50 chars
     const fullName = row.name || '';
     const shortName = fullName.length > 50 ? fullName.substring(0, 47) + '...' : fullName;
 
@@ -819,33 +1010,78 @@ const Storage = {
       assetId: row.asset_id, // 10-digit numeric ID
       assetNumber: parseInt((row.asset_number || '').replace(/\D/g, '')) || 0,
       tempAssetId: row.asset_number,
+      dummyAssetNumber: row.dummy_asset_number || null,
       name: fullName, shortName,
-      description: row.description, category: row.category,
+      nameConfidence: parseFloat(row.name_confidence) || 1.0,
+      description: row.description,
+      descriptionConfidence: parseFloat(row.description_confidence) || 1.0,
+      category: row.category,
       subCategory: row.sub_category, assetClass: row.asset_class,
+      assetType: row.asset_type, assetCriticality: row.asset_criticality,
+      categoryConfidence: parseFloat(row.category_confidence) || 1.0,
       make: row.make, model: row.model,
       serialNumber: row.serial_number, barcode: row.barcode,
+      barcodeRawData: row.barcode_raw_data,
       qrCodeData: row.qr_code_data, hsnCode: row.hsn_code,
       purchasePrice: parseFloat(row.purchase_price) || 0,
+      costConfidence: parseFloat(row.cost_confidence) || 1.0,
       cgst: parseFloat(row.cgst) || 0, sgst: parseFloat(row.sgst) || 0,
       igst: parseFloat(row.igst) || 0, tax: parseFloat(row.tax) || 0,
+      taxesDetail: row.taxes_detail || {},
+      taxesConfidence: parseFloat(row.taxes_confidence) || 1.0,
+      installationCharges: parseFloat(row.installation_charges) || 0,
+      installationConfidence: parseFloat(row.installation_confidence) || 1.0,
       totalCost: parseFloat(row.total_cost) || 0,
+      currency: row.currency || 'INR',
       vendor: row.vendor, invoiceNumber: row.invoice_number,
       invoiceDate: row.invoice_date, acquisitionDate: row.acquisition_date,
       parentAssetId: row.parent_asset_id, parentAssetNumber,
+      parentAssetDummyNumber: row.parent_asset_dummy_number,
+      assetGroupId: row.asset_group_id,
       childIndex: row.child_index, groupReason: row.group_reason,
+      isParentAsset: row.is_parent_asset !== false,
+      isParentConfidence: parseFloat(row.is_parent_confidence) || 1.0,
       unitOfMeasure: row.unit_of_measure || 'Nos',
       bulkQuantity: row.bulk_quantity ? parseFloat(row.bulk_quantity) : null,
       isBulkAsset: row.is_bulk_asset || false,
       locationId: row.location_id, departmentId: row.department_id,
+      plantLocation: row.plant_location,
       assignedTo: row.assigned_to, costCenter: row.cost_center,
       usefulLifeYears: row.useful_life_years ? parseFloat(row.useful_life_years) : null,
       depreciationMethod: row.depreciation_method || 'SLM',
       depreciationRate: row.depreciation_rate ? parseFloat(row.depreciation_rate) : null,
       salvageValue: row.salvage_value ? parseFloat(row.salvage_value) : 1,
       warrantyStartDate: row.warranty_start_date, warrantyEndDate: row.warranty_end_date,
-      warrantyProvider: row.warranty_provider,
+      warrantyProvider: row.warranty_provider, warrantyNumber: row.warranty_number,
       amcStartDate: row.amc_start_date, amcEndDate: row.amc_end_date,
-      amcProvider: row.amc_provider, amcCost: row.amc_cost ? parseFloat(row.amc_cost) : null,
+      amcProvider: row.amc_provider, amcNumber: row.amc_number, amcCost: row.amc_cost ? parseFloat(row.amc_cost) : null,
+      condition: row.condition || 'New',
+      conditionSource: row.condition_source || 'default',
+      conditionDetails: row.condition_details,
+      trackingConfig: row.tracking_config || {},
+      trackingConfigConfidence: parseFloat(row.tracking_config_confidence) || 1.0,
+      trackingConfigSource: row.tracking_config_source || 'rules',
+      invoiceProvenance: row.invoice_provenance || {},
+      source: row.source || 'invoice',
+      poNumber: row.po_number, poDate: row.po_date,
+      grnNumber: row.grn_number, grnDate: row.grn_date,
+      prNumber: row.pr_number, assetNature: row.asset_nature,
+      insuranceStartDate: row.insurance_start_date, insuranceEndDate: row.insurance_end_date,
+      insuranceNumber: row.insurance_number, insuranceVendor: row.insurance_vendor,
+      leaseStartDate: row.lease_start_date, leaseEndDate: row.lease_end_date,
+      leaseCost: row.lease_cost, leaseContractNumber: row.lease_contract_number, leaseVendor: row.lease_vendor,
+      assetExpiryDate: row.asset_expiry_date, nbv: row.nbv, nbvDate: row.nbv_date,
+      putToUseDate: row.put_to_use_date, residualValue: row.residual_value,
+      residualValuePercentage: row.residual_value_percentage, installationDate: row.installation_date,
+      businessSegment: row.business_segment, groupName: row.group_name,
+      legalEntity: row.legal_entity, controllingRegion: row.controlling_region,
+      profitCenter: row.profit_center, subLocation: row.sub_location,
+      lastScanLatitude: row.last_scan_latitude, lastScanLongitude: row.last_scan_longitude,
+      locationRadius: row.location_radius, allocatedTo: row.allocated_to,
+      assetStatusDate: row.asset_status_date, assetConditionDate: row.asset_condition_date,
+      lastScanDate: row.last_scan_date, lastScanCity: row.last_scan_city,
+      assetCreatedBy: row.asset_created_by, assetGeoFenceStatus: row.asset_geo_fence_status,
+      assigneeType: row.assignee_type, oldAssetNumber: row.old_asset_number,
       status: row.status, verificationDate: row.verification_date,
       verifiedBy: row.verified_by, assetImageUrl: row.asset_image_url,
       barcodeImageUrl: row.barcode_image_url,
@@ -858,21 +1094,35 @@ const Storage = {
   _assetToDb(asset) {
     return {
       name: asset.name, description: asset.description,
+      name_confidence: asset.nameConfidence,
+      description_confidence: asset.descriptionConfidence,
       category: asset.category, sub_category: asset.subCategory,
-      asset_class: asset.assetClass, make: asset.make, model: asset.model,
+      asset_class: asset.assetClass, asset_type: asset.assetType,
+      asset_criticality: asset.assetCriticality,
+      category_confidence: asset.categoryConfidence,
+      make: asset.make, model: asset.model,
       serial_number: asset.serialNumber, hsn_code: asset.hsnCode,
-      barcode: asset.barcode, qr_code_data: asset.qrCodeData,
-      purchase_price: asset.purchasePrice,
+      barcode: asset.barcode, barcode_raw_data: asset.barcodeRawData,
+      qr_code_data: asset.qrCodeData,
+      purchase_price: asset.purchasePrice, cost_confidence: asset.costConfidence,
       cgst: asset.cgst, sgst: asset.sgst, igst: asset.igst,
       tax: asset.tax, total_cost: asset.totalCost,
+      taxes_detail: asset.taxesDetail, taxes_confidence: asset.taxesConfidence,
+      installation_charges: asset.installationCharges,
+      installation_confidence: asset.installationConfidence,
+      currency: asset.currency || 'INR',
       vendor: asset.vendor, invoice_number: asset.invoiceNumber,
       invoice_date: asset.invoiceDate, acquisition_date: asset.acquisitionDate,
       parent_asset_id: asset.parentAssetId || null,
+      parent_asset_dummy_number: asset.parentAssetDummyNumber,
+      asset_group_id: asset.assetGroupId,
       child_index: asset.childIndex, group_reason: asset.groupReason,
+      is_parent_asset: asset.isParentAsset,
+      is_parent_confidence: asset.isParentConfidence,
       unit_of_measure: asset.unitOfMeasure,
       bulk_quantity: asset.bulkQuantity, is_bulk_asset: asset.isBulkAsset,
       status: asset.status, assigned_to: asset.assignedTo,
-      cost_center: asset.costCenter,
+      cost_center: asset.costCenter, plant_location: asset.plantLocation,
       location_id: asset.locationId || null,
       department_id: asset.departmentId || null,
       useful_life_years: asset.usefulLifeYears,
@@ -882,8 +1132,35 @@ const Storage = {
       warranty_start_date: asset.warrantyStartDate,
       warranty_end_date: asset.warrantyEndDate,
       warranty_provider: asset.warrantyProvider,
+      warranty_number: asset.warrantyNumber,
       amc_start_date: asset.amcStartDate, amc_end_date: asset.amcEndDate,
       amc_provider: asset.amcProvider, amc_cost: asset.amcCost,
+      condition: asset.condition, condition_source: asset.conditionSource,
+      condition_details: asset.conditionDetails,
+      tracking_config: asset.trackingConfig,
+      tracking_config_confidence: asset.trackingConfigConfidence,
+      tracking_config_source: asset.trackingConfigSource,
+      invoice_provenance: asset.invoiceProvenance,
+      source: asset.source || 'invoice',
+      po_number: asset.poNumber, po_date: asset.poDate,
+      grn_number: asset.grnNumber, grn_date: asset.grnDate,
+      pr_number: asset.prNumber, asset_nature: asset.assetNature,
+      insurance_start_date: asset.insuranceStartDate, insurance_end_date: asset.insuranceEndDate,
+      insurance_number: asset.insuranceNumber, insurance_vendor: asset.insuranceVendor,
+      lease_start_date: asset.leaseStartDate, lease_end_date: asset.leaseEndDate,
+      lease_cost: asset.leaseCost, lease_contract_number: asset.leaseContractNumber, lease_vendor: asset.leaseVendor,
+      asset_expiry_date: asset.assetExpiryDate, nbv: asset.nbv, nbv_date: asset.nbvDate,
+      put_to_use_date: asset.putToUseDate, residual_value: asset.residualValue,
+      residual_value_percentage: asset.residualValuePercentage, installation_date: asset.installationDate,
+      business_segment: asset.businessSegment, group_name: asset.groupName,
+      legal_entity: asset.legalEntity, controlling_region: asset.controllingRegion,
+      profit_center: asset.profitCenter, sub_location: asset.subLocation,
+      last_scan_latitude: asset.lastScanLatitude, last_scan_longitude: asset.lastScanLongitude,
+      location_radius: asset.locationRadius, allocated_to: asset.allocatedTo,
+      asset_status_date: asset.assetStatusDate, asset_condition_date: asset.assetConditionDate,
+      last_scan_date: asset.lastScanDate, last_scan_city: asset.lastScanCity,
+      asset_created_by: asset.assetCreatedBy, asset_geo_fence_status: asset.assetGeoFenceStatus,
+      assignee_type: asset.assigneeType, old_asset_number: asset.oldAssetNumber,
       verification_date: asset.verificationDate,
       verified_by: asset.verifiedBy,
       asset_image_url: asset.assetImageUrl,
@@ -891,6 +1168,32 @@ const Storage = {
       confidence: asset.confidence,
       custom_fields: asset.customFields, tags: asset.tags,
     };
+  },
+
+  // ═══════════════════════════════════════════════════
+  // UPDATE METHODS
+  // ═══════════════════════════════════════════════════
+
+  async updateAssetField(assetId, key, value) {
+    const asset = _cache.assets.find(a => a.id === assetId);
+    if (!asset) return;
+    asset[key] = value;
+    const dbPayload = this._assetToDb(asset);
+    try {
+      await Supabase.update('assets', assetId, dbPayload);
+      console.log(`[STORAGE] Updated field ${key} for asset ${assetId}`);
+    } catch (e) { console.error(`[STORAGE] Update field error:`, e); }
+  },
+
+  async updateAssetCustomField(assetId, key, value) {
+    const asset = _cache.assets.find(a => a.id === assetId);
+    if (!asset) return;
+    if (!asset.customFields) asset.customFields = {};
+    asset.customFields[key] = value;
+    try {
+      await Supabase.update('assets', assetId, { custom_fields: asset.customFields });
+      console.log(`[STORAGE] Updated custom field ${key} for asset ${assetId}`);
+    } catch (e) { console.error(`[STORAGE] Update custom field error:`, e); }
   },
 
   // ═══════════════════════════════════════════════════
@@ -933,6 +1236,8 @@ const Storage = {
   // ═══════════════════════════════════════════════════
   async clearAll() {
     try {
+      await Supabase.deleteWhere('asset_enrichments');
+      await Supabase.deleteWhere('asset_identifications');
       await Supabase.deleteWhere('physical_audits');
       await Supabase.deleteWhere('depreciation_entries');
       await Supabase.deleteWhere('asset_invoices');

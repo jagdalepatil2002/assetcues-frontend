@@ -1,88 +1,44 @@
-# Assetcues POC Frontend
+# AssetCues POC Frontend
 
-> **This is a Proof of Concept.** Not production-ready. Built for demo purposes only.
-> Completely separate from the core `far-ai-brain` backend.
+This is the frontend interface for the AssetCues Smart Upload and Extraction dashboard. It interfaces directly with the `VLM-OCR-MODEL-V1.4` backend mapping AI extractions into the Supabase remote database.
 
-## Quick Start
+## Prerequisites
+- Node.js (for the frontend server)
+- Python 3.10+ (for the VLM-OCR backend)
 
-```bash
-# 1. Start the backend (in a separate terminal)
-cd ../far-ai-brain
-uvicorn far_ai_brain.api.main:app --reload --port 8000
+## How to Start the Application
 
-# 2. Start the frontend
-cd ../poc-frontend
-.\serve.ps1
-# or: python -m http.server 5174 --bind 127.0.0.1
+You need to run **both** the backend Python server and the frontend Node.js server. Open two separate terminal windows.
 
-# 3. Open http://127.0.0.1:5174
+### 1. Start the VLM-OCR Backend Server
+Open your first terminal and run the following commands:
+```powershell
+# Navigate to the backend directory
+cd "..\VLM-OCR-MODEL-V1.4  quick extraction"
+
+# Install requirements (if you haven't already)
+pip install -r requirements.txt
+
+# Start the FastAPI server
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
+*The backend API will run on `http://127.0.0.1:8000`*
 
-## Pages
+### 2. Start the POC Frontend Server
+Open your second terminal and run the following commands:
+```powershell
+# Navigate to the frontend directory
+cd poc-frontend
 
-| Page | URL | Description |
-|------|-----|-------------|
-| Dashboard | `/index.html` | KPIs, recent ingestions, AI status |
-| Smart Upload | `/upload.html` | Drag & drop, multi-page, AI extraction |
-| Review List | `/review.html` | All extractions with status filter |
-| Review Detail | `/review-detail.html?id=xxx` | Side-by-side invoice + extracted data |
-| Asset Registry | `/registry.html` | Searchable/filterable asset table |
-| Asset Detail | `/asset-detail.html?id=xxx` | Full asset card, specs, audit trail |
-
-## Architecture
-
+# Start the local web server
+node server.js
 ```
-poc-frontend/        ← DELETE THIS FOLDER TO REMOVE
-├── index.html       ← Dashboard
-├── upload.html      ← Smart Upload
-├── review.html      ← Review List
-├── review-detail.html ← Review Detail (approve/reject)
-├── registry.html    ← Asset Registry
-├── asset-detail.html ← Asset Detail + Audit Log
-├── js/
-│   ├── storage.js   ← localStorage CRUD layer
-│   ├── api.js       ← Backend API client (dynamic URL)
-│   └── app.js       ← Shared nav, settings, utilities
-├── serve.ps1        ← PowerShell serve script
-└── README.md        ← This file
-```
+*Alternatively, you can just run `.\serve.ps1` in PowerShell.*
 
-## How Data Works
+### 3. Open the App
+Navigate to [http://127.0.0.1:5174](http://127.0.0.1:5174) in your browser.
 
-- **Extractions, assets, audit trails** → stored in browser `localStorage`
-- **Invoice images** → stored in `localStorage` as base64 (for preview)
-- **Only API call** → `POST /api/v1/extract/upload` to the `far-ai-brain` backend
-- Data persists across page refreshes but is browser-specific
-
-## Settings
-
-Click the ⚙ icon in the sidebar or top bar to configure:
-- **Backend API URL** (default: `http://localhost:8000`)
-- **Tenant ID** (default: `poc`)
-
-The app auto-detects the backend on common ports (8000, 8080, 8001, 3001).
-
-## Removal
-
-**To completely remove this POC:**
-
-```bash
-# 1. Delete the POC frontend folder
-rm -rf poc-frontend/
-
-# 2. (Optional) Remove POC CORS from backend
-# In far-ai-brain/far_ai_brain/api/main.py, delete the block between:
-#   # ── POC CORS — remove this block when shipping production frontend ──
-#   ... (CORSMiddleware code)
-#   # ── END POC CORS ──
-```
-
-**Impact on backend: ZERO.** The backend has no knowledge of this frontend.
-
-## Design Source
-
-UI designs from Stitch project: **Assetcues Invoice Agentic AI**
-- Fonts: Manrope (headings) + Inter (body)
-- Colors: Material Design 3 palette
-- Icons: Material Symbols Outlined
-- Framework: TailwindCSS (CDN)
+## Features Added
+- **Multi-File Batch Extraction:** Upload up to 8 invoices at a time; the frontend handles queueing them sequentially to the backend.
+- **Asset Image Upload:** Create single assets on the fly by uploading photos (nameplates, barcodes).
+- **Interactive Review UI:** Review, approve, and sync LLM/OCR generated structured data back into your master inventory.

@@ -364,6 +364,8 @@ function openSettings() {
     const tenantInput = document.getElementById('settings-tenant');
     if (urlInput) urlInput.value = s.apiUrl;
     if (tenantInput) tenantInput.value = s.tenantId;
+    const apiKeyInput = document.getElementById('settings-apikey');
+    if (apiKeyInput) apiKeyInput.value = s.apiKey || '';
     const testResult = document.getElementById('settings-test-result');
     if (testResult) testResult.innerHTML = '';
     modal.classList.remove('hidden');
@@ -378,11 +380,15 @@ function openSettings() {
       <button onclick="document.getElementById('settings-modal').classList.add('hidden')" class="absolute top-4 right-4 p-1 text-on-surface-variant hover:text-on-surface">
         <span class="material-symbols-outlined">close</span>
       </button>
-      <h3 class="font-headline font-bold text-xl mb-6">POC Settings</h3>
+      <h3 class="font-headline font-bold text-xl mb-6">VLM-OCR Settings</h3>
       <div class="space-y-4">
         <div>
           <label class="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1.5">Backend API URL</label>
           <input id="settings-url" type="text" value="${s.apiUrl}" class="w-full px-4 py-3 rounded-lg border border-outline-variant/30 text-sm font-medium focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none" placeholder="http://localhost:8000" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1.5">API Key (X-API-Key)</label>
+          <input id="settings-apikey" type="password" value="${s.apiKey || ''}" class="w-full px-4 py-3 rounded-lg border border-outline-variant/30 text-sm font-medium focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none" placeholder="Optional — leave blank if not required" />
         </div>
         <div>
           <label class="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1.5">Tenant ID</label>
@@ -415,7 +421,8 @@ async function testConnection() {
 function saveSettingsModal() {
   const url = document.getElementById('settings-url').value.trim();
   const tenant = document.getElementById('settings-tenant').value.trim();
-  Storage.saveSettings({ apiUrl: url || 'http://localhost:8000', tenantId: tenant || 'poc' });
+  const apiKey = document.getElementById('settings-apikey').value.trim();
+  Storage.saveSettings({ apiUrl: url || 'http://localhost:8000', tenantId: tenant || 'poc', apiKey: apiKey || '' });
   document.getElementById('settings-modal').classList.add('hidden');
   checkConnection();
 }
@@ -973,7 +980,7 @@ async function sendAgentMessage() {
   messages.innerHTML += `<div class="agent-msg bot" id="${botId}"><span style="opacity:0.5">▍</span></div>`;
   messages.scrollTop = messages.scrollHeight;
 
-  const baseUrl = Storage.getSettings().apiUrl || 'https://assetcues-backend.onrender.com';
+  const baseUrl = Storage.getSettings().apiUrl || 'http://localhost:8000';
   const context = _buildAgentContext();
   let rawAnswer = '';
   let streamOk = false;
