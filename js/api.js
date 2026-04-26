@@ -16,7 +16,7 @@
 
 const Api = {
   _getBaseUrl() {
-    return Storage.getSettings().apiUrl || 'http://localhost:8000';
+    return Storage.getSettings().apiUrl || 'https://assetcues-far-are0e2c4fmaedhc3.centralindia-01.azurewebsites.net';
   },
 
   _getApiKey() {

@@ -595,28 +595,54 @@ async function _startAssetPhotoIdentification() {
       // The endpoint returns ImageIdentificationResult structure where fields are {"value": ..., "confidence": ...}
       // Generate standard asset object
       const safeVal = (field) => field && field.value ? field.value : null;
+      const safeConf = (field) => field && field.confidence ? field.confidence : 1.0;
+      
+      // Get next asset number via Storage
+      const nextNum = await Storage._getNextAssetNumber();
+      const assetNumber = `AST-${String(nextNum).padStart(4, '0')}`;
       
       const newAsset = {
+        org_id: DEFAULT_ORG_ID,
+        asset_number: assetNumber,
         name: safeVal(assetDataRaw.asset_name) || 'Unknown Asset',
+        name_confidence: safeConf(assetDataRaw.asset_name),
+        description: safeVal(assetDataRaw.description) || safeVal(assetDataRaw.asset_name) || '',
         serial_number: safeVal(assetDataRaw.serial_number),
         category: safeVal(assetDataRaw.category) || 'Equipment',
+        sub_category: safeVal(assetDataRaw.sub_category),
         make: safeVal(assetDataRaw.manufacturer),
         model: safeVal(assetDataRaw.model_number),
+        condition: safeVal(assetDataRaw.condition) || 'Used',
+        condition_source: 'image_ai',
         status: 'draft',
-        source: 'image_identification'
+        source: 'image_identification',
+        confidence: safeConf(assetDataRaw.asset_name),
       };
       
       const inserted = await Supabase.insert('assets', [newAsset]);
       
       if (inserted && inserted[0]) {
-        // Try uploading photo
+        // Upload the photo to Supabase Storage
         try {
-          const fileObj = await Storage._uploadFile('asset-images', `${inserted[0].id}/${file.name}`, file);
-          if (fileObj) await Supabase.update('assets', inserted[0].id, { photo_url: fileObj.url });
-        } catch(e) { console.warn('Photo upload skipped/failed'); }
+          await Storage.saveAssetImage(inserted[0].id, URL.createObjectURL(file));
+        } catch(e) { 
+          console.warn('Photo upload skipped/failed:', e.message);
+          // Fallback: try direct file upload
+          try {
+            const path = `${inserted[0].id}/${file.name}`;
+            const url = await Supabase.uploadFile('asset-images', path, file);
+            if (url) {
+              const finalUrl = url.includes('?') ? url : url;
+              await Supabase.update('assets', inserted[0].id, { asset_image_url: finalUrl });
+            }
+          } catch(e2) { console.warn('Direct photo upload also failed:', e2.message); }
+        }
+        
+        // Refresh cache
+        await Storage.fetchAssets();
         
         progressTitle.textContent = 'Registration Complete';
-        setTimeout(() => { window.location.href = `asset-detail.html?id=${inserted[0].id}`; }, 1500);
+        setTimeout(() => { window.location.href = `review-detail.html`; }, 1500);
       } else {
         throw new Error('Database insert failed');
       }

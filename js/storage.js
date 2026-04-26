@@ -51,7 +51,7 @@ const Storage = {
       const raw = localStorage.getItem('ac_settings');
       if (raw) return JSON.parse(raw);
     } catch {}
-    return { apiUrl: 'http://localhost:8000', tenantId: 'poc', apiKey: '' };
+    return { apiUrl: 'https://assetcues-far-are0e2c4fmaedhc3.centralindia-01.azurewebsites.net', tenantId: 'poc', apiKey: '' };
   },
   saveSettings(s) { try { localStorage.setItem('ac_settings', JSON.stringify(s)); } catch {} },
 
