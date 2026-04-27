@@ -10,7 +10,9 @@ const ORG_ID = DEFAULT_ORG_ID;
 function _normalizeDate(raw) {
   if (!raw) return null;
   if (typeof raw !== 'string') return null;
-  const s = raw.trim();
+  // Strip parenthetical suffix like "April 26, 2029 (3 Years Comprehensive)"
+  const s = raw.replace(/\(.*?\)/g, '').trim();
+  if (!s) return null;
   if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
   const m = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
   if (m) {
@@ -21,9 +23,27 @@ function _normalizeDate(raw) {
     if (day > daysInMonth) return null;
     return `${m[3]}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
   }
+  // Try natural-language formats: "April 27, 2026", "27-Apr-2026", "27 Apr 2026"
   const d = new Date(s);
   if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
   return null;
+}
+
+// Normalize messy currency strings like "INR (₹)" → "INR"
+function _normalizeCurrency(raw) {
+  if (!raw) return 'INR';
+  const m = String(raw).toUpperCase().match(/[A-Z]{3}/);
+  return m ? m[0] : 'INR';
+}
+
+// Parse messy numeric strings like "1,15,000.00" or "₹ 5 Years" → number
+function _toNum(v) {
+  if (v == null) return null;
+  if (typeof v === 'number') return isFinite(v) ? v : null;
+  const s = String(v).replace(/[^\d.\-]/g, '');
+  if (!s) return null;
+  const n = parseFloat(s);
+  return isFinite(n) ? n : null;
 }
 
 function _unwrap(v) {
@@ -46,14 +66,162 @@ const Storage = {
   // ═══════════════════════════════════════════════════
   // SETTINGS (only thing still in localStorage — API URL)
   // ═══════════════════════════════════════════════════
+  DEFAULT_API_URL: 'https://assetcues-far-are0e2c4fmaedhc3.centralindia-01.azurewebsites.net',
+
   getSettings() {
+    const defaults = { apiUrl: this.DEFAULT_API_URL, tenantId: 'poc', apiKey: '' };
     try {
       const raw = localStorage.getItem('ac_settings');
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        // Migrate any legacy localhost / 127.0.0.1 URL to the hosted Azure backend
+        const url = (parsed.apiUrl || '').toLowerCase();
+        if (!parsed.apiUrl || url.includes('localhost') || url.includes('127.0.0.1')) {
+          parsed.apiUrl = this.DEFAULT_API_URL;
+          try { localStorage.setItem('ac_settings', JSON.stringify(parsed)); } catch {}
+        }
+        return { ...defaults, ...parsed };
+      }
     } catch {}
-    return { apiUrl: 'https://assetcues-far-are0e2c4fmaedhc3.centralindia-01.azurewebsites.net', tenantId: 'poc', apiKey: '' };
+    return defaults;
   },
   saveSettings(s) { try { localStorage.setItem('ac_settings', JSON.stringify(s)); } catch {} },
+
+  // ═══════════════════════════════════════════════════
+  // AI RESPONSE NORMALIZER
+  // ───────────────────────────────────────────────────
+  // The hosted backend emits assets in a *nested* shape:
+  //   { identity:{}, classification:{}, financials:{}, quantity:{},
+  //     dates:{}, useful_life:{}, contracts:{}, location_and_condition:{},
+  //     tracking:{}, relationships:{}, provenance:{}, confidence_scores:{} }
+  // The legacy backend emitted a *flat* shape (a.title, a.cost, a.taxes.cgst …).
+  // This helper accepts either and always returns the legacy flat shape so
+  // every downstream consumer (storage, review-detail.html, registry, …)
+  // keeps working unchanged.
+  // ═══════════════════════════════════════════════════
+  _normalizeAiAsset(a) {
+    if (!a || typeof a !== 'object') return a;
+    // Already flat? (legacy backend) — return as-is.
+    if (!a.identity && !a.classification && !a.financials && !a.contracts) return a;
+
+    const id   = a.identity || {};
+    const cls  = a.classification || {};
+    const fin  = a.financials || {};
+    const qty  = a.quantity || {};
+    const dts  = a.dates || {};
+    const ul   = a.useful_life || {};
+    const ctr  = a.contracts || {};
+    const ins  = ctr.insurance || {};
+    const amc  = ctr.amc || {};
+    const wty  = ctr.warranty || {};
+    const loc  = a.location_and_condition || {};
+    const trk  = a.tracking || {};
+    const rel  = a.relationships || {};
+    const prov = a.provenance || {};
+    const conf = a.confidence_scores || {};
+
+    // Flatten taxes — backend uses keys like "CGST 9%": 10350.0
+    const taxesIn = fin.taxes || {};
+    let cgst = 0, sgst = 0, igst = 0;
+    for (const [k, v] of Object.entries(taxesIn)) {
+      const key = String(k).toLowerCase();
+      const num = _toNum(v) || 0;
+      if (key.includes('cgst')) cgst += num;
+      else if (key.includes('sgst')) sgst += num;
+      else if (key.includes('igst')) igst += num;
+    }
+    if (taxesIn.cgst != null) cgst = _toNum(taxesIn.cgst) || cgst;
+    if (taxesIn.sgst != null) sgst = _toNum(taxesIn.sgst) || sgst;
+    if (taxesIn.igst != null) igst = _toNum(taxesIn.igst) || igst;
+
+    return {
+      ...a,
+
+      // ── Identity ─────────────────────────────────
+      dummy_asset_number: id.dummy_asset_number || a.dummy_asset_number || null,
+      title:              id.title || id.asset_name || a.title || '',
+      asset_name:         id.asset_name || id.title || a.asset_name || '',
+      description:        id.asset_description || a.description || '',
+      serial_number:      id.serial_number || a.serial_number || null,
+
+      // ── Classification ───────────────────────────
+      category_suggestion: cls.category_suggestion || a.category_suggestion || {
+        category:    cls.category    || null,
+        subcategory: cls.subcategory || null,
+        make:        cls.make        || null,
+        model:       cls.model       || null,
+        asset_class: cls.asset_class || null,
+      },
+      manufacturer: cls.manufacturer || cls.make || a.manufacturer || null,
+      asset_nature: cls.asset_nature || a.asset_nature || null,
+
+      // ── Financials ───────────────────────────────
+      cost:                 fin.cost                 != null ? fin.cost                 : (a.cost || 0),
+      total_amount:         fin.total_amount         != null ? fin.total_amount         : (a.total_amount || null),
+      installation_charges: fin.installation_charges != null ? fin.installation_charges : (a.installation_charges || 0),
+      currency:             _normalizeCurrency(fin.currency || a.currency),
+      // Keep flattened cgst/sgst/igst alongside the original taxes object so
+      // the review UI (which iterates raw.taxes keys) keeps showing labels.
+      taxes: { cgst, sgst, igst, ...(taxesIn || {}) },
+      price_validation: fin.price_validation || a.price_validation || null,
+
+      // ── Quantity ─────────────────────────────────
+      uom:               qty.uom               || a.uom               || null,
+      group_count:       qty.group_count       != null ? qty.group_count       : (a.group_count || 1),
+      measured_quantity: qty.measured_quantity != null ? qty.measured_quantity : (a.measured_quantity || null),
+
+      // ── Dates ────────────────────────────────────
+      acquisition_date:        dts.acquisition_date        || a.acquisition_date        || null,
+      acquisition_date_source: dts.acquisition_date_source || a.acquisition_date_source || null,
+
+      // ── Useful life ──────────────────────────────
+      useful_life_years: ul.years != null ? _toNum(ul.years) : (a.useful_life_years != null ? _toNum(a.useful_life_years) : null),
+      useful_life:       ul.years != null ? `${ul.years} Years` : (a.useful_life || null),
+
+      // ── Contracts → flat fields ──────────────────
+      insurance_start_date: ins.start_date || a.insurance_start_date || null,
+      insurance_end_date:   ins.end_date   || a.insurance_end_date   || null,
+      insurance_number:     ins.number     || a.insurance_number     || null,
+      insurance_vendor:     ins.vendor     || a.insurance_vendor     || null,
+      amc_start_date:       amc.start_date || a.amc_start_date       || null,
+      amc_end_date:         amc.end_date   || a.amc_end_date         || null,
+      amc_number:           amc.number     || a.amc_number           || null,
+      amc_vendor:           amc.vendor     || a.amc_vendor           || null,
+      warranty_start_date:  wty.start_date          || a.warranty_start_date  || null,
+      warranty_expiry_date: wty.expiry_date || wty.end_date || a.warranty_expiry_date || null,
+      warranty_number:      wty.number              || a.warranty_number      || null,
+
+      // ── Location & condition ─────────────────────
+      plant_location:   loc.plant_location   || a.plant_location   || null,
+      condition:        loc.condition        || a.condition        || 'New',
+      condition_source: loc.condition_source || a.condition_source || 'default',
+
+      // ── Tracking config ──────────────────────────
+      tracking_config: a.tracking_config || {
+        indicator:        trk.indicator        || null,
+        tracking_methods: trk.tracking_methods || [],
+        audit_methods:    trk.audit_methods    || [],
+        source:           trk.source           || 'rules',
+      },
+
+      // ── Relationships ────────────────────────────
+      is_parent_asset:           rel.is_parent_asset           !== undefined ? rel.is_parent_asset           : (a.is_parent_asset !== undefined ? a.is_parent_asset : true),
+      parent_asset_dummy_number: rel.parent_asset_dummy_number || a.parent_asset_dummy_number || null,
+      asset_group_id:            rel.asset_group_id            || a.asset_group_id            || null,
+
+      // ── Provenance ───────────────────────────────
+      invoice_provenance: a.invoice_provenance || prov,
+
+      // ── Confidence scores (flat aliases) ─────────
+      title_confidence:                conf.title                != null ? conf.title                : (a.title_confidence                || 1.0),
+      description_confidence:          conf.asset_description    != null ? conf.asset_description    : (a.description_confidence          || 1.0),
+      category_suggestion_confidence:  conf.category_suggestion  != null ? conf.category_suggestion  : (a.category_suggestion_confidence  || 1.0),
+      cost_confidence:                 conf.cost                 != null ? conf.cost                 : (a.cost_confidence                 || 1.0),
+      taxes_confidence:                conf.taxes                != null ? conf.taxes                : (a.taxes_confidence                || 1.0),
+      installation_charges_confidence: conf.installation_charges != null ? conf.installation_charges : (a.installation_charges_confidence || 1.0),
+      is_parent_asset_confidence:      conf.is_parent_asset      != null ? conf.is_parent_asset      : (a.is_parent_asset_confidence      || 1.0),
+    };
+  },
 
   // ═══════════════════════════════════════════════════
   // EXTRACTIONS
@@ -104,7 +272,9 @@ const Storage = {
     console.log('%c[STORAGE] 📥 createExtraction (VLM-OCR) starting...', 'color:#005da9;font-weight:bold');
 
     const rawData = vlmResponse.data || {};       // { page_1: {...}, page_2: {...} }
-    const generatedAssets = vlmResponse.assets || [];  // IndividualAsset[]
+    // Normalize the new nested AI response (identity/classification/financials/…)
+    // into the legacy flat shape every consumer expects. Idempotent.
+    const generatedAssets = (vlmResponse.assets || []).map(a => this._normalizeAiAsset(a));
     const metadata = vlmResponse.metadata || {};
 
     // Extract header info from the first page
@@ -117,8 +287,9 @@ const Storage = {
     const invoiceNumber = header.inv_no || '';
     const invoiceDateRaw = header.inv_dt || null;
     const invoiceDate = _normalizeDate(invoiceDateRaw);
-    const grandTotalRaw = (footer.total || header.cost || '0').toString().replace(/[^\d.]/g, '');
-    const grandTotal = parseFloat(grandTotalRaw) || 0;
+    // New backend uses footer.grand_total / footer.total_invoice_value; legacy used footer.total
+    const grandTotal = _toNum(footer.grand_total) || _toNum(footer.total_invoice_value)
+      || _toNum(footer.total) || _toNum(header.cost) || 0;
     const pageCount = metadata.page_count || Object.keys(rawData).length || 1;
     const confidence = generatedAssets.length > 0
       ? generatedAssets.reduce((s, a) => s + (a.title_confidence || 0), 0) / generatedAssets.length
@@ -148,7 +319,7 @@ const Storage = {
       confidence, extraction_json: rawData, generated_assets: generatedAssets,
       vendor_name: vendorName, invoice_number: invoiceNumber,
       invoice_date: invoiceDate, grand_total: grandTotal,
-      currency: header.currency || 'INR',
+      currency: _normalizeCurrency(header.currency),
       po_number: header.po_no || null,
       extraction_metadata: metadata,
       duplicate_of: typeof isDuplicate === 'string' ? isDuplicate : null,
@@ -335,6 +506,8 @@ const Storage = {
    */
   async _expandVlmAssets(extraction, generatedAssets) {
     if (!generatedAssets || generatedAssets.length === 0) return [];
+    // Defensive: normalize again in case caller passed the raw nested shape
+    generatedAssets = generatedAssets.map(a => this._normalizeAiAsset(a));
 
     let nextNum = await this._getNextAssetNumber();
     const assetRows = [];
@@ -344,9 +517,14 @@ const Storage = {
     const firstPageKey = Object.keys(rawData).sort()[0] || 'page_1';
     const firstPage = rawData[firstPageKey] || {};
     const header = firstPage.header || {};
+    const footer = firstPage.footer || {};
+    const otherData = firstPage.other_data || {};
+    // Merge order: legacy top-level → header → footer → other_data (priority view wins).
+    // This gives a single bag of canonical field names regardless of backend version.
+    const pageFields = { ...firstPage, ...header, ...footer, ...otherData };
     const vendor = header.vnd_name || header.vendor || extraction.vendorName || 'Unknown';
-    const invoiceNumber = header.inv_no || extraction.invoiceNumber || '';
-    const invoiceDate = _normalizeDate(header.inv_dt) || extraction.invoiceDate || null;
+    const invoiceNumber = header.inv_no || pageFields.invoice_number || extraction.invoiceNumber || '';
+    const invoiceDate = _normalizeDate(header.inv_dt) || _normalizeDate(pageFields.invoice_date) || extraction.invoiceDate || null;
 
     // Build flat table rows for HSN lookup by source_line_index
     const allTableRows = [];
@@ -371,16 +549,21 @@ const Storage = {
       const catSuggestion = a.category_suggestion || {};
 
       // Parse cost — handle string values like "60000/-"
-      const costRaw = a.cost || a.total_amount || 0;
-      const cost = typeof costRaw === 'string' ? parseFloat(costRaw.replace(/[^\d.]/g, '')) || 0 : costRaw;
-      const totalAmount = typeof a.total_amount === 'string' ? parseFloat(a.total_amount.toString().replace(/[^\d.]/g, '')) || 0 : (a.total_amount || cost);
+      const cost = _toNum(a.cost) ?? _toNum(a.total_amount) ?? 0;
+      const totalAmount = _toNum(a.total_amount) ?? cost;
 
       // Parse taxes (deterministic from Python, NOT LLM)
       const taxes = a.taxes || {};
-      const cgst = parseFloat(taxes.cgst) || 0;
-      const sgst = parseFloat(taxes.sgst) || 0;
-      const igst = parseFloat(taxes.igst) || 0;
+      const cgst = _toNum(taxes.cgst) || 0;
+      const sgst = _toNum(taxes.sgst) || 0;
+      const igst = _toNum(taxes.igst) || 0;
       const totalTax = cgst + sgst + igst;
+
+      // Acquisition date: prefer asset.dates.acquisition_date (now flattened),
+      // then header invoice date, then today.
+      const acquisitionDate = _normalizeDate(a.acquisition_date)
+        || _normalizeDate(invoiceDate)
+        || new Date().toISOString().split('T')[0];
 
       assetRows.push({
         org_id: ORG_ID,
@@ -395,14 +578,15 @@ const Storage = {
         description_confidence: a.description_confidence || 1.0,
 
         // Classification
-        category: catSuggestion.category || firstPage.asset_category || 'IT Equipment',
-        sub_category: catSuggestion.subcategory || firstPage.asset_sub_category || null,
-        make: catSuggestion.make || a.manufacturer || firstPage.manufacturer || null,
-        model: catSuggestion.model || firstPage.asset_make_model || null,
+        category: catSuggestion.category || pageFields.asset_category || 'IT Equipment',
+        sub_category: catSuggestion.subcategory || pageFields.asset_sub_category || null,
+        asset_class: catSuggestion.asset_class || pageFields.asset_class || null,
+        make: catSuggestion.make || a.manufacturer || pageFields.manufacturer || pageFields.manufacturer_priority || null,
+        model: catSuggestion.model || pageFields.asset_make_model || null,
         category_confidence: a.category_suggestion_confidence || 1.0,
 
         // Identification
-        serial_number: a.serial_number || firstPage.serial_number || null,
+        serial_number: a.serial_number || null,
         hsn_code: a.hsn_code || (() => {
           const lineIdx = a.invoice_provenance?.source_line_index;
           if (lineIdx !== undefined && allTableRows[lineIdx]) {
@@ -418,14 +602,14 @@ const Storage = {
         tax: totalTax,
         taxes_detail: taxes,
         taxes_confidence: a.taxes_confidence || 1.0,
-        installation_charges: a.installation_charges || 0,
+        installation_charges: _toNum(a.installation_charges) || 0,
         installation_confidence: a.installation_charges_confidence || 1.0,
         total_cost: totalAmount,
-        currency: a.currency || firstPage.currency || 'INR',
+        currency: _normalizeCurrency(a.currency || pageFields.currency),
 
         // Invoice metadata
-        vendor, invoice_number: invoiceNumber, invoice_date: _normalizeDate(invoiceDate),
-        acquisition_date: _normalizeDate(invoiceDate) || new Date().toISOString().split('T')[0],
+        vendor, invoice_number: invoiceNumber, invoice_date: invoiceDate,
+        acquisition_date: acquisitionDate,
 
         // Parent-child relationships
         is_parent_asset: a.is_parent_asset !== undefined ? a.is_parent_asset : true,
@@ -436,123 +620,135 @@ const Storage = {
         // Tracking config (from VLM-OCR rules engine)
         tracking_config: a.tracking_config || {},
         tracking_config_confidence: a.tracking_config?.confidence || 1.0,
-        tracking_config_source: 'rules',
+        tracking_config_source: a.tracking_config?.source || 'rules',
 
         // Invoice provenance
         invoice_provenance: a.invoice_provenance || {},
 
-        // Condition
-        condition: a.condition || firstPage.asset_condition || 'New',
+        // Location & condition
+        plant_location: a.plant_location || pageFields.plant_location || null,
+        condition: a.condition || pageFields.asset_condition || 'New',
         condition_source: a.condition_source || 'default',
+
+        // Useful life (from new useful_life.years block)
+        useful_life_years: _toNum(a.useful_life_years) ?? _toNum(pageFields.useful_life_priority) ?? _toNum(pageFields.useful_life) ?? null,
 
         // Source
         source: 'invoice',
         status: 'in_review',
 
-        // VLM-OCR V1.4 Additional Fields
-        po_number: firstPage.po_number || header.buy_po_no || null,
-        po_date: _normalizeDate(firstPage.po_date || header.buy_po_dt) || null,
-        grn_number: firstPage.grn_number || null,
-        grn_date: _normalizeDate(firstPage.grn_date) || null,
-        pr_number: firstPage.pr_number || null,
-        asset_nature: firstPage.asset_nature || null,
-        insurance_start_date: _normalizeDate(firstPage.insurance_start_date) || null,
-        insurance_end_date: _normalizeDate(firstPage.insurance_end_date) || null,
-        insurance_number: firstPage.insurance_number || null,
-        insurance_vendor: firstPage.insurance_vendor || null,
-        lease_start_date: _normalizeDate(firstPage.lease_start_date) || null,
-        lease_end_date: _normalizeDate(firstPage.lease_end_date) || null,
-        lease_cost: firstPage.lease_cost ? parseFloat(firstPage.lease_cost.toString().replace(/[^\d.]/g, '')) : null,
-        lease_contract_number: firstPage.lease_contract_number || null,
-        lease_vendor: firstPage.lease_vendor || null,
-        asset_expiry_date: _normalizeDate(firstPage.asset_expiry_date) || null,
-        nbv: firstPage.nbv ? parseFloat(firstPage.nbv.toString().replace(/[^\d.]/g, '')) : null,
-        nbv_date: _normalizeDate(firstPage.nbv_date) || null,
-        put_to_use_date: _normalizeDate(firstPage.put_to_use_date) || null,
-        residual_value: firstPage.residual_value ? parseFloat(firstPage.residual_value.toString().replace(/[^\d.]/g, '')) : null,
-        residual_value_percentage: firstPage.residual_value_percentage ? parseFloat(firstPage.residual_value_percentage.toString().replace(/[^\d.]/g, '')) : null,
-        installation_date: _normalizeDate(firstPage.installation_date) || null,
-        business_segment: firstPage.business_segment || null,
-        group_name: firstPage.group || null,
-        legal_entity: firstPage.legal_entity || null,
-        controlling_region: firstPage.controlling_region || null,
-        profit_center: firstPage.profit_center || null,
-        sub_location: firstPage.sub_location || null,
-        last_scan_latitude: firstPage.last_scan_latitude ? parseFloat(firstPage.last_scan_latitude) : null,
-        last_scan_longitude: firstPage.last_scan_longitude ? parseFloat(firstPage.last_scan_longitude) : null,
-        location_radius: firstPage.location_radius ? parseFloat(firstPage.location_radius) : null,
-        allocated_to: firstPage.allocated_to || null,
-        asset_status_date: _normalizeDate(firstPage.asset_status_date) || null,
-        asset_condition_date: _normalizeDate(firstPage.asset_condition_date) || null,
-        last_scan_date: _normalizeDate(firstPage.last_scan_date) || null,
-        last_scan_city: firstPage.last_scan_city || null,
-        asset_created_by: firstPage.asset_created_by || null,
-        asset_geo_fence_status: firstPage.asset_geo_fence_status || null,
-        assignee_type: firstPage.assignee_type || null,
-        old_asset_number: firstPage.old_asset_number || null,
+        // VLM-OCR Additional Fields — sourced from header / footer / other_data
+        po_number: pageFields.po_number || header.po_no || header.buy_po_no || null,
+        po_date: _normalizeDate(pageFields.po_date || header.po_dt || header.buy_po_dt) || null,
+        grn_number: pageFields.grn_number || header.grn_no || null,
+        grn_date: _normalizeDate(pageFields.grn_date || header.grn_dt) || null,
+        pr_number: pageFields.pr_number || header.pr_no || null,
+        asset_nature: a.asset_nature || pageFields.asset_nature || pageFields.asset_nature_priority || null,
+        warranty_start_date: _normalizeDate(a.warranty_start_date || pageFields.warranty_start_date || pageFields.warranty_start_date_priority) || null,
+        warranty_end_date: _normalizeDate(a.warranty_expiry_date || pageFields.warranty_expiry_date || pageFields.warranty_expiry_date_priority) || null,
+        warranty_number: a.warranty_number || pageFields.warranty_number || null,
+        amc_start_date: _normalizeDate(a.amc_start_date || pageFields.amc_start_date || pageFields.amc_start_date_priority) || null,
+        amc_end_date: _normalizeDate(a.amc_end_date || pageFields.amc_end_date || pageFields.amc_end_date_priority) || null,
+        amc_number: a.amc_number || pageFields.amc_number || null,
+        amc_provider: a.amc_vendor || pageFields.amc_vendor || null,
+        insurance_start_date: _normalizeDate(a.insurance_start_date || pageFields.insurance_start_date || pageFields.insurance_start_date_priority) || null,
+        insurance_end_date: _normalizeDate(a.insurance_end_date || pageFields.insurance_end_date || pageFields.insurance_end_date_priority) || null,
+        insurance_number: a.insurance_number || pageFields.insurance_number || pageFields.insurance_number_priority || null,
+        insurance_vendor: a.insurance_vendor || pageFields.insurance_vendor || pageFields.insurance_vendor_priority || null,
+        lease_start_date: _normalizeDate(pageFields.lease_start_date) || null,
+        lease_end_date: _normalizeDate(pageFields.lease_end_date) || null,
+        lease_cost: _toNum(pageFields.lease_cost),
+        lease_contract_number: pageFields.lease_contract_number || null,
+        lease_vendor: pageFields.lease_vendor || null,
+        asset_expiry_date: _normalizeDate(pageFields.asset_expiry_date) || null,
+        nbv: _toNum(pageFields.nbv),
+        nbv_date: _normalizeDate(pageFields.nbv_date) || null,
+        put_to_use_date: _normalizeDate(pageFields.put_to_use_date) || null,
+        residual_value: _toNum(pageFields.residual_value),
+        residual_value_percentage: _toNum(pageFields.residual_value_percentage),
+        installation_date: _normalizeDate(pageFields.installation_date) || null,
+        business_segment: pageFields.business_segment || null,
+        group_name: pageFields.group || null,
+        legal_entity: pageFields.legal_entity || null,
+        controlling_region: pageFields.controlling_region || null,
+        profit_center: pageFields.profit_center || null,
+        sub_location: pageFields.sub_location || null,
+        last_scan_latitude: _toNum(pageFields.last_scan_latitude),
+        last_scan_longitude: _toNum(pageFields.last_scan_longitude),
+        location_radius: _toNum(pageFields.location_radius),
+        allocated_to: pageFields.allocated_to || null,
+        asset_status_date: _normalizeDate(pageFields.asset_status_date) || null,
+        asset_condition_date: _normalizeDate(pageFields.asset_condition_date) || null,
+        last_scan_date: _normalizeDate(pageFields.last_scan_date) || null,
+        last_scan_city: pageFields.last_scan_city || null,
+        asset_created_by: pageFields.asset_created_by || null,
+        asset_geo_fence_status: pageFields.asset_geo_fence_status || null,
+        assignee_type: pageFields.assignee_type || null,
+        old_asset_number: pageFields.old_asset_number || null,
 
         // Overall confidence
         confidence: a.title_confidence || extraction.confidence || 0,
 
         custom_fields: (() => {
           const c = {
-            'PO Date': firstPage.po_date || header.buy_po_dt || '',
-            'PO Number': firstPage.po_number || header.buy_po_no || '',
-            'Audit Indicator': firstPage.audit_indicator || a.tracking_config?.indicator || '',
-            'Audit Method': firstPage.audit_method || (a.tracking_config?.audit_methods ? a.tracking_config.audit_methods.join(', ') : ''),
-            'Acquisition Date': firstPage.acquisition_date || '',
-            'Asset Created On': firstPage.asset_created_on || '',
-            'Asset Class': firstPage.asset_class || '',
-            'Department': firstPage.department || '',
-            'Asset Nature': firstPage.asset_nature || '',
-            'Asset Criticality': firstPage.asset_criticality || '',
-            'Insurance Start Date': firstPage.insurance_start_date || '',
-            'AMC Start Date': firstPage.amc_start_date || '',
-            'Insurance End Date': firstPage.insurance_end_date || '',
-            'AMC End Date': firstPage.amc_end_date || '',
-            'Warranty Start Date': firstPage.warranty_start_date || a.warranty_start_date || '',
-            'Warranty Expiry Date': firstPage.warranty_expiry_date || a.warranty_expiry_date || '',
-            'Lease Start Date': firstPage.lease_start_date || '',
-            'Lease End Date': firstPage.lease_end_date || '',
-            'Insurance Number': firstPage.insurance_number || '',
-            'AMC Number': firstPage.amc_number || '',
-            'Insurance Vendor': firstPage.insurance_vendor || '',
-            'AMC Vendor': firstPage.amc_vendor || '',
-            'Lease Cost': firstPage.lease_cost || '',
-            'Lease Contract Number': firstPage.lease_contract_number || '',
-            'Lease Vendor': firstPage.lease_vendor || '',
-            'Asset Expiry Date': firstPage.asset_expiry_date || '',
-            'NBV': firstPage.nbv || '',
-            'Useful Life': firstPage.useful_life || '',
-            'NBV Date': firstPage.nbv_date || '',
-            'Put to Use date': firstPage.put_to_use_date || '',
-            'Residual Value': firstPage.residual_value || '',
-            'Installation Date': firstPage.installation_date || '',
-            'Business Segment': firstPage.business_segment || '',
-            'Cost Center': firstPage.cost_center || '',
-            'Group': firstPage.group || '',
-            'Legal Entity': firstPage.legal_entity || '',
-            'Controlling Region': firstPage.controlling_region || '',
-            'Plant/Location': firstPage.plant_location || a.plant_location || '',
-            'Profit Center': firstPage.profit_center || '',
-            'Sub Location': firstPage.sub_location || '',
-            'Last Scan Latitude': firstPage.last_scan_latitude || '',
-            'Last Scan Longitude': firstPage.last_scan_longitude || '',
-            'Location Radius': firstPage.location_radius || '',
-            'GRN Date': firstPage.grn_date || '',
-            'GRN Number': firstPage.grn_number || '',
-            'Allocated To': firstPage.allocated_to || '',
-            'PR Number': firstPage.pr_number || '',
-            'Asset Status': firstPage.asset_status || '',
-            'Asset Status Date': firstPage.asset_status_date || '',
-            'Asset Condition': firstPage.asset_condition || a.condition || '',
-            'Asset Condition Date': firstPage.asset_condition_date || '',
-            'Last Scan Date': firstPage.last_scan_date || '',
-            'Last Scan City': firstPage.last_scan_city || '',
-            'Asset Created By': firstPage.asset_created_by || '',
-            'Asset Geo Fence Status': firstPage.asset_geo_fence_status || '',
-            'Assignee Type': firstPage.assignee_type || '',
-            'Residual Value Percentage': firstPage.residual_value_percentage || ''
+            'PO Date': pageFields.po_date || header.po_dt || header.buy_po_dt || '',
+            'PO Number': pageFields.po_number || header.po_no || header.buy_po_no || '',
+            'Audit Indicator': pageFields.audit_indicator || a.tracking_config?.indicator || '',
+            'Audit Method': pageFields.audit_method || (a.tracking_config?.audit_methods ? a.tracking_config.audit_methods.join(', ') : ''),
+            'Tracking Method': (a.tracking_config?.tracking_methods || []).join(', '),
+            'Acquisition Date': a.acquisition_date || pageFields.acquisition_date || '',
+            'Asset Created On': pageFields.asset_created_on || '',
+            'Asset Class': catSuggestion.asset_class || pageFields.asset_class || '',
+            'Department': pageFields.department || '',
+            'Asset Nature': a.asset_nature || pageFields.asset_nature || pageFields.asset_nature_priority || '',
+            'Asset Criticality': pageFields.asset_criticality || '',
+            'Insurance Start Date': a.insurance_start_date || pageFields.insurance_start_date || pageFields.insurance_start_date_priority || '',
+            'AMC Start Date': a.amc_start_date || pageFields.amc_start_date || pageFields.amc_start_date_priority || '',
+            'Insurance End Date': a.insurance_end_date || pageFields.insurance_end_date || pageFields.insurance_end_date_priority || '',
+            'AMC End Date': a.amc_end_date || pageFields.amc_end_date || pageFields.amc_end_date_priority || '',
+            'Warranty Start Date': a.warranty_start_date || pageFields.warranty_start_date || pageFields.warranty_start_date_priority || '',
+            'Warranty Expiry Date': a.warranty_expiry_date || pageFields.warranty_expiry_date || pageFields.warranty_expiry_date_priority || '',
+            'Lease Start Date': pageFields.lease_start_date || '',
+            'Lease End Date': pageFields.lease_end_date || '',
+            'Insurance Number': a.insurance_number || pageFields.insurance_number || pageFields.insurance_number_priority || '',
+            'AMC Number': a.amc_number || pageFields.amc_number || '',
+            'Insurance Vendor': a.insurance_vendor || pageFields.insurance_vendor || pageFields.insurance_vendor_priority || '',
+            'AMC Vendor': a.amc_vendor || pageFields.amc_vendor || '',
+            'Lease Cost': pageFields.lease_cost || '',
+            'Lease Contract Number': pageFields.lease_contract_number || '',
+            'Lease Vendor': pageFields.lease_vendor || '',
+            'Asset Expiry Date': pageFields.asset_expiry_date || '',
+            'NBV': pageFields.nbv || '',
+            'Useful Life': (a.useful_life_years != null ? `${a.useful_life_years} Years` : (pageFields.useful_life || pageFields.useful_life_priority || '')),
+            'NBV Date': pageFields.nbv_date || '',
+            'Put to Use date': pageFields.put_to_use_date || '',
+            'Residual Value': pageFields.residual_value || '',
+            'Installation Date': pageFields.installation_date || '',
+            'Business Segment': pageFields.business_segment || '',
+            'Cost Center': pageFields.cost_center || '',
+            'Group': pageFields.group || '',
+            'Legal Entity': pageFields.legal_entity || '',
+            'Controlling Region': pageFields.controlling_region || '',
+            'Plant/Location': a.plant_location || pageFields.plant_location || '',
+            'Profit Center': pageFields.profit_center || '',
+            'Sub Location': pageFields.sub_location || '',
+            'Last Scan Latitude': pageFields.last_scan_latitude || '',
+            'Last Scan Longitude': pageFields.last_scan_longitude || '',
+            'Location Radius': pageFields.location_radius || '',
+            'GRN Date': pageFields.grn_date || header.grn_dt || '',
+            'GRN Number': pageFields.grn_number || header.grn_no || '',
+            'Allocated To': pageFields.allocated_to || '',
+            'PR Number': pageFields.pr_number || header.pr_no || '',
+            'Asset Status': pageFields.asset_status || '',
+            'Asset Status Date': pageFields.asset_status_date || '',
+            'Asset Condition': a.condition || pageFields.asset_condition || '',
+            'Asset Condition Date': pageFields.asset_condition_date || '',
+            'Last Scan Date': pageFields.last_scan_date || '',
+            'Last Scan City': pageFields.last_scan_city || '',
+            'Asset Created By': pageFields.asset_created_by || '',
+            'Asset Geo Fence Status': pageFields.asset_geo_fence_status || '',
+            'Assignee Type': pageFields.assignee_type || '',
+            'Residual Value Percentage': pageFields.residual_value_percentage || ''
           };
           Object.keys(c).forEach(k => {
             if (c[k] === null || c[k] === undefined || c[k] === '') {
@@ -955,11 +1151,17 @@ const Storage = {
   // DB ↔ FRONTEND MAPPERS
   // ═══════════════════════════════════════════════════
   _dbToExtraction(row) {
+    // Defensive: re-normalize generated_assets in case the row was persisted
+    // with the new nested AI shape (identity/classification/financials/…).
+    const rawAssets = row.generated_assets || [];
+    const generatedAssets = Array.isArray(rawAssets)
+      ? rawAssets.map(a => this._normalizeAiAsset(a))
+      : rawAssets;
     return {
       id: row.id, fileName: row.file_name, status: row.status,
       confidence: parseFloat(row.confidence) || 0,
       extractionJson: row.extraction_json,
-      generatedAssets: row.generated_assets || [],
+      generatedAssets,
       extractionType: row.extraction_type || 'standard',
       extractionMetadata: row.extraction_metadata || {},
       preciseRows: row.precise_rows || null,

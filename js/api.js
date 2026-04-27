@@ -16,7 +16,7 @@
 
 const Api = {
   _getBaseUrl() {
-    return Storage.getSettings().apiUrl || 'https://assetcues-far-are0e2c4fmaedhc3.centralindia-01.azurewebsites.net';
+    return Storage.getSettings().apiUrl || Storage.DEFAULT_API_URL;
   },
 
   _getApiKey() {

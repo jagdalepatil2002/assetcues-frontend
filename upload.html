@@ -87,6 +87,15 @@ tailwind.config = {
           </button>
         </div>
 
+        <!-- Asset-mode info banner (hidden by default) -->
+        <div id="asset-mode-note" class="hidden bg-primary/5 border border-primary/30 rounded-xl px-4 py-3 flex gap-3 items-start text-xs text-on-surface">
+          <span class="material-symbols-outlined text-primary text-base mt-0.5">info</span>
+          <div class="flex-1 leading-relaxed">
+            <p class="font-bold mb-1">Image-only registration captures identity, not financials.</p>
+            <p class="text-on-surface-variant">From a photo we extract: <span class="font-medium text-on-surface">name, description, category, make/model, serial, asset tag, condition, barcode, count, UOM, color/observations</span>. Add <span class="font-medium text-on-surface">purchase date, cost, warranty</span> &amp; vendor / location during review (the backend tells us which fields still require an invoice).</p>
+          </div>
+        </div>
+
         <!-- Drop Zone -->
         <div id="drop-zone" class="drop-zone relative group bg-surface-container-low rounded-xl border-2 border-dashed border-outline-variant hover:border-primary transition-all p-12 flex flex-col items-center justify-center text-center cursor-pointer">
           <div class="w-20 h-20 signature-gradient rounded-full flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform">
@@ -313,15 +322,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function handleFiles(fileList) {
-  const before = selectedFiles.length;
+  // In asset-image mode we only accept ONE image; PDFs and extras are dropped.
+  const isAssetMode = uploadMode === 'asset';
+  const cap = isAssetMode ? 1 : 8;
+  let rejected = 0;
   for (const f of fileList) {
-    if (selectedFiles.length >= 8) break;
-    if (!f.type.match(/^(image\/(jpeg|png|bmp|webp|heic|tiff)|application\/pdf)$/)) continue;
+    if (selectedFiles.length >= cap) { rejected++; continue; }
+    const allowed = isAssetMode
+      ? /^image\/(jpeg|png|bmp|webp|heic|heif|tiff)$/i.test(f.type)
+      : /^(image\/(jpeg|png|bmp|webp|heic|heif|tiff)|application\/pdf)$/i.test(f.type);
+    if (!allowed) { rejected++; continue; }
     selectedFiles.push(f);
   }
   renderPreviews();
   updateCapacity();
   document.getElementById('extract-btn').disabled = selectedFiles.length === 0;
+  if (rejected > 0 && typeof showToast === 'function') {
+    showToast(isAssetMode
+      ? 'Asset registration accepts a single image only — extras were dropped.'
+      : `${rejected} file(s) rejected (unsupported type or batch full).`,
+      'info');
+  }
 }
 
 function removeFile(idx) {
@@ -391,17 +412,30 @@ function setUploadMode(mode) {
     icon.textContent = 'upload_file';
     btnExtract.textContent = 'Start AI Extraction';
     input.accept = '.pdf,.jpg,.jpeg,.png,.tiff,.heic,.bmp,.webp';
+    input.multiple = true;
     input.removeAttribute('capture');
   } else {
     btnAsset.className = 'px-6 py-2 rounded-lg text-sm font-bold bg-primary text-white shadow-sm transition-colors';
     btnInvoice.className = 'px-6 py-2 rounded-lg text-sm font-bold text-on-surface-variant hover:bg-surface-container-low transition-colors';
     title.textContent = 'Capture or upload asset photo';
-    desc.textContent = 'High-Res Images (Nameplate, Barcode, Full Unit).';
+    desc.textContent = 'A single high-res image — nameplate, barcode, or full unit.';
     icon.textContent = 'photo_camera';
     btnExtract.textContent = 'Identify & Register Asset';
     input.accept = 'image/*';
+    input.multiple = false;
     input.setAttribute('capture', 'environment');
   }
+
+  // Show the "image-only / no financials" note only in asset mode.
+  document.getElementById('asset-mode-note')?.classList.toggle('hidden', mode !== 'asset');
+
+  // Reset progress visuals so a previous run's stale state doesn't bleed across modes.
+  document.getElementById('progress-section')?.classList.add('hidden');
+  document.getElementById('error-section')?.classList.add('hidden');
+  const pBar = document.getElementById('progress-bar');
+  const pPct = document.getElementById('progress-pct');
+  if (pBar) pBar.style.width = '0%';
+  if (pPct) pPct.textContent = '0%';
 }
 
 window.addEventListener('beforeunload', (e) => {
@@ -562,112 +596,262 @@ async function startExtraction() {
 
 async function _startAssetPhotoIdentification() {
   const file = selectedFiles[0];
-  _extracting = true;
-  document.getElementById('extract-btn').disabled = true;
-  document.getElementById('progress-section').classList.remove('hidden');
-  document.getElementById('error-section').classList.add('hidden');
-  
+  const errorSection = document.getElementById('error-section');
+  const errorMessage = document.getElementById('error-message');
+  const progressSection = document.getElementById('progress-section');
   const progressTitle = document.getElementById('progress-title');
+  const progressDetail = document.getElementById('progress-detail');
   const progressPct = document.getElementById('progress-pct');
   const progressBar = document.getElementById('progress-bar');
-  
+  const progressStatusLabel = document.getElementById('progress-status-label');
+  const extractBtn = document.getElementById('extract-btn');
+
+  // ── Pre-flight validation ───────────────────────────────────
+  if (!file) {
+    errorSection.classList.remove('hidden');
+    errorMessage.textContent = 'No image selected. Please add a photo of the asset.';
+    return;
+  }
+  if (!/^image\//i.test(file.type)) {
+    errorSection.classList.remove('hidden');
+    errorMessage.textContent = `Asset Registration accepts images only (got "${file.type || 'unknown'}").`;
+    return;
+  }
+
+  _extracting = true;
+  extractBtn.disabled = true;
+  progressSection.classList.remove('hidden');
+  errorSection.classList.add('hidden');
+  progressBar.style.width = '0%';
+  progressPct.textContent = '0%';
+
+  // Reuse the SAME stage helper signature as the invoice path so visuals
+  // stay consistent across mode toggles.
   const _setStage = (active) => {
-    ['stage-upload', 'stage-ai', 'stage-done'].forEach(id => {
+    const stages = { upload: 'stage-upload', ai: 'stage-ai', done: 'stage-done' };
+    const activeNumCls = 'bg-primary text-white';
+    const inactiveNumCls = 'bg-surface-container-high text-on-surface-variant';
+    Object.entries(stages).forEach(([key, id]) => {
       const el = document.getElementById(id);
-      if (el) el.style.opacity = active === id ? '1' : '0.4';
+      if (!el) return;
+      el.classList.toggle('opacity-40', key !== active);
+      el.classList.toggle('opacity-100', key === active);
+      el.style.opacity = '';
+      const num = el.querySelector('span');
+      if (num) {
+        num.className = num.className.replace(/(bg-\S+|text-\S+)/g, '');
+        num.classList.add(...(key === active ? activeNumCls : inactiveNumCls).split(' '));
+      }
     });
   };
 
-  const result = await Api.identifyAsset(file, null, (stage, pct) => {
-    progressPct.textContent = pct + '%';
-    progressBar.style.width = pct + '%';
-    if (stage === 'uploading') { _setStage('stage-upload'); progressTitle.textContent = 'Uploading Photo...'; }
-    if (stage === 'processing') { _setStage('stage-ai'); progressTitle.textContent = 'AI Vision Identifying...'; }
-  });
-
-  if (result.ok && result.data && result.data.data) {
-    try {
-      _setStage('stage-done');
-      progressTitle.textContent = 'Saving Asset...';
-      
-      const d = result.data.data;
-      
-      // All fields are ConfidentValue: { value, confidence }
-      const v = (field) => field && field.value != null ? field.value : null;
-      const c = (field) => field && field.confidence != null ? field.confidence : 1.0;
-      
-      // Get next asset number via Storage
-      const nextNum = await Storage._getNextAssetNumber();
-      const assetNumber = `AST-${String(nextNum).padStart(4, '0')}`;
-      
-      // Category suggestion is nested: { value: { category, subcategory, make, model }, confidence }
-      const catSugg = v(d.category_suggestion) || {};
-      
-      const newAsset = {
-        org_id: DEFAULT_ORG_ID,
-        asset_number: assetNumber,
-        name: v(d.asset_name) || 'Unknown Asset',
-        name_confidence: c(d.asset_name),
-        description: v(d.asset_description) || v(d.asset_name) || '',
-        description_confidence: c(d.asset_description),
-        serial_number: v(d.serial_number),
-        category: catSugg.category || 'Equipment',
-        sub_category: catSugg.subcategory || null,
-        category_confidence: c(d.category_suggestion),
-        make: catSugg.make || v(d.manufacturer),
-        model: catSugg.model || v(d.make_model),
-        asset_class: v(d.asset_class) || 'Tangible',
-        asset_type: v(d.asset_type) || 'Movable',
-        asset_criticality: v(d.asset_criticality) || 'Medium',
-        condition: v(d.asset_condition) || 'Used',
-        condition_source: 'image_ai',
-        condition_details: v(d.condition_details),
-        barcode_raw_data: v(d.barcode_raw_data),
-        tracking_config: d.tracking_config || {},
-        tracking_config_confidence: d.tracking_config_confidence || 1.0,
-        tracking_config_source: d.tracking_config_source || 'rules',
-        status: 'draft',
-        source: 'image_identification',
-        confidence: c(d.asset_name),
-      };
-      
-      const inserted = await Supabase.insert('assets', [newAsset]);
-      
-      if (inserted && inserted[0]) {
-        // Upload the photo to Supabase Storage
-        try {
-          const path = `${inserted[0].id}/asset_photo.${file.name.split('.').pop()}`;
-          const url = await Supabase.uploadFile('asset-images', path, file);
-          if (url) {
-            await Supabase.update('assets', inserted[0].id, { asset_image_url: url });
-          }
-        } catch(e) { 
-          console.warn('Photo upload failed:', e.message);
-        }
-        
-        // Refresh cache
-        await Storage.fetchAssets();
-        
-        progressTitle.textContent = 'Registration Complete';
-        progressPct.textContent = '100%';
-        progressBar.style.width = '100%';
-        setTimeout(() => { window.location.href = `registry.html`; }, 1500);
-      } else {
-        throw new Error('Database insert failed');
+  try {
+    // ── Step 1: Call AI identify endpoint ───────────────────
+    const result = await Api.identifyAsset(file, null, (stage, pct) => {
+      progressPct.textContent = pct + '%';
+      progressBar.style.width = pct + '%';
+      if (stage === 'uploading') {
+        _setStage('upload');
+        progressTitle.textContent = 'Uploading Photo...';
+        progressDetail.textContent = 'Sending image to vision pipeline';
+        if (progressStatusLabel) progressStatusLabel.textContent = 'Uploading';
+      } else if (stage === 'processing') {
+        _setStage('ai');
+        progressTitle.textContent = 'AI Vision Identifying...';
+        progressDetail.textContent = 'Reading nameplate, serial, and category';
+        if (progressStatusLabel) progressStatusLabel.textContent = 'AI Processing';
       }
-    } catch(e) {
-      _extracting = false;
-      document.getElementById('error-section').classList.remove('hidden');
-      document.getElementById('error-message').textContent = e.message;
-      document.getElementById('progress-section').classList.add('hidden');
-      document.getElementById('extract-btn').disabled = false;
+    });
+
+    if (!result.ok || !result.data || !result.data.data) {
+      throw new Error(result.error || 'Vision API did not return any asset data.');
     }
-  } else {
+
+    // ── Step 2: Build the row from the identify response ────
+    _setStage('done');
+    progressTitle.textContent = 'Saving Asset...';
+    progressDetail.textContent = 'Persisting to inventory';
+    if (progressStatusLabel) progressStatusLabel.textContent = 'Saving';
+
+    const d = result.data.data;
+    // Most leaves from /identify/upload are { value, confidence }; a handful
+    // (tracking_config, additional_observations, fields_requiring_invoice)
+    // are bare objects/arrays — handle both shapes.
+    const v = (field) => (field && field.value != null) ? field.value : null;
+    const c = (field) => (field && field.confidence != null) ? field.confidence : 1.0;
+
+    const catSugg = v(d.category_suggestion) || {};
+    const nextNum = await Storage._getNextAssetNumber();
+    const assetNumber = `AST-${String(nextNum).padStart(4, '0')}`;
+    const today = new Date().toISOString().split('T')[0];
+
+    // ⚠️  asset_class semantics in the /identify/upload response:
+    //   • TOP-LEVEL  d.asset_class.value          = "Tangible"  → maps to OUR `asset_nature` column
+    //   • NESTED     d.category_suggestion.value.asset_class = "Computers & Data Processing Units"
+    //                                                          → maps to OUR `asset_class` column
+    //   The backend reuses the key name; do not let them collide.
+    const assetNature = v(d.asset_class) || 'Tangible';
+    const assetClass  = catSugg.asset_class || null;
+
+    // Quantity handling: count > 1 means a bulk row; UOM may be "Each", "Nos", "Pcs", etc.
+    const aiCount = Number(v(d.count)) || 1;
+    const aiUom   = v(d.uom) || 'Nos';
+
+    // Flatten additional_observations ({ color: { value, confidence } }) into a plain map
+    // so it can ride along in custom_fields without losing data.
+    const observations = {};
+    if (d.additional_observations && typeof d.additional_observations === 'object') {
+      for (const [k, val] of Object.entries(d.additional_observations)) {
+        const flat = v(val);
+        if (flat != null) observations[k] = flat;
+      }
+    }
+
+    // Image registration is intentionally a thin payload:
+    //   • AI-DERIVED   → identity, classification, condition, barcode, count, observations
+    //   • AUTO-DERIVED → asset_number, dates, currency, status flags (computed locally)
+    //   • LEFT BLANK   → financials, vendor, location, warranty/AMC (added during review)
+    const newAsset = {
+      org_id: DEFAULT_ORG_ID,
+
+      // ── Auto-derived locally ─────────────────────────────
+      asset_number: assetNumber,
+      acquisition_date: today,         // registration date
+      currency: 'INR',                 // workspace standard; user can edit during review
+      is_parent_asset: true,
+      status: 'in_review',             // CHECK-constraint-valid
+      source: 'asset_image',           // CHECK-constraint-valid
+      condition_source: 'image_ai',
+
+      // ── AI-derived: identity ─────────────────────────────
+      name: v(d.asset_name) || 'Unknown Asset',
+      name_confidence: c(d.asset_name),
+      description: v(d.asset_description) || v(d.asset_name) || '',
+      description_confidence: c(d.asset_description),
+
+      // ── AI-derived: classification ───────────────────────
+      // (see asset_class semantic note above)
+      category: catSugg.category || 'Equipment',
+      sub_category: catSugg.subcategory || null,
+      asset_class: assetClass,
+      asset_nature: assetNature,
+      asset_type: v(d.asset_type) || 'Movable',
+      asset_criticality: v(d.asset_criticality) || 'Medium',
+      category_confidence: c(d.category_suggestion),
+
+      make: catSugg.make || v(d.manufacturer) || null,
+      // Prefer the discrete model identifier from category_suggestion;
+      // fall back to make_model only if nothing else was returned.
+      model: catSugg.model || v(d.make_model) || null,
+
+      // ── AI-derived: identification artefacts ─────────────
+      serial_number: v(d.serial_number) || null,
+      barcode_raw_data: v(d.barcode_raw_data) || null,
+
+      // ── AI-derived: quantity ─────────────────────────────
+      unit_of_measure: aiUom,
+      bulk_quantity: aiCount > 1 ? aiCount : null,
+      is_bulk_asset: aiCount > 1,
+
+      // ── AI-derived: condition ────────────────────────────
+      condition: v(d.asset_condition) || 'Used',
+      condition_details: v(d.condition_details) || null,
+
+      // ── AI-derived: tracking config (top-level conf/source) ─
+      ...(d.tracking_config ? {
+        tracking_config: d.tracking_config,
+        tracking_config_confidence: d.tracking_config_confidence ?? 1.0,
+        tracking_config_source: d.tracking_config_source || 'ai',
+      } : {}),
+
+      confidence: c(d.asset_name),
+
+      // ── Extension data → custom_fields ───────────────────
+      // Asset tag number, color/observations, and the backend's hint about
+      // which fields still require an invoice are preserved here so the
+      // review screen can surface them.
+      custom_fields: {
+        ...(v(d.asset_tag_number) ? { asset_tag_number: v(d.asset_tag_number) } : {}),
+        ...(Object.keys(observations).length ? { observations } : {}),
+        ...(Array.isArray(d.fields_requiring_invoice) && d.fields_requiring_invoice.length
+            ? { fields_requiring_invoice: d.fields_requiring_invoice } : {}),
+        identify_metadata: {
+          provider: result.data.metadata?.provider,
+          model: result.data.metadata?.model,
+          processed_at: new Date().toISOString(),
+        },
+      },
+
+      // ── Intentionally NOT set (filled in during review) ──
+      //   purchase_price, total_cost, cgst/sgst/igst/tax, taxes_detail,
+      //   installation_charges, useful_life_years, depreciation_*,
+      //   warranty_*, amc_*, vendor, invoice_number, invoice_date,
+      //   location_id, department_id, plant_location, assigned_to,
+      //   cost_center, hsn_code, qr_code_data, barcode
+    };
+
+    // ── Step 3: Insert the asset row ────────────────────────
+    const inserted = await Supabase.insert('assets', [newAsset]);
+    const assetRow = Array.isArray(inserted) ? inserted[0] : inserted;
+    if (!assetRow || !assetRow.id) {
+      throw new Error('Database insert returned no row.');
+    }
+
+    // ── Step 4: Upload the photo (best-effort) ──────────────
+    // Derive a safe extension from the MIME type, not the filename, so
+    // camera captures and dotted/space filenames don't produce broken paths.
+    const mimeExt = (file.type.split('/')[1] || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const ext = ['jpeg','jpg','png','webp','heic','heif','tiff','bmp'].includes(mimeExt) ? mimeExt : 'jpg';
+    const path = `${assetRow.id}/asset_photo.${ext}`;
+    let imageUploadFailed = false;
+    try {
+      const url = await Supabase.uploadFile('asset-images', path, file);
+      if (url) {
+        await Supabase.update('assets', assetRow.id, { asset_image_url: url });
+      } else {
+        imageUploadFailed = true;
+      }
+    } catch (uploadErr) {
+      imageUploadFailed = true;
+      console.warn('Asset photo upload failed:', uploadErr.message);
+    }
+
+    await Storage.fetchAssets();
+
+    // ── Step 5: Done ────────────────────────────────────────
+    progressTitle.textContent = 'Registration Complete';
+    const missing = Array.isArray(d.fields_requiring_invoice) && d.fields_requiring_invoice.length
+      ? d.fields_requiring_invoice.join(', ')
+      : 'financials, vendor, location';
+    progressDetail.textContent = imageUploadFailed
+      ? `Asset ${assetNumber} saved — photo upload failed; attach later from Asset Detail.`
+      : `Asset ${assetNumber} saved · still needed: ${missing}.`;
+    if (progressStatusLabel) progressStatusLabel.textContent = 'Done';
+    progressPct.textContent = '100%';
+    progressBar.style.width = '100%';
+
+    if (imageUploadFailed && typeof showToast === 'function') {
+      showToast('Asset saved, but photo upload failed.', 'warn');
+    }
+    if (typeof pushNotification === 'function') {
+      pushNotification({
+        icon: 'inventory_2',
+        color: 'text-primary bg-primary/10',
+        title: `Registered: ${newAsset.name}`,
+        detail: `${assetNumber} · awaiting: ${missing}`,
+        href: `asset-detail.html?id=${assetRow.id}`,
+      });
+    }
+
     _extracting = false;
-    document.getElementById('error-section').classList.remove('hidden');
-    document.getElementById('error-message').textContent = result.error || 'Failed to identify asset';
-    document.getElementById('progress-section').classList.add('hidden');
-    document.getElementById('extract-btn').disabled = false;
+    setTimeout(() => { window.location.href = `asset-detail.html?id=${assetRow.id}`; }, 1500);
+  } catch (e) {
+    _extracting = false;
+    extractBtn.disabled = false;
+    progressSection.classList.add('hidden');
+    errorSection.classList.remove('hidden');
+    errorMessage.textContent = e.message || 'Asset registration failed.';
+    console.error('[ASSET-REGISTER] Failed:', e);
   }
 }
 
