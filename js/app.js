@@ -35,6 +35,62 @@
     .ac-toast.error { background:#7f1d1d; color:#fca5a5; }
     .ac-toast.info { background:#003366; color:#a4c9ff; }
 
+    /* Push notification toast (rich card, auto-dismisses after configurable lifetime) */
+    @keyframes pushIn  { from { opacity:0; transform:translateX(40px) scale(.96); } to { opacity:1; transform:translateX(0) scale(1); } }
+    @keyframes pushOut { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(40px); } }
+    @keyframes pushBar { from { width:100%; } to { width:0%; } }
+    #ac-push-host {
+      position:fixed; bottom:24px; right:24px; z-index:9998;
+      display:flex; flex-direction:column-reverse; gap:12px;
+      pointer-events:none; max-width:calc(100vw - 32px);
+    }
+    .ac-push-toast {
+      position:relative; pointer-events:auto;
+      width:380px; max-width:calc(100vw - 32px);
+      background:#ffffff; border-radius:14px; overflow:hidden;
+      box-shadow:0 12px 36px rgba(0,0,0,0.16), 0 1px 4px rgba(0,0,0,0.06);
+      border:1px solid rgba(0,93,169,0.12);
+      display:grid; grid-template-columns:44px 1fr 32px;
+      align-items:start; padding:14px 14px 18px 14px; gap:10px;
+      font-family:Inter,sans-serif;
+      opacity:0; transform:translateX(40px) scale(.96);
+    }
+    .ac-push-toast.show { animation: pushIn 0.3s ease-out forwards; }
+    .ac-push-toast.out  { animation: pushOut 0.25s ease-in forwards; }
+    .ac-push-toast-icon {
+      width:40px; height:40px; border-radius:10px;
+      display:flex; align-items:center; justify-content:center;
+      background:rgba(0,93,169,0.10); color:#005DA9;
+    }
+    .ac-push-toast-body { min-width:0; padding-top:2px; }
+    .ac-push-toast-title { font-size:13px; font-weight:700; color:#1a1c1e; line-height:1.3; margin:0 0 4px; }
+    .ac-push-toast-detail { font-size:11.5px; color:#565e74; line-height:1.5; }
+    .ac-push-toast-cta {
+      display:inline-block; margin-top:8px;
+      font-size:11px; font-weight:700; color:#005DA9; text-decoration:none;
+      text-transform:uppercase; letter-spacing:0.04em;
+      padding:4px 10px; background:rgba(0,93,169,0.08); border-radius:6px;
+      transition:background 0.15s ease;
+    }
+    .ac-push-toast-cta:hover { background:rgba(0,93,169,0.16); }
+    .ac-push-toast-close {
+      width:28px; height:28px; padding:0; border:none; background:transparent;
+      color:#717784; border-radius:6px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      transition:background 0.15s ease, color 0.15s ease;
+    }
+    .ac-push-toast-close:hover { background:#f3f4f6; color:#1a1c1e; }
+    .ac-push-toast-bar {
+      position:absolute; bottom:0; left:0; right:0; height:3px;
+      background:rgba(0,93,169,0.08);
+    }
+    .ac-push-toast-bar-fill {
+      height:100%; width:100%;
+      background:linear-gradient(90deg,#005DA9,#0176D3);
+      animation:pushBar linear forwards;
+      transform-origin:left;
+    }
+
     /* Confidence ring */
     .confidence-ring { position:relative; width:52px; height:52px; border-radius:50%;
       display:flex; align-items:center; justify-content:center; }
@@ -581,7 +637,72 @@ function pushNotification(item) {
   arr.unshift(item);
   _saveStoredNotifs(arr);
   loadNotifications();
+  // Pop a transient on-screen card in addition to bumping the bell.
+  // Default lifetime 10s; pass item.silent === true to skip the popup,
+  // or item.duration to override (in ms).
+  if (!item.silent) _showPushToast(item);
 }
+
+/**
+ * Render a transient push-notification card (slides in bottom-right).
+ * Lifetime defaults to 10 000ms; pauses on hover; manual close button;
+ * clicking the CTA navigates to item.href.
+ */
+function _showPushToast(item) {
+  if (typeof document === 'undefined' || !document.body) return;
+  let host = document.getElementById('ac-push-host');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'ac-push-host';
+    document.body.appendChild(host);
+  }
+  const duration = Math.max(2000, Number(item.duration) || 10000);
+  const iconName = item.icon || 'notifications';
+  const iconCls = item.color || '';
+  const safeTitle  = String(item.title  || 'Notification').replace(/</g, '&lt;');
+  const safeDetail = String(item.detail || '').replace(/</g, '&lt;');
+  const safeHref   = item.href ? String(item.href).replace(/"/g, '&quot;') : '';
+
+  const card = document.createElement('div');
+  card.className = 'ac-push-toast';
+  card.innerHTML = `
+    <div class="ac-push-toast-icon ${iconCls}">
+      <span class="material-symbols-outlined" style="font-size:22px;font-variation-settings:'FILL' 1">${iconName}</span>
+    </div>
+    <div class="ac-push-toast-body">
+      <div class="ac-push-toast-title">${safeTitle}</div>
+      ${safeDetail ? `<div class="ac-push-toast-detail">${safeDetail}</div>` : ''}
+      ${safeHref ? `<a href="${safeHref}" class="ac-push-toast-cta">View →</a>` : ''}
+    </div>
+    <button class="ac-push-toast-close" aria-label="Dismiss">
+      <span class="material-symbols-outlined" style="font-size:18px">close</span>
+    </button>
+    <div class="ac-push-toast-bar"><div class="ac-push-toast-bar-fill" style="animation-duration:${duration}ms"></div></div>
+  `;
+  host.appendChild(card);
+  requestAnimationFrame(() => card.classList.add('show'));
+
+  let dismissed = false;
+  let timer = setTimeout(close, duration);
+  function close() {
+    if (dismissed) return;
+    dismissed = true;
+    clearTimeout(timer);
+    card.classList.add('out');
+    setTimeout(() => card.remove(), 280);
+  }
+  const fill = card.querySelector('.ac-push-toast-bar-fill');
+  card.addEventListener('mouseenter', () => {
+    clearTimeout(timer);
+    if (fill) fill.style.animationPlayState = 'paused';
+  });
+  card.addEventListener('mouseleave', () => {
+    timer = setTimeout(close, 3000);
+    if (fill) fill.style.animationPlayState = 'running';
+  });
+  card.querySelector('.ac-push-toast-close').addEventListener('click', close);
+}
+window._showPushToast = _showPushToast;
 function dismissNotification(id) {
   _saveStoredNotifs(_getStoredNotifs().filter(n => n.id !== id));
   _addDismissed(id);

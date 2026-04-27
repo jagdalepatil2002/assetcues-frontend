@@ -582,9 +582,11 @@ async function startExtraction() {
 
     if (typeof pushNotification === 'function') {
       const title = totalFiles > 1 ? `${savedIds.length} invoices ready for review` : `Ready to review: ${selectedFiles[0].name}`;
-      pushNotification({ icon: 'description', color: 'text-primary bg-primary/10', title, detail: 'Click to approve and sync assets', href: redirectUrl });
+      pushNotification({ icon: 'description', color: 'text-primary bg-primary/10', title, detail: 'Click to approve and sync assets', href: redirectUrl, duration: 10000 });
     }
-    setTimeout(() => { window.location.href = redirectUrl; }, 1500);
+    // Hold on this page so the 10s toast can be read; user can also click the
+    // toast CTA or the "Go to Review" button above to navigate sooner.
+    setTimeout(() => { window.location.href = redirectUrl; }, 10500);
   } else {
     // All failed
     document.getElementById('error-section').classList.remove('hidden');
@@ -840,11 +842,14 @@ async function _startAssetPhotoIdentification() {
         title: `Registered: ${newAsset.name}`,
         detail: `${assetNumber} · awaiting: ${missing}`,
         href: `asset-detail.html?id=${assetRow.id}`,
+        duration: 10000,
       });
     }
 
     _extracting = false;
-    setTimeout(() => { window.location.href = `asset-detail.html?id=${assetRow.id}`; }, 1500);
+    // Hold on this page so the 10s toast is fully visible; user can click
+    // the toast CTA to navigate sooner.
+    setTimeout(() => { window.location.href = `asset-detail.html?id=${assetRow.id}`; }, 10500);
   } catch (e) {
     _extracting = false;
     extractBtn.disabled = false;
