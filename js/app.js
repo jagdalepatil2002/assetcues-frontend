@@ -161,8 +161,16 @@
 
 /* ── Format helpers ── */
 function formatCurrency(n) {
-  if (n == null || isNaN(n)) return '₹0';
-  return '₹' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+  if (n == null) return '₹0';
+  // Accept Indian comma-formatted strings ("1,20,000.00"), bare numbers, or wrapped values.
+  let num;
+  if (typeof n === 'number') num = n;
+  else {
+    const s = String(n).replace(/[₹$€£\s,]/g, '').replace(/[^\d.\-]/g, '');
+    num = parseFloat(s);
+  }
+  if (!Number.isFinite(num)) return '₹0';
+  return '₹' + num.toLocaleString('en-IN', { maximumFractionDigits: 2 });
 }
 function formatDate(d) {
   if (!d) return '—';

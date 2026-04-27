@@ -284,7 +284,9 @@
                     <span>ID: <span class="font-mono font-bold">${a.tempAssetId || a.id.slice(0, 8)}</span></span>
                     <span>•</span>
                     <span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">location_on</span> <span id="loc-display">Loading...</span></span>
+                    ${a.source === 'asset_image' ? '<span>•</span><span class="flex items-center gap-1 text-primary"><span class="material-symbols-outlined text-sm">photo_camera</span> Image-registered</span>' : ''}
                 </div>
+                ${a.description ? `<p class="mt-3 text-sm text-on-surface-variant max-w-3xl leading-relaxed">${a.description}</p>` : ''}
             </div>
             <div class="flex gap-3">
                 <button onclick="downloadQR('${a.id}')" class="px-4 py-2 bg-surface-container-lowest border border-outline-variant/30 rounded-lg text-primary font-bold hover:bg-surface-container-low transition-colors flex items-center gap-2 text-sm"><span class="material-symbols-outlined text-[18px]">qr_code_2</span> QR</button>
@@ -476,6 +478,162 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- ── AI-derived classification, condition, quantity, tracking ── -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+
+                      <!-- Classification & Description -->
+                      <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+                        <h3 class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-5 flex items-center gap-2"><span class="material-symbols-outlined text-primary text-[16px]">category</span> Classification &amp; Description</h3>
+                        <div class="space-y-4 text-sm">
+                          <div class="flex flex-col">
+                            <span class="text-on-surface-variant mb-1">Description ${a.description ? '<span class="text-[9px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded ml-1">AI</span>' : ''}</span>
+                            <textarea id="desc-input" rows="2" placeholder="Describe the asset…"
+                              class="w-full text-sm bg-surface-container-low border border-outline-variant/30 rounded-lg px-3 py-2 focus:ring-1 focus:ring-primary focus:outline-none resize-none"
+                              onblur="saveField('${a.id}','description',this.value)">${a.description || ''}</textarea>
+                          </div>
+                          <div class="grid grid-cols-2 gap-3">
+                            <div class="flex flex-col">
+                              <span class="text-on-surface-variant text-xs mb-1">Asset Class ${a.assetClass ? '<span class="text-[9px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded">AI</span>' : ''}</span>
+                              <input type="text" value="${a.assetClass || ''}" placeholder="e.g. Computers"
+                                class="text-sm bg-surface-container-low border-none rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-primary focus:outline-none font-bold"
+                                onblur="saveField('${a.id}','assetClass',this.value)" />
+                            </div>
+                            <div class="flex flex-col">
+                              <span class="text-on-surface-variant text-xs mb-1">Asset Nature</span>
+                              <select onchange="saveField('${a.id}','assetNature',this.value)" class="text-sm bg-surface-container-low border-none rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-primary focus:outline-none font-bold">
+                                ${['Tangible','Intangible'].map(o => `<option value="${o}" ${(a.assetNature||'Tangible')===o?'selected':''}>${o}</option>`).join('')}
+                              </select>
+                            </div>
+                            <div class="flex flex-col">
+                              <span class="text-on-surface-variant text-xs mb-1">Asset Type ${a.assetType ? '<span class="text-[9px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded">AI</span>' : ''}</span>
+                              <select onchange="saveField('${a.id}','assetType',this.value)" class="text-sm bg-surface-container-low border-none rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-primary focus:outline-none font-bold">
+                                ${['Movable','Immovable','Fixed','Current'].map(o => `<option value="${o}" ${(a.assetType||'Movable')===o?'selected':''}>${o}</option>`).join('')}
+                              </select>
+                            </div>
+                            <div class="flex flex-col">
+                              <span class="text-on-surface-variant text-xs mb-1">Criticality ${a.assetCriticality ? '<span class="text-[9px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded">AI</span>' : ''}</span>
+                              <select onchange="saveField('${a.id}','assetCriticality',this.value)" class="text-sm bg-surface-container-low border-none rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-primary focus:outline-none font-bold">
+                                ${['Low','Medium','High','Critical'].map(o => `<option value="${o}" ${(a.assetCriticality||'Medium')===o?'selected':''}>${o}</option>`).join('')}
+                              </select>
+                            </div>
+                          </div>
+                          ${typeof a.categoryConfidence === 'number' && a.categoryConfidence > 0 ? `<div class="text-[10px] text-on-surface-variant pt-1">AI category confidence: <span class="font-bold text-primary">${Math.round(a.categoryConfidence * 100)}%</span></div>` : ''}
+                        </div>
+                      </div>
+
+                      <!-- Condition & Observations -->
+                      <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+                        <h3 class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-5 flex items-center gap-2"><span class="material-symbols-outlined text-primary text-[16px]">health_and_safety</span> Condition &amp; Observations</h3>
+                        <div class="space-y-4 text-sm">
+                          <div class="grid grid-cols-2 gap-3">
+                            <div class="flex flex-col">
+                              <span class="text-on-surface-variant text-xs mb-1">Condition ${a.condition ? '<span class="text-[9px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded">AI</span>' : ''}</span>
+                              <select onchange="saveField('${a.id}','condition',this.value)" class="text-sm bg-surface-container-low border-none rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-primary focus:outline-none font-bold">
+                                ${['New','Good','Used','Poor','Damaged','Refurbished'].map(o => `<option value="${o}" ${(a.condition||'New')===o?'selected':''}>${o}</option>`).join('')}
+                              </select>
+                            </div>
+                            <div class="flex flex-col">
+                              <span class="text-on-surface-variant text-xs mb-1">Source</span>
+                              <span class="text-sm font-bold px-2 py-1.5 rounded-lg ${a.conditionSource==='image_ai' ? 'bg-primary/10 text-primary' : 'bg-surface-container-low text-on-surface'}">${a.conditionSource || 'default'}</span>
+                            </div>
+                          </div>
+                          <div class="flex flex-col">
+                            <span class="text-on-surface-variant mb-1">Condition Details ${a.conditionDetails ? '<span class="text-[9px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded ml-1">AI</span>' : ''}</span>
+                            <textarea rows="2" placeholder="e.g. Minor scuff on top edge…"
+                              class="w-full text-sm bg-surface-container-low border border-outline-variant/30 rounded-lg px-3 py-2 focus:ring-1 focus:ring-primary focus:outline-none resize-none"
+                              onblur="saveField('${a.id}','conditionDetails',this.value)">${a.conditionDetails || ''}</textarea>
+                          </div>
+                          ${(() => {
+                            const obs = (a.customFields && a.customFields.observations) || {};
+                            const keys = Object.keys(obs);
+                            if (keys.length === 0) return '';
+                            return `<div class="flex flex-col">
+                              <span class="text-on-surface-variant text-xs mb-2">Visual Observations <span class="text-[9px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded ml-1">AI</span></span>
+                              <div class="flex flex-wrap gap-1.5">
+                                ${keys.map(k => `<span class="text-xs px-2 py-1 bg-surface-container-low rounded-full border border-outline-variant/30"><span class="text-on-surface-variant capitalize">${k.replace(/_/g,' ')}:</span> <span class="font-bold ml-1">${obs[k]}</span></span>`).join('')}
+                              </div>
+                            </div>`;
+                          })()}
+                        </div>
+                      </div>
+
+                      <!-- Quantity -->
+                      <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+                        <h3 class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-5 flex items-center gap-2"><span class="material-symbols-outlined text-primary text-[16px]">inventory_2</span> Quantity</h3>
+                        <div class="space-y-4 text-sm">
+                          <div class="grid grid-cols-3 gap-3">
+                            <div class="flex flex-col">
+                              <span class="text-on-surface-variant text-xs mb-1">Count</span>
+                              <input type="number" min="1" step="1" value="${a.bulkQuantity || 1}"
+                                class="text-sm bg-surface-container-low border-none rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-primary focus:outline-none font-bold"
+                                onblur="saveField('${a.id}','bulkQuantity',parseFloat(this.value)||1); saveField('${a.id}','isBulkAsset',(parseFloat(this.value)||1)>1)" />
+                            </div>
+                            <div class="flex flex-col">
+                              <span class="text-on-surface-variant text-xs mb-1">UOM ${a.unitOfMeasure ? '<span class="text-[9px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded">AI</span>' : ''}</span>
+                              <input type="text" value="${a.unitOfMeasure || 'Nos'}" placeholder="Nos"
+                                class="text-sm bg-surface-container-low border-none rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-primary focus:outline-none font-bold"
+                                onblur="saveField('${a.id}','unitOfMeasure',this.value)" />
+                            </div>
+                            <div class="flex flex-col">
+                              <span class="text-on-surface-variant text-xs mb-1">Bulk Asset</span>
+                              <span class="text-sm font-bold px-2 py-1.5 rounded-lg ${a.isBulkAsset ? 'bg-tertiary/10 text-tertiary' : 'bg-surface-container-low text-on-surface-variant'}">${a.isBulkAsset ? 'Yes' : 'No'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Tracking Config -->
+                      <div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+                        <h3 class="text-[10px] font-label uppercase tracking-widest text-on-surface-variant mb-5 flex items-center gap-2"><span class="material-symbols-outlined text-primary text-[16px]">my_location</span> Tracking Config ${a.trackingConfigSource==='ai' ? '<span class="text-[9px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded ml-1">AI</span>' : ''}</h3>
+                        <div class="space-y-4 text-sm">
+                          ${(() => {
+                            const tc = a.trackingConfig || {};
+                            const indicator = tc.indicator || 'No';
+                            const tm = Array.isArray(tc.tracking_methods) ? tc.tracking_methods : [];
+                            const am = Array.isArray(tc.audit_methods) ? tc.audit_methods : [];
+                            return `
+                              <div class="flex justify-between items-center">
+                                <span class="text-on-surface-variant text-xs">Tracking Required</span>
+                                <span class="text-sm font-bold px-2 py-1 rounded-lg ${indicator==='Yes' ? 'bg-green-500/10 text-green-700' : 'bg-surface-container-low text-on-surface-variant'}">${indicator}</span>
+                              </div>
+                              <div class="flex flex-col">
+                                <span class="text-on-surface-variant text-xs mb-2">Tracking Methods</span>
+                                <div class="flex flex-wrap gap-1.5">
+                                  ${tm.length ? tm.map(m => `<span class="text-xs px-2 py-1 bg-primary/5 text-primary rounded-full border border-primary/20 font-medium">${m}</span>`).join('') : '<span class="text-xs text-on-surface-variant italic">None recommended</span>'}
+                                </div>
+                              </div>
+                              <div class="flex flex-col">
+                                <span class="text-on-surface-variant text-xs mb-2">Audit Methods</span>
+                                <div class="flex flex-wrap gap-1.5">
+                                  ${am.length ? am.map(m => `<span class="text-xs px-2 py-1 bg-tertiary/5 text-tertiary rounded-full border border-tertiary/20 font-medium">${m}</span>`).join('') : '<span class="text-xs text-on-surface-variant italic">None recommended</span>'}
+                                </div>
+                              </div>
+                              ${typeof a.trackingConfigConfidence === 'number' && a.trackingConfigConfidence > 0 ? `<div class="text-[10px] text-on-surface-variant pt-1">AI confidence: <span class="font-bold text-primary">${Math.round(a.trackingConfigConfidence * 100)}%</span></div>` : ''}
+                            `;
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- ── Awaiting Invoice banner (only when AI flagged required fields) ── -->
+                    ${(() => {
+                      const fri = a.customFields && Array.isArray(a.customFields.fields_requiring_invoice) ? a.customFields.fields_requiring_invoice : [];
+                      if (!fri.length) return '';
+                      const labels = { purchase_date: 'Purchase Date', cost: 'Purchase Cost', vendor: 'Vendor', warranty_expiry: 'Warranty Expiry', invoice_number: 'Invoice Number', amc: 'AMC Details' };
+                      return `
+                        <div class="mt-6 bg-tertiary/5 border border-tertiary/30 rounded-xl px-5 py-4 flex gap-4 items-start">
+                          <span class="material-symbols-outlined text-tertiary text-2xl">pending_actions</span>
+                          <div class="flex-1">
+                            <p class="font-bold text-on-surface mb-1">Awaiting from Invoice</p>
+                            <p class="text-xs text-on-surface-variant mb-2">The AI flagged these fields as needing the original invoice / supplier document:</p>
+                            <div class="flex flex-wrap gap-1.5">
+                              ${fri.map(f => `<span class="text-xs px-2.5 py-1 bg-tertiary/10 text-tertiary rounded-full font-bold border border-tertiary/30">${labels[f] || f.replace(/_/g,' ')}</span>`).join('')}
+                            </div>
+                          </div>
+                        </div>
+                      `;
+                    })()}
                 </div>
 
                 <!-- Depreciation Tab -->

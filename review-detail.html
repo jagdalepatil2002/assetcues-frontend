@@ -241,8 +241,8 @@ async function renderDetail() {
          cgst_rate: allFooters.cgst_rate || null, cgst_amt: allFooters.cgst_amt || allFooters.total_cgst || null,
          sgst_rate: allFooters.sgst_rate || null, sgst_amt: allFooters.sgst_amt || allFooters.total_sgst || null,
          igst_rate: allFooters.igst_rate || null, igst_amt: allFooters.igst_amt || allFooters.total_igst || null,
-         rounding: allFooters.rounding || allFooters.rounding_off || allFooters.round_off || null,
-         grand_total: allFooters.grand_total || allHeaders.grand_total || allHeaders.declared_val || null,
+        rounding: allFooters.rounding || allFooters.rounding_off || allFooters.round_off || allFooters.roundoff || null,
+        grand_total: allFooters.grand_total || allFooters.total_invoice_value || allHeaders.grand_total || allHeaders.declared_val || null,
          amt_in_words: allFooters.amt_in_words || null,
          due_dt: allFooters.due_dt || allHeaders.payment_due_dt || null,
          credit_days: allFooters.payment_credit_days || null,
@@ -267,28 +267,50 @@ async function renderDetail() {
          micr: allFooters.bank_micr || ''
      };
 
-     // Line Items
-     let parsedItems = [];
-     for (const r of allTables) {
-         if (r.product_description || r.desc || r.description || r.qty) {
-             parsedItems.push({
-                 sr_no: r.sl_no || r.sr_no || '',
-                 description: r.product_description || r.desc || r.description || '',
-                 hsn: r.hsn_code || r.hsn || r.hsn_sac || '',
-                 uom: r.uqc || r.uom || '',
-                 qty: r.qty || '',
-                 rate: r.unit_price || r.rate || '',
-                 amt: r.amount || r.amt || r.taxable_value || '',
-                 total_amt: r.total_amt || '',
-                 serial_no: r.serial_no || '', part_no: r.part_no || r.item_code || '',
-                 igst_rate: r.igst_rate || '', igst_amt: r.igst_amt || '',
-                 cgst_rate: r.cgst_rate || '', cgst_amt: r.cgst_amt || '',
-                 sgst_rate: r.sgst_utgst_rate || '', sgst_amt: r.sgst_utgst_amt || '',
-                 discount: r.discount || ''
-             });
-         }
-     }
-     if (parsedItems.length > 0) lineItems = parsedItems;
+    // Line Items — supports legacy flat keys AND new Azure backend
+    // (asset_description_serial_no, unit_rate, taxable, total, cgst_9%, sgst_9%, disc, #).
+    let parsedItems = [];
+    for (const r of allTables) {
+        const hasContent = r.product_description || r.desc || r.description
+                        || r.asset_description_serial_no || r.qty || r['#'] || r.serial_no;
+        if (!hasContent) continue;
+
+        // Derive GST rate + amount from compound keys like "cgst_9%", "sgst_9%", "igst_18%"
+        let cgstRate = r.cgst_rate || '', cgstAmt = r.cgst_amt || '';
+        let sgstRate = r.sgst_utgst_rate || r.sgst_rate || '', sgstAmt = r.sgst_utgst_amt || r.sgst_amt || '';
+        let igstRate = r.igst_rate || '', igstAmt = r.igst_amt || '';
+        for (const k of Object.keys(r)) {
+            const m = k.match(/^(cgst|sgst|igst)[_\s]*(\d+(?:\.\d+)?)\s*%?$/i);
+            if (!m) continue;
+            const which = m[1].toLowerCase(), rate = m[2], val = r[k];
+            if (which === 'cgst') { cgstRate = cgstRate || rate; cgstAmt = cgstAmt || val; }
+            else if (which === 'sgst') { sgstRate = sgstRate || rate; sgstAmt = sgstAmt || val; }
+            else if (which === 'igst') { igstRate = igstRate || rate; igstAmt = igstAmt || val; }
+        }
+
+        // Strip trailing "S/N: ..." from description — serial is rendered separately as a chip.
+        const rawDesc = r.product_description || r.desc || r.description
+                     || r.asset_description_serial_no || r.asset_description || '';
+        const cleanDesc = String(rawDesc).replace(/\s*S\/N[:\s]+[^,]+$/i, '').trim();
+
+        parsedItems.push({
+            sr_no: r.sl_no || r.sr_no || r['#'] || '',
+            description: cleanDesc,
+            hsn: r.hsn_code || r.hsn || r.hsn_sac || '',
+            uom: r.uqc || r.uom || '',
+            qty: r.qty || '',
+            rate: r.unit_price || r.rate || r.unit_rate || '',
+            amt: r.amount || r.amt || r.taxable_value || r.taxable || '',
+            total_amt: r.total_amt || r.total || '',
+            serial_no: r.serial_no || r.serial || '',
+            part_no: r.part_no || r.item_code || '',
+            igst_rate: igstRate, igst_amt: igstAmt,
+            cgst_rate: cgstRate, cgst_amt: cgstAmt,
+            sgst_rate: sgstRate, sgst_amt: sgstAmt,
+            discount: r.discount || r.disc || ''
+        });
+    }
+    if (parsedItems.length > 0) lineItems = parsedItems;
 
      otherData = Object.assign({}, allHeaders, allFooters, allOther);
   }
@@ -394,37 +416,86 @@ async function renderDetail() {
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
               ${(ext.assetIds||[]).slice(0,4).map((aid, idx) => {
-                const a = Storage.getAsset(aid);
-                const raw = (json.assets && json.assets[idx]) ? json.assets[idx] : a;
-                const cost = raw.cost || a.totalCost || 0;
-                const total = raw.total_amount || a.totalCost || cost;
-                const gstText = raw.taxes ? Object.keys(raw.taxes).map(tk => tk+': '+formatCurrency(raw.taxes[tk])).join(', ') : 'N/A';
+                const a = Storage.getAsset(aid) || {};
+                // Prefer the normalized flat shape that storage.js produces — it accounts for the
+                // new nested AI response (identity / classification / financials / contracts / …).
+                const raw = (ext.generatedAssets || [])[idx]
+                          || (json.assets && json.assets[idx])
+                          || a;
+
+                const cost = raw.cost != null ? raw.cost : (a.totalCost || 0);
+                const total = raw.total_amount != null ? raw.total_amount : (a.totalCost || cost);
+
+                // Build readable tax summary, ignoring our internal flat aliases (cgst/sgst/igst zero values).
+                const taxesObj = raw.taxes || {};
+                const taxParts = [];
+                for (const [tk, tv] of Object.entries(taxesObj)) {
+                  if (['cgst','sgst','igst'].includes(tk)) continue;
+                  if (parseNum(tv) > 0) taxParts.push(`${tk}: ${formatCurrency(tv)}`);
+                }
+                const gstText = taxParts.length ? taxParts.join(' • ') : '—';
+
                 const catInfo = raw.category_suggestion || {};
-                const classification = [catInfo.category, catInfo.subcategory].filter(Boolean).join(' > ') || a.category || 'Uncategorized';
-                const makeModel = [catInfo.make, catInfo.model].filter(Boolean).join(' / ') || 'Not Specified';
-                const title = raw.title || a.name || 'Unknown Asset';
-                const desc = raw.description || a.description || 'No description provided';
-                const serial = raw.serial_number || a.serialNumber || raw.dummy_asset_number || a.tempAssetId;
+                const classification = [catInfo.category, catInfo.subcategory].filter(Boolean).join(' › ')
+                                    || a.category || 'Uncategorized';
+                const makeModel = [catInfo.make || raw.manufacturer, catInfo.model].filter(Boolean).join(' / ')
+                               || raw.make_model || 'Not Specified';
+                const title = raw.title || raw.asset_name || a.name || 'Unknown Asset';
+                const cleanTitle = String(title).replace(/^↳\s*Child:\s*/i, '').replace(/\s*S\/N[:\s]+[^,]+$/i, '').trim() || title;
+                const descRaw = raw.description || a.description || 'No description provided';
+                const desc = String(descRaw).replace(/\s*S\/N[:\s]+[^,]+$/i, '').trim() || descRaw;
+                const serial = raw.serial_number || a.serialNumber || raw.dummy_asset_number || a.tempAssetId || '—';
                 const currency = raw.currency || 'INR';
-                const count = raw.uom ? ' (1 '+raw.uom+')' : '';
+                const count = raw.uom ? ` (${raw.group_count || 1} ${raw.uom})` : '';
+
+                const usefulLife = raw.useful_life_years ? `${raw.useful_life_years} yrs` : (raw.useful_life || '');
+                const acqDate = raw.acquisition_date || '';
+                const plant = raw.plant_location || '';
+                const condition = raw.condition || '';
+
+                const isParent = raw.is_parent_asset === false ? false
+                              : (raw.is_parent_asset !== undefined ? !!raw.is_parent_asset : !a.parentAssetId);
+                const parentBadge = !isParent
+                  ? '<span class="text-[9px] font-bold bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded uppercase">Child</span>'
+                  : '<span class="text-[9px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded uppercase">Parent</span>';
+
+                // Contract chips (warranty / amc / insurance end dates)
+                const contractChips = [];
+                if (raw.warranty_expiry_date) contractChips.push(`<span class="text-[9px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">Wty till ${raw.warranty_expiry_date}</span>`);
+                if (raw.amc_end_date)         contractChips.push(`<span class="text-[9px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded">AMC till ${raw.amc_end_date}</span>`);
+                if (raw.insurance_end_date)   contractChips.push(`<span class="text-[9px] bg-pink-50 text-pink-700 px-1.5 py-0.5 rounded">Ins till ${raw.insurance_end_date}</span>`);
+
+                // Price-validation note (if backend ran sanity check)
+                const pv = raw.price_validation || null;
+                const pvChip = pv && pv.passed === false
+                  ? `<span class="text-[9px] bg-red-50 text-red-700 px-1.5 py-0.5 rounded" title="${(pv.warning||pv.rationale||'').replace(/"/g,'&quot;')}">⚠ Price out of range</span>`
+                  : (pv && pv.passed === true
+                      ? `<span class="text-[9px] bg-green-50 text-green-700 px-1.5 py-0.5 rounded" title="${(pv.rationale||'').replace(/"/g,'&quot;')}">✓ Price ok</span>`
+                      : '');
+
+                const icon = a.isBulkAsset ? 'scale' : (!isParent ? 'subdirectory_arrow_right' : 'inventory_2');
 
                 return `<div class="p-4 bg-surface-container-lowest rounded-xl border border-outline-variant/30 hover:border-primary transition-colors cursor-pointer flex flex-col gap-3 group" onclick="openAssetModal('${a.id}')">
                    <div class="flex justify-between items-start gap-4">
                      <div class="flex items-start gap-3 flex-1 min-w-0">
                         <div class="h-10 w-10 rounded bg-surface-container flex items-center justify-center shrink-0 text-on-surface-variant">
-                           <span class="material-symbols-outlined">${a.isBulkAsset ? 'scale' : a.parentAssetId ? 'subdirectory_arrow_right' : 'inventory_2'}</span>
+                           <span class="material-symbols-outlined">${icon}</span>
                         </div>
                         <div class="flex-1 min-w-0">
-                           <p class="text-sm font-bold text-on-surface line-clamp-1" title="${title}">${title}</p>
-                           <p class="text-[11px] text-primary font-mono bg-primary/10 px-1.5 py-0.5 rounded inline-block mt-0.5" title="Serial/ID SN: ${serial}">${serial}</p>
+                           <div class="flex items-center gap-1.5 flex-wrap">
+                              <p class="text-sm font-bold text-on-surface line-clamp-1" title="${title}">${cleanTitle}</p>
+                              ${parentBadge}
+                           </div>
+                           <p class="text-[11px] text-primary font-mono bg-primary/10 px-1.5 py-0.5 rounded inline-block mt-0.5" title="Serial / ID: ${serial}">${serial}</p>
                         </div>
                      </div>
                      <div class="text-right shrink-0">
                        <p class="text-sm font-bold text-on-surface font-mono">${currency} ${formatCurrency(total)}${count}</p>
                        <p class="text-[10px] text-on-surface-variant font-mono">Cost: ${formatCurrency(cost)}</p>
+                       ${usefulLife ? `<p class="text-[10px] text-on-surface-variant mt-0.5">Life: ${usefulLife}</p>` : ''}
                      </div>
                    </div>
-                   <div class="grid grid-cols-2 gap-2 border-t border-outline-variant/30 pt-3">
+                   <div class="grid grid-cols-2 gap-x-3 gap-y-2 border-t border-outline-variant/30 pt-3">
                       <div>
                          <p class="text-[9px] text-outline uppercase font-label">Classification</p>
                          <p class="text-[11px] text-on-surface-variant font-medium mt-0.5 line-clamp-1" title="${classification}">${classification}</p>
@@ -433,12 +504,25 @@ async function renderDetail() {
                          <p class="text-[9px] text-outline uppercase font-label">Make / Model</p>
                          <p class="text-[11px] text-on-surface-variant font-medium mt-0.5 line-clamp-1" title="${makeModel}">${makeModel}</p>
                       </div>
-                      <div class="col-span-2 flex items-center justify-between">
-                         <div>
-                            <p class="text-[9px] text-outline uppercase font-label">Taxes & Logistics</p>
-                            <p class="text-[11px] text-on-surface-variant font-mono mt-0.5 truncate">${gstText}</p>
-                         </div>
+                      ${acqDate ? `<div>
+                         <p class="text-[9px] text-outline uppercase font-label">Acquired</p>
+                         <p class="text-[11px] text-on-surface-variant font-medium mt-0.5">${acqDate}</p>
+                      </div>` : ''}
+                      ${condition ? `<div>
+                         <p class="text-[9px] text-outline uppercase font-label">Condition</p>
+                         <p class="text-[11px] text-on-surface-variant font-medium mt-0.5">${condition}</p>
+                      </div>` : ''}
+                      ${plant ? `<div class="col-span-2">
+                         <p class="text-[9px] text-outline uppercase font-label">Plant Location</p>
+                         <p class="text-[11px] text-on-surface-variant font-medium mt-0.5 line-clamp-1" title="${plant}">${plant}</p>
+                      </div>` : ''}
+                      <div class="col-span-2">
+                         <p class="text-[9px] text-outline uppercase font-label">Taxes</p>
+                         <p class="text-[11px] text-on-surface-variant font-mono mt-0.5 truncate" title="${gstText}">${gstText}</p>
                       </div>
+                      ${(contractChips.length || pvChip) ? `<div class="col-span-2 flex flex-wrap gap-1">
+                         ${contractChips.join('')}${pvChip}
+                      </div>` : ''}
                    </div>
                    <div class="bg-surface-container rounded p-2.5 mt-1 relative">
                       <p class="text-[11px] text-on-surface-variant italic line-clamp-2 pr-6">${desc}</p>

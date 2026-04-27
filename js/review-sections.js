@@ -99,11 +99,18 @@ function renderLineItemsSection(lineItems, confidence) {
       : '';
     const partHtml = li.part_no ? `<span class="text-[9px] font-mono bg-surface-container px-1.5 py-0.5 rounded mt-1 inline-block">${li.part_no}</span>` : '';
 
-    // Tax display
+    // Tax chips — render rate AND amount whenever either is present.
+    const _chip = (label, rate, amt, cls) => {
+      const r = parseNum(rate), a = parseNum(amt);
+      if (r <= 0 && a <= 0) return '';
+      const rateLbl = r > 0 ? ` ${rate}%` : '';
+      const amtLbl  = a > 0 ? ` = ${formatCurrency(amt)}` : '';
+      return `<span class="text-[9px] ${cls} px-1.5 py-0.5 rounded">${label}${rateLbl}${amtLbl}</span>`;
+    };
     let taxChips = '';
-    if (parseNum(li.igst_rate) > 0) taxChips += `<span class="text-[9px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">IGST ${li.igst_rate}% = ${formatCurrency(li.igst_amt)}</span>`;
-    if (parseNum(li.cgst_rate) > 0) taxChips += `<span class="text-[9px] bg-green-50 text-green-700 px-1.5 py-0.5 rounded">CGST ${li.cgst_rate}%</span>`;
-    if (parseNum(li.sgst_rate) > 0) taxChips += `<span class="text-[9px] bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded">SGST ${li.sgst_rate}%</span>`;
+    taxChips += _chip('IGST', li.igst_rate, li.igst_amt, 'bg-blue-50 text-blue-700');
+    taxChips += _chip('CGST', li.cgst_rate, li.cgst_amt, 'bg-green-50 text-green-700');
+    taxChips += _chip('SGST', li.sgst_rate, li.sgst_amt, 'bg-yellow-50 text-yellow-700');
 
     const lineTotal = li.total_amt || li.amt || '';
 
